@@ -16,17 +16,17 @@ public class PneumaticsSubsystem extends SubsystemBase {
 
     public PneumaticsSubsystem() {
 
-        // Enable compressor on REV PH using pressure switch
+        // Enable compressor on CTRE using pressure switch
         compressor = new Compressor(
             Constants.PNEUMATICS_HUB_ID,
-            PneumaticsModuleType.REVPH
+        PneumaticsModuleType.CTREPCM
         );
         compressor.enableDigital();
 
         // Double solenoid setup
         doubleSolenoid = new DoubleSolenoid(
             Constants.PNEUMATICS_HUB_ID,
-            PneumaticsModuleType.REVPH,
+            PneumaticsModuleType.CTREPCM,
             Constants.EXTEND_SOLENOID_ID,
             Constants.RETRACT_SOLENOID_ID
         );
