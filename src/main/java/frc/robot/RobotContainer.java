@@ -7,9 +7,15 @@
 
 package frc.robot;
 
-import static frc.robot.subsystems.vision.VisionConstants.*;
+import static frc.robot.subsystems.vision.VisionConstants.camera0Name;
+import static frc.robot.subsystems.vision.VisionConstants.camera1Name;
+import static frc.robot.subsystems.vision.VisionConstants.robotToCamera0;
+import static frc.robot.subsystems.vision.VisionConstants.robotToCamera1;
+
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -20,6 +26,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
+import frc.robot.subsystems.PneumaticsSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIONavX;
@@ -30,8 +37,7 @@ import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
@@ -42,6 +48,8 @@ public class RobotContainer {
   // Subsystems
   private final Drive drive;
   private final Vision vision;
+  private final PneumaticsSubsystem pneumatics; 
+
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
@@ -110,6 +118,8 @@ public class RobotContainer {
         vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
         break;
     }
+    //Initialize subsystem
+    pneumatics = new PneumaticsSubsystem();
 
     // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
@@ -130,8 +140,11 @@ public class RobotContainer {
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
+
+
     // Configure the button bindings
     configureButtonBindings();
+
   }
 
   /**
@@ -215,6 +228,14 @@ public class RobotContainer {
                   // Could add logic to switch vision pipelines
                   System.out.println("Toggle vision pipeline (not implemented)");
                 }));
+
+    // Pneumatics controls using triggers instead of A/B
+    controller.leftTrigger()
+        .onTrue(new InstantCommand(pneumatics::extend, pneumatics));
+
+    controller.rightTrigger()
+        .onTrue(new InstantCommand(pneumatics::retract, pneumatics));
+              
   }
 
   /**
@@ -243,4 +264,10 @@ public class RobotContainer {
   public Vision getVision() {
     return vision;
   }
+
+  public PneumaticsSubsystem getPneumatics() {
+    return pneumatics;
+  }
+
+
 }

@@ -6,7 +6,6 @@
 // at the root directory of this project.
 
 package frc.robot;
-
 import edu.wpi.first.wpilibj.RobotBase;
 
 /**
@@ -17,6 +16,11 @@ import edu.wpi.first.wpilibj.RobotBase;
 public final class Constants {
   public static final Mode simMode = Mode.SIM;
   public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : simMode;
+  public static final int PNEUMATICS_HUB_ID = 1;
+
+    // Solenoid channel IDs on the REV PH
+    public static final int EXTEND_SOLENOID_ID = 0;
+    public static final int RETRACT_SOLENOID_ID = 1;
 
   public static enum Mode {
     /** Running on a real robot. */
