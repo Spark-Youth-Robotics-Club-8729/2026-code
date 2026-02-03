@@ -1,20 +1,146 @@
 package frc.robot.util;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import frc.robot.Constants.ShooterConstants;
 
-/** Physics for shooter calculations */
+/** Physics for shooter calculations with both static and moving shots. */
 public class ShooterCalculations {
+
+  /** Result of a moving shot calculation. */
+  public static class MovingShotResult {
+    /** Robot heading angle to face the hub (degrees) */
+    public final double robotHeadingDeg;
+    /** Shooter horizontal angle on x-y plane (2D plane) (degrees) */
+    public final double shooterAngleDeg;
+    /** Shooter elevation angle from horizontal (degrees, 0 to 90) */
+    public final double elevationAngleDeg;
+    /** Launch velocity in m/s */
+    public final double launchVelocity;
+    /** Required RPM clamped to motor limits */
+    public final double rpm;
+
+    public MovingShotResult(
+        double robotHeadingDeg,
+        double shooterAngleDeg,
+        double elevationAngleDeg,
+        double launchVelocity,
+        double rpm) {
+      this.robotHeadingDeg = robotHeadingDeg;
+      this.shooterAngleDeg = shooterAngleDeg;
+      this.elevationAngleDeg = elevationAngleDeg;
+      this.launchVelocity = launchVelocity;
+      this.rpm = rpm;
+    }
+
+    /** @return Robot heading in radians */
+    public double getRobotHeadingRad() {
+      return Math.toRadians(robotHeadingDeg);
+    }
+
+    /** @return Shooter angle in radians */
+    public double getShooterAngleRad() {
+      return Math.toRadians(shooterAngleDeg);
+    }
+
+    /** @return Elevation angle in radians */
+    public double getElevationAngleRad() {
+      return Math.toRadians(elevationAngleDeg);
+    }
+  }
+
   /**
-   * Calcualtes the requried initial velocity for the FUEL to be shot at so that it enters the HUB
-   * in meters/second.
+   * Calculates shooter parameters for a shot while the robot is moving.
    *
-   * @param deltaD The horizontal distance to the HUB, taken from the computer vision part of it
-   * @param deltaH The vertical distance to the HUB (distance from shooter to center of HUB)
-   * @param thetaDeg Shooting angle in degrees (optimal is 45 degrees).
-   * @return The initial velocity, in meters/second
+   * <p>Uses projectile motion with velocity vector addition to account for robot movement.
+   *
+   * <p>The projectile velocity in the field frame equals the vector sum of the robot's velocity and
+   * the launch velocity:
+   *
+   * <ul>
+   *   <li>v_x = v_rx + v0*cos(alpha)*cos(theta_shooter)
+   *   <li>v_y = v_ry + v0*cos(alpha)*sin(theta_shooter)
+   *   <li>v_z = v0*sin(alpha)
+   * </ul>
+   *
+   * @param robotPose Current robot pose (x, y, heading)
+   * @param chassisSpeeds Chassis speeds relative to the floor (v_rx, v_ry, omega)
+   * @param hubPosition Hub position on the field
+   * @return MovingShotResult containing all required angles and velocities
    */
-  public static double calculateInitialVelocity(double deltaD, double deltaH, double thetaDeg) {
+  public static MovingShotResult calculateMovingShot(
+      Pose2d robotPose, ChassisSpeeds chassisSpeeds, Translation2d hubPosition) {
+
+    // Calculate deltas
+    double deltaX = hubPosition.getX() - robotPose.getX();
+    double deltaY = hubPosition.getY() - robotPose.getY();
+    double deltaD = Math.hypot(deltaX, deltaY); // Horizontal distance
+    double deltaH = ShooterConstants.HEIGHT_DIFF; // Vertical height difference
+
+    // Robot velocity components
+    double vRx = chassisSpeeds.vxMetersPerSecond;
+    double vRy = chassisSpeeds.vyMetersPerSecond;
+
+    // Robot heading to face the hub
+    double robotHeading = Math.atan2(deltaY, deltaX);
+
+    // Direction to hub
+    double thetaHub = Math.atan2(deltaY, deltaX);
+
+    // Required horizontal velocity magnitude (using flight time)
+    double T = ShooterConstants.FLIGHT_TIME;
+    double vH = deltaD / T;
+
+    // Horizontal component of launch velocity (in field frame, pointing to hub)
+    double vHubX = vH * Math.cos(thetaHub);
+    double vHubY = vH * Math.sin(thetaHub);
+
+    // Horizontal launch velocity relative to robot (vector subtraction)
+    double vLaunchX = vHubX - vRx;
+    double vLaunchY = vHubY - vRy;
+
+    // Shooter horizontal angle (direction to aim on x-y plane)
+    double shooterAngle = Math.atan2(vLaunchY, vLaunchX);
+
+    // Horizontal component magnitude of launch velocity
+    double v0CosAlpha = Math.hypot(vLaunchX, vLaunchY);
+
+    // Vertical component of launch velocity
+    // From: deltaH = v0*sin(alpha)*T - 0.5*g*T^2
+    // Solving: v0*sin(alpha) = (deltaH + 0.5*g*T^2) / T = deltaH/T + g*T/2
+    double v0SinAlpha = deltaH / T + ShooterConstants.GRAVITY * T / 2.0;
+
+    // Total launch velocity
+    double v0 = Math.hypot(v0CosAlpha, v0SinAlpha);
+
+    // Elevation angle
+    double elevationAngle = Math.atan2(v0SinAlpha, v0CosAlpha);
+
+    // Convert to RPM
+    double rpm = velocityToRPM(v0);
+    rpm = MathUtil.clamp(rpm, ShooterConstants.MIN_SHOOTER_RPM, ShooterConstants.MAX_SHOOTER_RPM);
+
+    // Convert radians to degrees for the result
+    return new MovingShotResult(
+        Math.toDegrees(robotHeading),
+        Math.toDegrees(shooterAngle),
+        Math.toDegrees(elevationAngle),
+        v0,
+        rpm);
+  }
+
+  /**
+   * Calculates the required initial velocity for a STATIC shot (robot not moving).
+   *
+   * @param deltaD The horizontal distance to the HUB
+   * @param deltaH The vertical distance to the HUB (shooter to center of HUB)
+   * @param thetaDeg Shooting angle in degrees (optimal is 45 degrees)
+   * @return The initial velocity in m/s
+   */
+  public static double calculateStaticInitialVelocity(
+      double deltaD, double deltaH, double thetaDeg) {
     double thetaRadians = Math.toRadians(thetaDeg);
 
     double numerator = deltaD * deltaD * ShooterConstants.GRAVITY;
@@ -23,13 +149,14 @@ public class ShooterCalculations {
 
     double initialVelocity = Math.sqrt(numerator / denominator);
 
-    return initialVelocity; // This is in m/s
+    return initialVelocity;
   }
+
   /**
-   * Converts velocity in meters/second to RPM
+   * Converts velocity in m/s to RPM.
    *
-   * @param velocityMPS Velocity in meters/second, calculated from calcualteInitialVelocity
-   * @return RPM at which the motor must spin in order to shoot the FUEL at that velocity
+   * @param velocityMPS Velocity in m/s
+   * @return RPM at which the motor must spin
    */
   public static double velocityToRPM(double velocityMPS) {
     double wheelCircumference = Math.PI * ShooterConstants.WHEEL_DIAMETER;
@@ -40,24 +167,60 @@ public class ShooterCalculations {
   }
 
   /**
-   * Pulls the two above functions together and handles exceptions, as well as limits to the motor's
-   * minimum and maximum RPM.
+   * Calculates RPM for a stationary shot at the given distance.
    *
    * @param distanceMeters Horizontal distance to the HUB
-   * @return RPM clamped to the motor's max and min values
+   * @return RPM clamped to motor limits
    */
-  public static double calculateRPM(double distanceMeters) {
+  public static double calculateStaticRPM(double distanceMeters) {
     double thetaDeg = ShooterConstants.LAUNCH_ANGLE;
     double deltaH = ShooterConstants.HEIGHT_DIFF;
 
-    double velocity = calculateInitialVelocity(distanceMeters, deltaH, thetaDeg);
+    double velocity = calculateStaticInitialVelocity(distanceMeters, deltaH, thetaDeg);
 
-    if (velocity < 0) {
+    if (Double.isNaN(velocity) || velocity < 0) {
       return ShooterConstants.MIN_SHOOTER_RPM;
     }
 
     double rpm = velocityToRPM(velocity);
 
     return MathUtil.clamp(rpm, ShooterConstants.MIN_SHOOTER_RPM, ShooterConstants.MAX_SHOOTER_RPM);
+  }
+
+  /**
+   * Calculates the horizontal distance from robot to hub.
+   *
+   * @param robotPose Current robot pose
+   * @param hubPosition Hub position on the field
+   * @return Horizontal distance in meters
+   */
+  public static double calculateDistance(Pose2d robotPose, Translation2d hubPosition) {
+    return robotPose.getTranslation().getDistance(hubPosition);
+  }
+
+  /**
+   * Calculates the angle the robot should face to point at the hub.
+   *
+   * @param robotPose Current robot pose
+   * @param hubPosition Hub position on the field
+   * @return Angle in degrees
+   */
+  public static double calculateAngleToHub(Pose2d robotPose, Translation2d hubPosition) {
+    double deltaX = hubPosition.getX() - robotPose.getX();
+    double deltaY = hubPosition.getY() - robotPose.getY();
+    return Math.toDegrees(Math.atan2(deltaY, deltaX));
+  }
+
+  /**
+   * Calculates the angle the robot should face to point at the hub.
+   *
+   * @param robotPose Current robot pose
+   * @param hubPosition Hub position on the field
+   * @return Angle in radians
+   */
+  public static double calculateAngleToHubRad(Pose2d robotPose, Translation2d hubPosition) {
+    double deltaX = hubPosition.getX() - robotPose.getX();
+    double deltaY = hubPosition.getY() - robotPose.getY();
+    return Math.atan2(deltaY, deltaX);
   }
 }

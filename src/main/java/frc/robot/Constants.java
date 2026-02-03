@@ -43,6 +43,7 @@ public final class Constants {
         0.75; // In meters TODO: Change to actual shooter height from mech
     public static final double HUB_CENTER_HEIGHT = 2.36; // Center of HUB, in meters
     public static final double HEIGHT_DIFF = HUB_CENTER_HEIGHT - SHOOTER_HEIGHT; // In meters
+    public static final double FLIGHT_TIME = 0.5; // In seconds, experimentally determined
     // RMP depentent on distance will be calcualted with the formula in
     // ./src/main/java/frc/robot/util/ShooterCalculations.java
   }
