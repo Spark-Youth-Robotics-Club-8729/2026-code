@@ -1,10 +1,16 @@
-package frc.robot.util;
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
+
+package frc.robot.subsystems.shooter;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import frc.robot.Constants.ShooterConstants;
 
 /** Physics for shooter calculations with both static and moving shots. */
 public class ShooterCalculations {
@@ -58,12 +64,9 @@ public class ShooterCalculations {
    *
    * <p>The projectile velocity in the field frame equals the vector sum of the robot's velocity and
    * the launch velocity:
-   *
-   * <ul>
-   *   <li>v_x = v_rx + v0*cos(alpha)*cos(theta_shooter)
-   *   <li>v_y = v_ry + v0*cos(alpha)*sin(theta_shooter)
-   *   <li>v_z = v0*sin(alpha)
-   * </ul>
+   * - v_x = v_rx + v0*cos(alpha)*cos(theta_shooter)
+   * - v_y = v_ry + v0*cos(alpha)*sin(theta_shooter)
+   * - v_z = v0*sin(alpha)
    *
    * @param robotPose Current robot pose (x, y, heading)
    * @param chassisSpeeds Chassis speeds relative to the floor (v_rx, v_ry, omega)
@@ -76,8 +79,8 @@ public class ShooterCalculations {
     // Calculate deltas
     double deltaX = hubPosition.getX() - robotPose.getX();
     double deltaY = hubPosition.getY() - robotPose.getY();
-    double deltaD = Math.hypot(deltaX, deltaY); // Horizontal distance
-    double deltaH = ShooterConstants.HEIGHT_DIFF; // Vertical height difference
+    double deltaD = Math.hypot(deltaX, deltaY); // horizontal distance
+    double deltaH = ShooterConstants.heightDiffMeters; // vertical height difference
 
     // Robot velocity components
     double vRx = chassisSpeeds.vxMetersPerSecond;
@@ -90,7 +93,7 @@ public class ShooterCalculations {
     double thetaHub = Math.atan2(deltaY, deltaX);
 
     // Required horizontal velocity magnitude (using flight time)
-    double T = ShooterConstants.FLIGHT_TIME;
+    double T = ShooterConstants.flightTimeSeconds;
     double vH = deltaD / T;
 
     // Horizontal component of launch velocity (in field frame, pointing to hub)
@@ -108,9 +111,9 @@ public class ShooterCalculations {
     double v0CosAlpha = Math.hypot(vLaunchX, vLaunchY);
 
     // Vertical component of launch velocity
-    // From: deltaH = v0*sin(alpha)*T - 0.5*g*T^2
-    // Solving: v0*sin(alpha) = (deltaH + 0.5*g*T^2) / T = deltaH/T + g*T/2
-    double v0SinAlpha = deltaH / T + ShooterConstants.GRAVITY * T / 2.0;
+    // from: deltaH = v0*sin(alpha)*T - 0.5*g*T^2
+    // solving: v0*sin(alpha) = (deltaH + 0.5*g*T^2) / T = deltaH/T + g*T/2
+    double v0SinAlpha = deltaH / T + ShooterConstants.gravity * T / 2.0;
 
     // Total launch velocity
     double v0 = Math.hypot(v0CosAlpha, v0SinAlpha);
@@ -120,7 +123,7 @@ public class ShooterCalculations {
 
     // Convert to RPM
     double rpm = velocityToRPM(v0);
-    rpm = MathUtil.clamp(rpm, ShooterConstants.MIN_SHOOTER_RPM, ShooterConstants.MAX_SHOOTER_RPM);
+    rpm = MathUtil.clamp(rpm, ShooterConstants.minFlywheelRPM, ShooterConstants.maxFlywheelRPM);
 
     // Convert radians to degrees for the result
     return new MovingShotResult(
@@ -143,7 +146,7 @@ public class ShooterCalculations {
       double deltaD, double deltaH, double thetaDeg) {
     double thetaRadians = Math.toRadians(thetaDeg);
 
-    double numerator = deltaD * deltaD * ShooterConstants.GRAVITY;
+    double numerator = deltaD * deltaD * ShooterConstants.gravity;
     double denominator =
         2 * Math.pow(Math.cos(thetaRadians), 2) * (deltaD * Math.tan(thetaRadians) - deltaH);
 
@@ -159,7 +162,7 @@ public class ShooterCalculations {
    * @return RPM at which the motor must spin
    */
   public static double velocityToRPM(double velocityMPS) {
-    double wheelCircumference = Math.PI * ShooterConstants.WHEEL_DIAMETER;
+    double wheelCircumference = Math.PI * ShooterConstants.wheelDiameterMeters;
     double rotationsPerSecond = velocityMPS / wheelCircumference;
     double rpm = rotationsPerSecond * 60.0;
 
@@ -173,18 +176,18 @@ public class ShooterCalculations {
    * @return RPM clamped to motor limits
    */
   public static double calculateStaticRPM(double distanceMeters) {
-    double thetaDeg = ShooterConstants.LAUNCH_ANGLE;
-    double deltaH = ShooterConstants.HEIGHT_DIFF;
+    double thetaDeg = ShooterConstants.defaultLaunchAngleDeg;
+    double deltaH = ShooterConstants.heightDiffMeters;
 
     double velocity = calculateStaticInitialVelocity(distanceMeters, deltaH, thetaDeg);
 
     if (Double.isNaN(velocity) || velocity < 0) {
-      return ShooterConstants.MIN_SHOOTER_RPM;
+      return ShooterConstants.minFlywheelRPM;
     }
 
     double rpm = velocityToRPM(velocity);
 
-    return MathUtil.clamp(rpm, ShooterConstants.MIN_SHOOTER_RPM, ShooterConstants.MAX_SHOOTER_RPM);
+    return MathUtil.clamp(rpm, ShooterConstants.minFlywheelRPM, ShooterConstants.maxFlywheelRPM);
   }
 
   /**
