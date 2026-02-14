@@ -1,31 +1,44 @@
-// Copyright (c) 2021-2026 Littleton Robotics
-// http://github.com/Mechanical-Advantage
-//
-// Use of this source code is governed by a BSD
-// license that can be found in the LICENSE file
-// at the root directory of this project.
-
 package frc.robot;
 
-import edu.wpi.first.wpilibj.RobotBase;
-
-/**
- * This class defines the runtime mode used by AdvantageKit. The mode is always "real" when running
- * on a roboRIO. Change the value of "simMode" to switch between "sim" (physics sim) and "replay"
- * (log replay from a file).
- */
 public final class Constants {
-  public static final Mode simMode = Mode.SIM;
-  public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : simMode;
 
-  public static enum Mode {
-    /** Running on a real robot. */
-    REAL,
+  public static final class IntakeConstants {
+    // CAN IDs
+    public static final int kRollerMotorID = 10;     // TalonFX
+    public static final int kSlapdownMotorID = 11;   // SparkMax
 
-    /** Running a physics simulator. */
-    SIM,
+    // Roller speeds
+    public static final double kIntakeInSpeed = 0.65;
+    public static final double kIntakeOutSpeed = -0.65;
 
-    /** Replaying from a log file. */
-    REPLAY
+    // Slapdown manual speeds
+    public static final double kSlapdownDownSpeed = 0.45;
+    public static final double kSlapdownUpSpeed = -0.45;
+
+    // Encoder setpoints
+    public static final double kUpPosition = 0.0;
+    public static final double kDownPosition = 25.0;
+
+    // PID 
+    public static final double kP = 0.05;
+    public static final double kI = 0.0;
+    public static final double kD = 0.0;
+
+    // Safety clamp for PID output
+    public static final double kMaxPIDOutput = 0.5;
+
+    // Soft limits (encoder rotations)
+    public static final double kMinPosition = 0.0;
+    public static final double kMaxPosition = 28.0;
+
+    // Current limits
+    public static final int kRollerCurrentLimit = 40;
+    public static final int kSlapdownCurrentLimit = 35;
+
+    // Manual safety scaling
+    public static final double kManualMaxOutput = 0.6;
+
+    // Telemetry toggle
+    public static final boolean kEnableTelemetry = true;
   }
 }
