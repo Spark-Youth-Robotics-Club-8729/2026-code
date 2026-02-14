@@ -14,7 +14,7 @@ public class SlapdownDown extends Command {
 
   @Override
   public void execute() {
-    intake.setSlapdownSpeed(IntakeConstants.kSlapdownDownSpeed);
+    intake.setSlapdownManual(IntakeConstants.kSlapdownDownSpeed);
   }
 
   @Override
