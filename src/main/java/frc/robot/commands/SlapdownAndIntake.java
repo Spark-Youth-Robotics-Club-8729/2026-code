@@ -14,7 +14,7 @@ public class SlapdownAndIntake extends Command {
 
   @Override
   public void initialize() {
-    // nothing
+    intake.resetPID();
   }
 
   @Override
@@ -27,6 +27,11 @@ public class SlapdownAndIntake extends Command {
   public void end(boolean interrupted) {
     intake.stopSlapdown();
     intake.stopRollers();
+  }
+
+  @Override
+  public boolean isFinished() {
+      return intake.atTarget();
   }
 }
 
