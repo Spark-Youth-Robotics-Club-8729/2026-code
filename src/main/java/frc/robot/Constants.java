@@ -7,18 +7,13 @@
 
 package frc.robot;
 
-import edu.wpi.first.wpilibj.RobotBase;
-
-
 public final class Constants {
   public static final class IndexerConstants {
 
     public static final int leftindexCanid = 41; // changeable
     public static final int rightindexCanid = 14;
-    
+
     public static final double indexspeed = 2.0;
     public static final double indexvoltage = 1.0;
-
   }
-  
 }
