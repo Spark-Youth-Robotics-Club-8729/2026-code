@@ -52,7 +52,7 @@ public class ShooterConstants {
   // ---------------------------------------------------------------------------
   // Hood PID constants
   // ---------------------------------------------------------------------------
-  public static final double hoodKp = 10.0; // TODO: Tune
+  public static final double hoodKp = 0.0; // TODO: Tune
   public static final double hoodKi = 0.0;
   public static final double hoodKd = 0.5;
 

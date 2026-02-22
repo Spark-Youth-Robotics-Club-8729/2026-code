@@ -24,7 +24,7 @@ public class IntakeConstants {
       Units.degreesToRadians(90.0); // TODO: Set actual
 
   // Slapdown PID gains
-  public static final double slapdownKp = 10.0; // TODO: Tune
+  public static final double slapdownKp = 0.0; // TODO: Tune
   public static final double slapdownKd = 0.5; // TODO: Tune
 
   // Slapdown tolerance
