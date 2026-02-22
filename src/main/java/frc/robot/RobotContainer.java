@@ -10,12 +10,9 @@ package frc.robot;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import com.pathplanner.lib.auto.AutoBuilder;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -27,6 +24,10 @@ import frc.robot.subsystems.drive.GyroIONavX;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOSpark;
+import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.IntakeIO;
+import frc.robot.subsystems.intake.IntakeIOHardware;
+import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterIO;
 import frc.robot.subsystems.shooter.ShooterIOKrakenX60;
@@ -34,38 +35,27 @@ import frc.robot.subsystems.shooter.ShooterIOSim;
 import frc.robot.subsystems.shooter.ShotCalculator;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
-import frc.robot.subsystems.vision.VisionIOPhotonVision;
+import frc.robot.subsystems.vision.VisionIOLimelight;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
-/**
- * This class is where the bulk of the robot should be declared. Since Command-based is a
- * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
- * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
- * subsystems, commands, and button mappings) should be declared here.
- */
 public class RobotContainer {
   // Subsystems
   private final Drive drive;
   private final Vision vision;
   private final Shooter shooter;
+  private final Intake intake;
 
   // Controllers
-  private final CommandXboxController controller = new CommandXboxController(0);
+  private final CommandXboxController driver = new CommandXboxController(0);
+  private final CommandXboxController operator = new CommandXboxController(1);
 
-  // Aim controller for vision-based rotation
-  private final PIDController aimController = new PIDController(0.2, 0.0, 0.0);
-
-  // Dashboard inputs
+  // Dashboard
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  // ---------------------------------------------------------------------------
-  // TODO: Set this to the actual field position of your shoot target (e.g. the
-  // center of the speaker opening on your field layout).
-  // ---------------------------------------------------------------------------
+  // TODO: Set to the actual field position of your shoot target (e.g. speaker center)
   private static final Translation2d SHOOT_TARGET_POSITION = new Translation2d(0.0, 5.55);
 
-  /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     switch (Constants.currentMode) {
       case REAL:
@@ -77,13 +67,16 @@ public class RobotContainer {
                 new ModuleIOSpark(2),
                 new ModuleIOSpark(3));
 
+        // Limelight cameras — pass rotation supplier for MegaTag 2
+        // camera0Name / camera1Name must match names in the Limelight web UI
         vision =
             new Vision(
                 drive::addVisionMeasurement,
-                new VisionIOPhotonVision(camera0Name, robotToCamera0),
-                new VisionIOPhotonVision(camera1Name, robotToCamera1));
+                new VisionIOLimelight(camera0Name, () -> drive.getRotation()),
+                new VisionIOLimelight(camera1Name, () -> drive.getRotation()));
 
         shooter = new Shooter(new ShooterIOKrakenX60());
+        intake = new Intake(new IntakeIOHardware());
         break;
 
       case SIM:
@@ -95,6 +88,7 @@ public class RobotContainer {
                 new ModuleIOSim(),
                 new ModuleIOSim());
 
+        // PhotonVision sim still works great for simulation even though real robot uses Limelight
         vision =
             new Vision(
                 drive::addVisionMeasurement,
@@ -102,6 +96,7 @@ public class RobotContainer {
                 new VisionIOPhotonVisionSim(camera1Name, robotToCamera1, drive::getPose));
 
         shooter = new Shooter(new ShooterIOSim());
+        intake = new Intake(new IntakeIOSim());
         break;
 
       default:
@@ -113,19 +108,15 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {});
-
         vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
-
         shooter = new Shooter(new ShooterIO() {});
+        intake = new Intake(new IntakeIO() {});
         break;
     }
 
-    // Initialize the shot calculator singleton once we have a pose supplier
     ShotCalculator.initialize(drive::getPose, SHOOT_TARGET_POSITION);
 
-    // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
-
     autoChooser.addOption(
         "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
     autoChooser.addOption(
@@ -145,28 +136,23 @@ public class RobotContainer {
   }
 
   private void configureButtonBindings() {
-    // ------------------------------------------------------------------
-    // DRIVE — default field-relative joystick drive
-    // ------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // DRIVER (port 0)
+    // -------------------------------------------------------------------------
+
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
-            drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
+            drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
 
-    // Lock to 0° when A button is held
-    controller
+    // A — lock heading to 0°
+    driver
         .a()
         .whileTrue(
             DriveCommands.joystickDriveAtAngle(
-                drive,
-                () -> -controller.getLeftY(),
-                () -> -controller.getLeftX(),
-                () -> Rotation2d.kZero));
+                drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> Rotation2d.kZero));
 
-    // Reset gyro to 0° when B button is pressed
-    controller
+    // B — reset gyro to 0°
+    driver
         .b()
         .onTrue(
             Commands.runOnce(
@@ -176,60 +162,33 @@ public class RobotContainer {
                     drive)
                 .ignoringDisable(true));
 
-    // X-pattern brake when X is pressed
-    controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+    // X — X-pattern brake
+    driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // Auto-aim to AprilTag using vision when Y button is held
-    aimController.enableContinuousInput(-Math.PI, Math.PI);
-    controller
+    // Y — auto-aim to best Limelight target while driving
+    driver
         .y()
         .whileTrue(
-            Commands.startRun(
-                () -> aimController.reset(),
-                () -> {
-                  double rotationSpeed =
-                      aimController.calculate(vision.getTargetX(0).getRadians());
-                  drive.setDefaultCommand(
-                      DriveCommands.joystickDrive(
-                          drive,
-                          () -> -controller.getLeftY(),
-                          () -> -controller.getLeftX(),
-                          () -> rotationSpeed));
-                },
-                drive));
+            DriveCommands.joystickDriveAtAngle(
+                drive,
+                () -> -driver.getLeftY(),
+                () -> -driver.getLeftX(),
+                // vision.getTargetX(0) returns the tx offset; negate to turn toward the tag
+                () -> drive.getRotation().plus(vision.getTargetX(0))));
 
-    // Left bumper: Reset odometry using vision
-    controller
-        .leftBumper()
-        .onTrue(
-            Commands.runOnce(
-                () -> System.out.println("Reset odometry using vision (not implemented)"), drive));
+    // -------------------------------------------------------------------------
+    // OPERATOR (port 1)
+    // -------------------------------------------------------------------------
 
-    // Right bumper: Toggle vision pipeline
-    controller
-        .rightBumper()
-        .onTrue(
-            Commands.runOnce(
-                () -> System.out.println("Toggle vision pipeline (not implemented)")));
-
-    // ------------------------------------------------------------------
-    // SHOOTER
-    // ------------------------------------------------------------------
-
-    // Right trigger: spin up flywheel + aim hood at current distance,
-    // then feed the ball when ready.
-    // Hold to keep spinning; release to stop everything.
-    controller
+    // Right trigger — spin up + aim hood, fire when ready
+    operator
         .rightTrigger(0.5)
         .whileTrue(
             Commands.run(
                     () -> {
-                      // Recalculate each loop so hood/flywheel track as the robot moves
                       var params = ShotCalculator.getInstance().calculate();
                       shooter.setHoodPosition(params.hoodAngleRad());
                       shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
-
-                      // Only feed once everything is settled and in range
                       if (params.isValid() && shooter.isReadyToShoot()) {
                         shooter.feedNote();
                       } else {
@@ -239,42 +198,52 @@ public class RobotContainer {
                     shooter)
                 .finallyDo(shooter::stop));
 
-    // Left trigger: eject ball back toward hopper
-    controller
+    // Left trigger — eject ball back toward hopper
+    operator
         .leftTrigger(0.5)
-        .whileTrue(
-            Commands.startEnd(shooter::ejectNote, shooter::stopIndexer, shooter));
+        .whileTrue(Commands.startEnd(shooter::ejectNote, shooter::stopIndexer, shooter));
 
-    // Right bumper (secondary use on operator controller if you add one):
-    // For now, left stick button manually spins up to default speed without
-    // hood tracking — useful for testing the flywheel independently.
-    controller
+    // Right bumper — deploy slapdown + run roller; retract when released
+    operator
+        .rightBumper()
+        .whileTrue(intake.slapdownAndIntakeCommand())
+        .onFalse(intake.retractCommand());
+
+    // Left bumper — roller only (arm already down), stops on release
+    operator.leftBumper().whileTrue(intake.intakeCommand());
+
+    // A — outtake
+    operator.a().whileTrue(intake.outtakeCommand());
+
+    // Left stick button — test flywheel at default speed
+    operator
         .leftStick()
         .whileTrue(
             Commands.startEnd(
-                    () -> shooter.setFlywheelVelocity(
+                () ->
+                    shooter.setFlywheelVelocity(
                         frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM),
-                    shooter::stop,
-                    shooter));
+                shooter::stop,
+                shooter));
   }
 
-  /** Use this to pass the autonomous command to the main {@link Robot} class. */
   public Command getAutonomousCommand() {
     return autoChooser.get();
   }
 
-  /** Returns the drive subsystem. */
   public Drive getDrive() {
     return drive;
   }
 
-  /** Returns the vision subsystem. */
   public Vision getVision() {
     return vision;
   }
 
-  /** Returns the shooter subsystem. */
   public Shooter getShooter() {
     return shooter;
+  }
+
+  public Intake getIntake() {
+    return intake;
   }
 }

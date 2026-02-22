@@ -55,8 +55,7 @@ public interface ShooterIO {
   public default void setHoodPosition(double positionRad) {}
 
   /**
-   * Set the indexer velocity in RPM.
-   * Positive = counter-clockwise = feeds ball up toward shooter.
+   * Set the indexer velocity in RPM. Positive = counter-clockwise = feeds ball up toward shooter.
    * Negative = clockwise = ejects ball back toward hopper.
    */
   public default void setIndexerVelocity(double velocityRPM) {}

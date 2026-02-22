@@ -16,7 +16,6 @@ import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 
-
 /** IO implementation for shooter simulation using WPILib physics sim. */
 public class ShooterIOSim implements ShooterIO {
   // ---------------------------------------------------------------------------
@@ -43,12 +42,12 @@ public class ShooterIOSim implements ShooterIO {
   private final SingleJointedArmSim hoodSim =
       new SingleJointedArmSim(
           DCMotor.getKrakenX60(1),
-          hoodGearRatio,   // 13.7778:1
-          0.02,            // MOI in kg·m² (estimate for the hood pivot arm)
-          0.3,             // Arm length in meters (estimate)
+          hoodGearRatio, // 13.7778:1
+          0.02, // MOI in kg·m² (estimate for the hood pivot arm)
+          0.3, // Arm length in meters (estimate)
           hoodMinAngleRad,
           hoodMaxAngleRad,
-          true,            // Simulate gravity
+          true, // Simulate gravity
           (hoodMinAngleRad + hoodMaxAngleRad) / 2.0); // Start at middle
 
   // ---------------------------------------------------------------------------
@@ -56,33 +55,30 @@ public class ShooterIOSim implements ShooterIO {
   // ---------------------------------------------------------------------------
   private final FlywheelSim indexerSim =
       new FlywheelSim(
-          LinearSystemId.createFlywheelSystem(
-              DCMotor.getKrakenX60(1), 0.001, indexerGearRatio),
+          LinearSystemId.createFlywheelSystem(DCMotor.getKrakenX60(1), 0.001, indexerGearRatio),
           DCMotor.getKrakenX60(1));
 
   // ---------------------------------------------------------------------------
   // PID controllers (use same gains as hardware for consistency)
   // ---------------------------------------------------------------------------
-  private final PIDController leftFlywheelPID  =
+  private final PIDController leftFlywheelPID =
       new PIDController(flywheelKp, flywheelKi, flywheelKd);
   private final PIDController rightFlywheelPID =
       new PIDController(flywheelKp, flywheelKi, flywheelKd);
-  private final PIDController hoodPID =
-      new PIDController(hoodKp, hoodKi, hoodKd);
-  private final PIDController indexerPID =
-      new PIDController(indexerKp, indexerKi, indexerKd);
+  private final PIDController hoodPID = new PIDController(hoodKp, hoodKi, hoodKd);
+  private final PIDController indexerPID = new PIDController(indexerKp, indexerKi, indexerKd);
 
   // Setpoints
-  private double leftFlywheelSetpointRPM  = 0.0;
+  private double leftFlywheelSetpointRPM = 0.0;
   private double rightFlywheelSetpointRPM = 0.0;
-  private double hoodSetpointRad          = (hoodMinAngleRad + hoodMaxAngleRad) / 2.0;
-  private double indexerSetpointRPM       = 0.0;
+  private double hoodSetpointRad = (hoodMinAngleRad + hoodMaxAngleRad) / 2.0;
+  private double indexerSetpointRPM = 0.0;
 
   // Applied voltages
-  private double leftFlywheelAppliedVolts  = 0.0;
+  private double leftFlywheelAppliedVolts = 0.0;
   private double rightFlywheelAppliedVolts = 0.0;
-  private double hoodAppliedVolts          = 0.0;
-  private double indexerAppliedVolts       = 0.0;
+  private double hoodAppliedVolts = 0.0;
+  private double indexerAppliedVolts = 0.0;
 
   @Override
   public void updateInputs(ShooterIOInputs inputs) {
@@ -95,7 +91,8 @@ public class ShooterIOSim implements ShooterIO {
             leftFlywheelPID.calculate(
                     leftFlywheelSim.getAngularVelocityRPM(), leftFlywheelSetpointRPM)
                 + flywheelKv * leftFlywheelSetpointRPM / 60.0,
-            -12.0, 12.0);
+            -12.0,
+            12.0);
     leftFlywheelSim.setInputVoltage(leftFlywheelAppliedVolts);
     leftFlywheelSim.update(dt);
 
@@ -105,14 +102,14 @@ public class ShooterIOSim implements ShooterIO {
             rightFlywheelPID.calculate(
                     rightFlywheelSim.getAngularVelocityRPM(), rightFlywheelSetpointRPM)
                 + flywheelKv * rightFlywheelSetpointRPM / 60.0,
-            -12.0, 12.0);
+            -12.0,
+            12.0);
     rightFlywheelSim.setInputVoltage(rightFlywheelAppliedVolts);
     rightFlywheelSim.update(dt);
 
     // Hood
     hoodAppliedVolts =
-        MathUtil.clamp(
-            hoodPID.calculate(hoodSim.getAngleRads(), hoodSetpointRad), -12.0, 12.0);
+        MathUtil.clamp(hoodPID.calculate(hoodSim.getAngleRads(), hoodSetpointRad), -12.0, 12.0);
     hoodSim.setInputVoltage(hoodAppliedVolts);
     hoodSim.update(dt);
 
@@ -121,35 +118,36 @@ public class ShooterIOSim implements ShooterIO {
         MathUtil.clamp(
             indexerPID.calculate(indexerSim.getAngularVelocityRPM(), indexerSetpointRPM)
                 + indexerKv * indexerSetpointRPM / 60.0,
-            -12.0, 12.0);
+            -12.0,
+            12.0);
     indexerSim.setInputVoltage(indexerAppliedVolts);
     indexerSim.update(dt);
 
     // Write back to inputs
-    inputs.leftFlywheelConnected     = true;
-    inputs.leftFlywheelVelocityRPM   = leftFlywheelSim.getAngularVelocityRPM();
-    inputs.leftFlywheelAppliedVolts  = leftFlywheelAppliedVolts;
-    inputs.leftFlywheelCurrentAmps   = leftFlywheelSim.getCurrentDrawAmps();
-    inputs.leftFlywheelTempCelsius   = 25.0;
+    inputs.leftFlywheelConnected = true;
+    inputs.leftFlywheelVelocityRPM = leftFlywheelSim.getAngularVelocityRPM();
+    inputs.leftFlywheelAppliedVolts = leftFlywheelAppliedVolts;
+    inputs.leftFlywheelCurrentAmps = leftFlywheelSim.getCurrentDrawAmps();
+    inputs.leftFlywheelTempCelsius = 25.0;
 
-    inputs.rightFlywheelConnected    = true;
-    inputs.rightFlywheelVelocityRPM  = rightFlywheelSim.getAngularVelocityRPM();
+    inputs.rightFlywheelConnected = true;
+    inputs.rightFlywheelVelocityRPM = rightFlywheelSim.getAngularVelocityRPM();
     inputs.rightFlywheelAppliedVolts = rightFlywheelAppliedVolts;
-    inputs.rightFlywheelCurrentAmps  = rightFlywheelSim.getCurrentDrawAmps();
-    inputs.rightFlywheelTempCelsius  = 25.0;
+    inputs.rightFlywheelCurrentAmps = rightFlywheelSim.getCurrentDrawAmps();
+    inputs.rightFlywheelTempCelsius = 25.0;
 
-    inputs.hoodConnected         = true;
-    inputs.hoodPositionRad       = hoodSim.getAngleRads();
+    inputs.hoodConnected = true;
+    inputs.hoodPositionRad = hoodSim.getAngleRads();
     inputs.hoodVelocityRadPerSec = hoodSim.getVelocityRadPerSec();
-    inputs.hoodAppliedVolts      = hoodAppliedVolts;
-    inputs.hoodCurrentAmps       = hoodSim.getCurrentDrawAmps();
-    inputs.hoodTempCelsius       = 25.0;
+    inputs.hoodAppliedVolts = hoodAppliedVolts;
+    inputs.hoodCurrentAmps = hoodSim.getCurrentDrawAmps();
+    inputs.hoodTempCelsius = 25.0;
 
-    inputs.indexerConnected    = true;
-    inputs.indexerVelocityRPM  = indexerSim.getAngularVelocityRPM();
+    inputs.indexerConnected = true;
+    inputs.indexerVelocityRPM = indexerSim.getAngularVelocityRPM();
     inputs.indexerAppliedVolts = indexerAppliedVolts;
-    inputs.indexerCurrentAmps  = indexerSim.getCurrentDrawAmps();
-    inputs.indexerTempCelsius  = 25.0;
+    inputs.indexerCurrentAmps = indexerSim.getCurrentDrawAmps();
+    inputs.indexerTempCelsius = 25.0;
   }
 
   @Override
@@ -175,9 +173,9 @@ public class ShooterIOSim implements ShooterIO {
 
   @Override
   public void stop() {
-    leftFlywheelSetpointRPM  = 0.0;
+    leftFlywheelSetpointRPM = 0.0;
     rightFlywheelSetpointRPM = 0.0;
-    indexerSetpointRPM       = 0.0;
+    indexerSetpointRPM = 0.0;
     // Hood holds last position on stop
   }
 }

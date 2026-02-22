@@ -25,8 +25,9 @@ public class ShotCalculator {
   private static ShotCalculator instance;
 
   // Interpolation maps
-  private static final InterpolatingDoubleTreeMap hoodAngleMap    = new InterpolatingDoubleTreeMap();
-  private static final InterpolatingDoubleTreeMap flywheelSpeedMap = new InterpolatingDoubleTreeMap();
+  private static final InterpolatingDoubleTreeMap hoodAngleMap = new InterpolatingDoubleTreeMap();
+  private static final InterpolatingDoubleTreeMap flywheelSpeedMap =
+      new InterpolatingDoubleTreeMap();
 
   private static final double minDistance = 1.0; // meters
   private static final double maxDistance = 6.0; // meters
@@ -61,10 +62,7 @@ public class ShotCalculator {
 
   /** Immutable result from a single calculate() call. */
   public record ShootingParameters(
-      boolean isValid,
-      double hoodAngleRad,
-      double flywheelSpeedRPM,
-      double distanceToTarget) {}
+      boolean isValid, double hoodAngleRad, double flywheelSpeedRPM, double distanceToTarget) {}
 
   private final Supplier<Pose2d> poseSupplier;
   private final Translation2d targetPosition;
@@ -77,7 +75,7 @@ public class ShotCalculator {
   /**
    * Initializes the singleton. Must be called before {@link #getInstance()}.
    *
-   * @param poseSupplier  Supplier that returns the current robot pose.
+   * @param poseSupplier Supplier that returns the current robot pose.
    * @param targetPosition Field position of the shoot target (e.g., speaker center).
    */
   public static void initialize(Supplier<Pose2d> poseSupplier, Translation2d targetPosition) {
@@ -105,7 +103,7 @@ public class ShotCalculator {
     double distance = currentPose.getTranslation().getDistance(targetPosition);
 
     boolean isValid = distance >= minDistance && distance <= maxDistance;
-    double hoodAngle    = hoodAngleMap.get(distance);
+    double hoodAngle = hoodAngleMap.get(distance);
     double flywheelSpeed = flywheelSpeedMap.get(distance);
 
     Logger.recordOutput("ShotCalculator/DistanceToTarget", distance);

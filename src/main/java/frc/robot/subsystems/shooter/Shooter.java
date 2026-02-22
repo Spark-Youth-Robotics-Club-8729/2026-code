@@ -79,7 +79,7 @@ public class Shooter extends SubsystemBase {
   /**
    * Sets different velocities for the left and right flywheels independently.
    *
-   * @param leftVelocityRPM  Target velocity for the left flywheel in RPM.
+   * @param leftVelocityRPM Target velocity for the left flywheel in RPM.
    * @param rightVelocityRPM Target velocity for the right flywheel in RPM.
    */
   public void setFlywheelVelocities(double leftVelocityRPM, double rightVelocityRPM) {
@@ -129,22 +129,30 @@ public class Shooter extends SubsystemBase {
   // Getters
   // ---------------------------------------------------------------------------
 
-  /** @return Current left flywheel velocity in RPM. */
+  /**
+   * @return Current left flywheel velocity in RPM.
+   */
   public double getLeftFlywheelVelocity() {
     return inputs.leftFlywheelVelocityRPM;
   }
 
-  /** @return Current right flywheel velocity in RPM. */
+  /**
+   * @return Current right flywheel velocity in RPM.
+   */
   public double getRightFlywheelVelocity() {
     return inputs.rightFlywheelVelocityRPM;
   }
 
-  /** @return Current hood mechanism angle in radians. */
+  /**
+   * @return Current hood mechanism angle in radians.
+   */
   public double getHoodPosition() {
     return inputs.hoodPositionRad;
   }
 
-  /** @return Average of left and right flywheel velocities in RPM. */
+  /**
+   * @return Average of left and right flywheel velocities in RPM.
+   */
   public double getAverageFlywheelVelocity() {
     return (inputs.leftFlywheelVelocityRPM + inputs.rightFlywheelVelocityRPM) / 2.0;
   }
@@ -153,9 +161,7 @@ public class Shooter extends SubsystemBase {
   // At-goal checks  (compare measured value to stored setpoint)
   // ---------------------------------------------------------------------------
 
-  /**
-   * Returns true when the left flywheel is within {@code flywheelToleranceRPM} of its setpoint.
-   */
+  /** Returns true when the left flywheel is within {@code flywheelToleranceRPM} of its setpoint. */
   public boolean isLeftFlywheelAtSpeed() {
     return Math.abs(inputs.leftFlywheelVelocityRPM - leftFlywheelSetpointRPM)
         <= flywheelToleranceRPM;
@@ -175,8 +181,8 @@ public class Shooter extends SubsystemBase {
   }
 
   /**
-   * Returns true when the hood is within {@code hoodToleranceRad} of its setpoint.
-   * Compares measured position to stored setpoint (not velocity).
+   * Returns true when the hood is within {@code hoodToleranceRad} of its setpoint. Compares
+   * measured position to stored setpoint (not velocity).
    */
   public boolean isHoodAtPosition() {
     return Math.abs(inputs.hoodPositionRad - hoodSetpointRad) <= hoodToleranceRad;

@@ -11,11 +11,11 @@ import edu.wpi.first.math.util.Units;
 
 public class ShooterConstants {
   // CAN IDs
-  public static final int leftFlywheelID = 10;   // TODO: Set actual CAN ID
-  public static final int rightFlywheelID = 11;  // TODO: Set actual CAN ID
-  public static final int hoodMotorID = 12;       // TODO: Set actual CAN ID
-  public static final int indexerMotorID = 13;    // TODO: Set actual CAN ID
-  public static final String canBus = "rio";      // Change to "canivore" if using CANivore
+  public static final int leftFlywheelID = 10; // TODO: Set actual CAN ID
+  public static final int rightFlywheelID = 11; // TODO: Set actual CAN ID
+  public static final int hoodMotorID = 12; // TODO: Set actual CAN ID
+  public static final int indexerMotorID = 13; // TODO: Set actual CAN ID
+  public static final String canBus = "rio"; // Change to "canivore" if using CANivore
 
   // ---------------------------------------------------------------------------
   // Gear ratios
@@ -44,22 +44,22 @@ public class ShooterConstants {
   // ---------------------------------------------------------------------------
   // Flywheel PID / feedforward constants
   // ---------------------------------------------------------------------------
-  public static final double flywheelKp = 0.1;   // TODO: Tune
+  public static final double flywheelKp = 0.1; // TODO: Tune
   public static final double flywheelKi = 0.0;
   public static final double flywheelKd = 0.0;
-  public static final double flywheelKv = 0.12;  // Volts per RPS feedforward
+  public static final double flywheelKv = 0.12; // Volts per RPS feedforward
 
   // ---------------------------------------------------------------------------
   // Hood PID constants
   // ---------------------------------------------------------------------------
-  public static final double hoodKp = 10.0;  // TODO: Tune
+  public static final double hoodKp = 10.0; // TODO: Tune
   public static final double hoodKi = 0.0;
   public static final double hoodKd = 0.5;
 
   // ---------------------------------------------------------------------------
   // Indexer PID / feedforward constants
   // ---------------------------------------------------------------------------
-  public static final double indexerKp = 0.1;   // TODO: Tune
+  public static final double indexerKp = 0.1; // TODO: Tune
   public static final double indexerKi = 0.0;
   public static final double indexerKd = 0.0;
   public static final double indexerKv = 0.12;
@@ -81,7 +81,7 @@ public class ShooterConstants {
   // ---------------------------------------------------------------------------
   public static final double defaultFlywheelSpeedRPM = 3000.0; // TODO: Tune
   // Positive = counter-clockwise (brings ball up from hopper to shooter)
-  public static final double indexerFeedSpeedRPM  =  500.0;
+  public static final double indexerFeedSpeedRPM = 500.0;
   // Negative = clockwise (ejects ball back down)
   public static final double indexerEjectSpeedRPM = -300.0;
 

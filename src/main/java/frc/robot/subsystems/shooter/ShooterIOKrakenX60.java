@@ -58,20 +58,19 @@ public class ShooterIOKrakenX60 implements ShooterIO {
   private final StatusSignal<Temperature> indexerTemp;
 
   // Control requests
-  private final VelocityVoltage leftFlywheelVelocityControl  = new VelocityVoltage(0);
+  private final VelocityVoltage leftFlywheelVelocityControl = new VelocityVoltage(0);
   private final VelocityVoltage rightFlywheelVelocityControl = new VelocityVoltage(0);
-  private final PositionVoltage hoodPositionControl          = new PositionVoltage(0);
-  private final VelocityVoltage indexerVelocityControl       = new VelocityVoltage(0);
-  private final VoltageOut voltageControl                    = new VoltageOut(0);
+  private final PositionVoltage hoodPositionControl = new PositionVoltage(0);
+  private final VelocityVoltage indexerVelocityControl = new VelocityVoltage(0);
+  private final VoltageOut voltageControl = new VoltageOut(0);
 
   public ShooterIOKrakenX60() {
-    CANBus canBusInstance =
-        canBus.equals("rio") ? CANBus.roboRIO() : new CANBus(canBus);
+    CANBus canBusInstance = canBus.equals("rio") ? CANBus.roboRIO() : new CANBus(canBus);
 
-    leftFlywheelMotor  = new TalonFX(leftFlywheelID, canBusInstance);
+    leftFlywheelMotor = new TalonFX(leftFlywheelID, canBusInstance);
     rightFlywheelMotor = new TalonFX(rightFlywheelID, canBusInstance);
-    hoodMotor          = new TalonFX(hoodMotorID, canBusInstance);
-    indexerMotor       = new TalonFX(indexerMotorID, canBusInstance);
+    hoodMotor = new TalonFX(hoodMotorID, canBusInstance);
+    indexerMotor = new TalonFX(indexerMotorID, canBusInstance);
 
     // -------------------------------------------------------------------------
     // Left flywheel — spins counter-clockwise to shoot
@@ -119,11 +118,9 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     hoodConfig.Slot0.kD = hoodKd;
     // Software limits in mechanism rotations (convert radians → rotations)
     hoodConfig.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-    hoodConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold =
-        hoodMaxAngleRad / (2.0 * Math.PI);
+    hoodConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold = hoodMaxAngleRad / (2.0 * Math.PI);
     hoodConfig.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-    hoodConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold =
-        hoodMinAngleRad / (2.0 * Math.PI);
+    hoodConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = hoodMinAngleRad / (2.0 * Math.PI);
     hoodMotor.getConfigurator().apply(hoodConfig);
 
     // -------------------------------------------------------------------------
@@ -146,26 +143,26 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     // -------------------------------------------------------------------------
     // Status signals
     // -------------------------------------------------------------------------
-    leftFlywheelVelocity   = leftFlywheelMotor.getVelocity();
+    leftFlywheelVelocity = leftFlywheelMotor.getVelocity();
     leftFlywheelAppliedVolts = leftFlywheelMotor.getMotorVoltage();
-    leftFlywheelCurrent    = leftFlywheelMotor.getSupplyCurrent();
-    leftFlywheelTemp       = leftFlywheelMotor.getDeviceTemp();
+    leftFlywheelCurrent = leftFlywheelMotor.getSupplyCurrent();
+    leftFlywheelTemp = leftFlywheelMotor.getDeviceTemp();
 
-    rightFlywheelVelocity    = rightFlywheelMotor.getVelocity();
+    rightFlywheelVelocity = rightFlywheelMotor.getVelocity();
     rightFlywheelAppliedVolts = rightFlywheelMotor.getMotorVoltage();
-    rightFlywheelCurrent     = rightFlywheelMotor.getSupplyCurrent();
-    rightFlywheelTemp        = rightFlywheelMotor.getDeviceTemp();
+    rightFlywheelCurrent = rightFlywheelMotor.getSupplyCurrent();
+    rightFlywheelTemp = rightFlywheelMotor.getDeviceTemp();
 
-    hoodPosition     = hoodMotor.getPosition();
-    hoodVelocity     = hoodMotor.getVelocity();
+    hoodPosition = hoodMotor.getPosition();
+    hoodVelocity = hoodMotor.getVelocity();
     hoodAppliedVolts = hoodMotor.getMotorVoltage();
-    hoodCurrent      = hoodMotor.getSupplyCurrent();
-    hoodTemp         = hoodMotor.getDeviceTemp();
+    hoodCurrent = hoodMotor.getSupplyCurrent();
+    hoodTemp = hoodMotor.getDeviceTemp();
 
-    indexerVelocity    = indexerMotor.getVelocity();
+    indexerVelocity = indexerMotor.getVelocity();
     indexerAppliedVolts = indexerMotor.getMotorVoltage();
-    indexerCurrent     = indexerMotor.getSupplyCurrent();
-    indexerTemp        = indexerMotor.getDeviceTemp();
+    indexerCurrent = indexerMotor.getSupplyCurrent();
+    indexerTemp = indexerMotor.getDeviceTemp();
 
     // High-frequency signals (50 Hz)
     BaseStatusSignal.setUpdateFrequencyForAll(
@@ -219,73 +216,62 @@ public class ShooterIOKrakenX60 implements ShooterIO {
 
     inputs.hoodConnected =
         BaseStatusSignal.refreshAll(
-                hoodPosition,
-                hoodVelocity,
-                hoodAppliedVolts,
-                hoodCurrent,
-                hoodTemp)
+                hoodPosition, hoodVelocity, hoodAppliedVolts, hoodCurrent, hoodTemp)
             .isOK();
 
     inputs.indexerConnected =
         BaseStatusSignal.refreshAll(
-                indexerVelocity,
-                indexerAppliedVolts,
-                indexerCurrent,
-                indexerTemp)
+                indexerVelocity, indexerAppliedVolts, indexerCurrent, indexerTemp)
             .isOK();
 
     // Left flywheel (rotations/sec → RPM)
-    inputs.leftFlywheelVelocityRPM   = leftFlywheelVelocity.getValueAsDouble() * 60.0;
-    inputs.leftFlywheelAppliedVolts  = leftFlywheelAppliedVolts.getValueAsDouble();
-    inputs.leftFlywheelCurrentAmps   = leftFlywheelCurrent.getValueAsDouble();
-    inputs.leftFlywheelTempCelsius   = leftFlywheelTemp.getValueAsDouble();
+    inputs.leftFlywheelVelocityRPM = leftFlywheelVelocity.getValueAsDouble() * 60.0;
+    inputs.leftFlywheelAppliedVolts = leftFlywheelAppliedVolts.getValueAsDouble();
+    inputs.leftFlywheelCurrentAmps = leftFlywheelCurrent.getValueAsDouble();
+    inputs.leftFlywheelTempCelsius = leftFlywheelTemp.getValueAsDouble();
 
     // Right flywheel (rotations/sec → RPM)
-    inputs.rightFlywheelVelocityRPM  = rightFlywheelVelocity.getValueAsDouble() * 60.0;
+    inputs.rightFlywheelVelocityRPM = rightFlywheelVelocity.getValueAsDouble() * 60.0;
     inputs.rightFlywheelAppliedVolts = rightFlywheelAppliedVolts.getValueAsDouble();
-    inputs.rightFlywheelCurrentAmps  = rightFlywheelCurrent.getValueAsDouble();
-    inputs.rightFlywheelTempCelsius  = rightFlywheelTemp.getValueAsDouble();
+    inputs.rightFlywheelCurrentAmps = rightFlywheelCurrent.getValueAsDouble();
+    inputs.rightFlywheelTempCelsius = rightFlywheelTemp.getValueAsDouble();
 
     // Hood — Phoenix reports in mechanism rotations (after SensorToMechanismRatio),
     // so multiply by 2π to get radians.
-    inputs.hoodPositionRad       = hoodPosition.getValueAsDouble() * 2.0 * Math.PI;
+    inputs.hoodPositionRad = hoodPosition.getValueAsDouble() * 2.0 * Math.PI;
     inputs.hoodVelocityRadPerSec = hoodVelocity.getValueAsDouble() * 2.0 * Math.PI;
-    inputs.hoodAppliedVolts      = hoodAppliedVolts.getValueAsDouble();
-    inputs.hoodCurrentAmps       = hoodCurrent.getValueAsDouble();
-    inputs.hoodTempCelsius       = hoodTemp.getValueAsDouble();
+    inputs.hoodAppliedVolts = hoodAppliedVolts.getValueAsDouble();
+    inputs.hoodCurrentAmps = hoodCurrent.getValueAsDouble();
+    inputs.hoodTempCelsius = hoodTemp.getValueAsDouble();
 
     // Indexer (rotations/sec → RPM)
-    inputs.indexerVelocityRPM   = indexerVelocity.getValueAsDouble() * 60.0;
-    inputs.indexerAppliedVolts  = indexerAppliedVolts.getValueAsDouble();
-    inputs.indexerCurrentAmps   = indexerCurrent.getValueAsDouble();
-    inputs.indexerTempCelsius   = indexerTemp.getValueAsDouble();
+    inputs.indexerVelocityRPM = indexerVelocity.getValueAsDouble() * 60.0;
+    inputs.indexerAppliedVolts = indexerAppliedVolts.getValueAsDouble();
+    inputs.indexerCurrentAmps = indexerCurrent.getValueAsDouble();
+    inputs.indexerTempCelsius = indexerTemp.getValueAsDouble();
   }
 
   @Override
   public void setLeftFlywheelVelocity(double velocityRPM) {
     // Phoenix velocity control is in rotations/sec
-    leftFlywheelMotor.setControl(
-        leftFlywheelVelocityControl.withVelocity(velocityRPM / 60.0));
+    leftFlywheelMotor.setControl(leftFlywheelVelocityControl.withVelocity(velocityRPM / 60.0));
   }
 
   @Override
   public void setRightFlywheelVelocity(double velocityRPM) {
-    rightFlywheelMotor.setControl(
-        rightFlywheelVelocityControl.withVelocity(velocityRPM / 60.0));
+    rightFlywheelMotor.setControl(rightFlywheelVelocityControl.withVelocity(velocityRPM / 60.0));
   }
 
   @Override
   public void setHoodPosition(double positionRad) {
     // Phoenix position control is in mechanism rotations (after SensorToMechanismRatio)
-    hoodMotor.setControl(
-        hoodPositionControl.withPosition(positionRad / (2.0 * Math.PI)));
+    hoodMotor.setControl(hoodPositionControl.withPosition(positionRad / (2.0 * Math.PI)));
   }
 
   @Override
   public void setIndexerVelocity(double velocityRPM) {
     // Positive RPM → CCW → feeds ball up to shooter
-    indexerMotor.setControl(
-        indexerVelocityControl.withVelocity(velocityRPM / 60.0));
+    indexerMotor.setControl(indexerVelocityControl.withVelocity(velocityRPM / 60.0));
   }
 
   @Override
