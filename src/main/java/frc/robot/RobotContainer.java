@@ -13,6 +13,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -26,6 +27,11 @@ import frc.robot.subsystems.drive.GyroIONavX;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOSpark;
+import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterIO;
+import frc.robot.subsystems.shooter.ShooterIOKrakenX60;
+import frc.robot.subsystems.shooter.ShooterIOSim;
+import frc.robot.subsystems.shooter.ShotCalculator;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonVision;
@@ -42,19 +48,27 @@ public class RobotContainer {
   // Subsystems
   private final Drive drive;
   private final Vision vision;
+  private final Shooter shooter;
 
-  // Controller
+  // Controllers
   private final CommandXboxController controller = new CommandXboxController(0);
+
+  // Aim controller for vision-based rotation
   private final PIDController aimController = new PIDController(0.2, 0.0, 0.0);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
 
+  // ---------------------------------------------------------------------------
+  // TODO: Set this to the actual field position of your shoot target (e.g. the
+  // center of the speaker opening on your field layout).
+  // ---------------------------------------------------------------------------
+  private static final Translation2d SHOOT_TARGET_POSITION = new Translation2d(0.0, 5.55);
+
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     switch (Constants.currentMode) {
       case REAL:
-        // Real robot, instantiate hardware IO implementations
         drive =
             new Drive(
                 new GyroIONavX(),
@@ -63,23 +77,16 @@ public class RobotContainer {
                 new ModuleIOSpark(2),
                 new ModuleIOSpark(3));
 
-        // Vision with Limelight cameras
         vision =
             new Vision(
                 drive::addVisionMeasurement,
                 new VisionIOPhotonVision(camera0Name, robotToCamera0),
                 new VisionIOPhotonVision(camera1Name, robotToCamera1));
 
-        // Alternative: PhotonVision cameras (uncomment if using PhotonVision)
-        // vision =
-        //     new Vision(
-        //         drive::addVisionMeasurement,
-        //         new VisionIOPhotonVision(camera0Name, robotToCamera0),
-        //         new VisionIOPhotonVision(camera1Name, robotToCamera1));
+        shooter = new Shooter(new ShooterIOKrakenX60());
         break;
 
       case SIM:
-        // Sim robot, instantiate physics sim IO implementations
         drive =
             new Drive(
                 new GyroIO() {},
@@ -88,16 +95,17 @@ public class RobotContainer {
                 new ModuleIOSim(),
                 new ModuleIOSim());
 
-        // Vision simulation with PhotonVision
         vision =
             new Vision(
                 drive::addVisionMeasurement,
                 new VisionIOPhotonVisionSim(camera0Name, robotToCamera0, drive::getPose),
                 new VisionIOPhotonVisionSim(camera1Name, robotToCamera1, drive::getPose));
+
+        shooter = new Shooter(new ShooterIOSim());
         break;
 
       default:
-        // Replayed robot, disable IO implementations
+        // Replay — no-op IO implementations
         drive =
             new Drive(
                 new GyroIO() {},
@@ -106,15 +114,18 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
 
-        // Dummy vision implementations for replay
         vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+
+        shooter = new Shooter(new ShooterIO() {});
         break;
     }
+
+    // Initialize the shot calculator singleton once we have a pose supplier
+    ShotCalculator.initialize(drive::getPose, SHOOT_TARGET_POSITION);
 
     // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
 
-    // Set up SysId routines
     autoChooser.addOption(
         "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
     autoChooser.addOption(
@@ -130,18 +141,13 @@ public class RobotContainer {
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
-    // Configure the button bindings
     configureButtonBindings();
   }
 
-  /**
-   * Use this method to define your button->command mappings. Buttons can be created by
-   * instantiating a {@link GenericHID} or one of its subclasses ({@link
-   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a {@link
-   * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
-   */
   private void configureButtonBindings() {
-    // Default command, normal field-relative drive
+    // ------------------------------------------------------------------
+    // DRIVE — default field-relative joystick drive
+    // ------------------------------------------------------------------
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
             drive,
@@ -149,7 +155,7 @@ public class RobotContainer {
             () -> -controller.getLeftX(),
             () -> -controller.getRightX()));
 
-    // Lock to 0° when A button is held (auto-aim forward)
+    // Lock to 0° when A button is held
     controller
         .a()
         .whileTrue(
@@ -170,22 +176,19 @@ public class RobotContainer {
                     drive)
                 .ignoringDisable(true));
 
-    // Switch to X pattern when X button is pressed
+    // X-pattern brake when X is pressed
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+
     // Auto-aim to AprilTag using vision when Y button is held
     aimController.enableContinuousInput(-Math.PI, Math.PI);
     controller
         .y()
         .whileTrue(
             Commands.startRun(
+                () -> aimController.reset(),
                 () -> {
-                  aimController.reset();
-                },
-                () -> {
-                  // Get target angle from first camera
-                  double rotationSpeed = aimController.calculate(vision.getTargetX(0).getRadians());
-
-                  // Drive with rotation adjustment
+                  double rotationSpeed =
+                      aimController.calculate(vision.getTargetX(0).getRadians());
                   drive.setDefaultCommand(
                       DriveCommands.joystickDrive(
                           drive,
@@ -200,47 +203,78 @@ public class RobotContainer {
         .leftBumper()
         .onTrue(
             Commands.runOnce(
-                () -> {
-                  // Could add logic to reset pose based on AprilTag detection
-                  System.out.println("Reset odometry using vision (not implemented)");
-                },
-                drive));
+                () -> System.out.println("Reset odometry using vision (not implemented)"), drive));
 
-    // Right bumper: Toggle vision pipeline or camera
+    // Right bumper: Toggle vision pipeline
     controller
         .rightBumper()
         .onTrue(
             Commands.runOnce(
-                () -> {
-                  // Could add logic to switch vision pipelines
-                  System.out.println("Toggle vision pipeline (not implemented)");
-                }));
+                () -> System.out.println("Toggle vision pipeline (not implemented)")));
+
+    // ------------------------------------------------------------------
+    // SHOOTER
+    // ------------------------------------------------------------------
+
+    // Right trigger: spin up flywheel + aim hood at current distance,
+    // then feed the ball when ready.
+    // Hold to keep spinning; release to stop everything.
+    controller
+        .rightTrigger(0.5)
+        .whileTrue(
+            Commands.run(
+                    () -> {
+                      // Recalculate each loop so hood/flywheel track as the robot moves
+                      var params = ShotCalculator.getInstance().calculate();
+                      shooter.setHoodPosition(params.hoodAngleRad());
+                      shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
+
+                      // Only feed once everything is settled and in range
+                      if (params.isValid() && shooter.isReadyToShoot()) {
+                        shooter.feedNote();
+                      } else {
+                        shooter.stopIndexer();
+                      }
+                    },
+                    shooter)
+                .finallyDo(shooter::stop));
+
+    // Left trigger: eject ball back toward hopper
+    controller
+        .leftTrigger(0.5)
+        .whileTrue(
+            Commands.startEnd(shooter::ejectNote, shooter::stopIndexer, shooter));
+
+    // Right bumper (secondary use on operator controller if you add one):
+    // For now, left stick button manually spins up to default speed without
+    // hood tracking — useful for testing the flywheel independently.
+    controller
+        .leftStick()
+        .whileTrue(
+            Commands.startEnd(
+                    () -> shooter.setFlywheelVelocity(
+                        frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM),
+                    shooter::stop,
+                    shooter));
   }
 
-  /**
-   * Use this to pass the autonomous command to the main {@link Robot} class.
-   *
-   * @return the command to run in autonomous
-   */
+  /** Use this to pass the autonomous command to the main {@link Robot} class. */
   public Command getAutonomousCommand() {
     return autoChooser.get();
   }
 
-  /**
-   * Get the drive subsystem for use in other classes.
-   *
-   * @return The drive subsystem instance.
-   */
+  /** Returns the drive subsystem. */
   public Drive getDrive() {
     return drive;
   }
 
-  /**
-   * Get the vision subsystem for use in other classes.
-   *
-   * @return The vision subsystem instance.
-   */
+  /** Returns the vision subsystem. */
   public Vision getVision() {
     return vision;
+  }
+
+  /** Returns the shooter subsystem. */
+  public Shooter getShooter() {
+    return shooter;
   }
 }
