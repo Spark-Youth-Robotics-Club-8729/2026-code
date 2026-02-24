@@ -14,12 +14,10 @@ import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.PersistMode;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
-import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
 import com.revrobotics.spark.SparkBase;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkClosedLoopController;
-import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.AbsoluteEncoderConfig;
@@ -110,7 +108,8 @@ public class ModuleIOSpark implements ModuleIO {
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .pid(driveKp, 0.0, driveKd)
         .outputRange(-1, 1)
-        .feedForward.kV(driveKv);
+        .feedForward
+        .kV(driveKv);
     driveConfig
         .signals
         .primaryEncoderPositionAlwaysOn(true)
@@ -177,8 +176,14 @@ public class ModuleIOSpark implements ModuleIO {
   public void updateInputs(ModuleIOInputs inputs) {
     // Update drive inputs
     sparkStickyFault = false;
-    ifOk(driveSpark, driveEncoder::getPosition, (value) -> inputs.drivePositionRad = value / wheelRadiusMeters);
-    ifOk(driveSpark, driveEncoder::getVelocity, (value) -> inputs.driveVelocityRadPerSec = value / wheelRadiusMeters);
+    ifOk(
+        driveSpark,
+        driveEncoder::getPosition,
+        (value) -> inputs.drivePositionRad = value / wheelRadiusMeters);
+    ifOk(
+        driveSpark,
+        driveEncoder::getVelocity,
+        (value) -> inputs.driveVelocityRadPerSec = value / wheelRadiusMeters);
     ifOk(
         driveSpark,
         new DoubleSupplier[] {driveSpark::getAppliedOutput, driveSpark::getBusVoltage},
@@ -204,7 +209,9 @@ public class ModuleIOSpark implements ModuleIO {
     inputs.odometryTimestamps =
         timestampQueue.stream().mapToDouble((Double value) -> value).toArray();
     inputs.odometryDrivePositionsRad =
-        drivePositionQueue.stream().mapToDouble((Double value) -> value / wheelRadiusMeters).toArray();
+        drivePositionQueue.stream()
+            .mapToDouble((Double value) -> value / wheelRadiusMeters)
+            .toArray();
     inputs.odometryTurnPositions =
         turnPositionQueue.stream()
             .map((Double value) -> new Rotation2d(value).minus(zeroRotation))
