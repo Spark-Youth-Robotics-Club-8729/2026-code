@@ -6,29 +6,22 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IndexerSubsystem extends SubsystemBase {
-  public final SparkMax leftindexermotor;
-
-  public final SparkMax rightindexermotor;
+  public final SparkMax Indexmotor;
 
   public IndexerSubsystem() {
-    leftindexermotor =
-        new SparkMax(Indexconstants.leftindexCanid, MotorType.kBrushless); // left one
-    rightindexermotor = new SparkMax(Indexconstants.rightindexCanid, MotorType.kBrushless);
+    Indexmotor = new SparkMax(Indexconstants.indexCanid, MotorType.kBrushless);
   }
 
   public void rotate() {
-    leftindexermotor.set(Indexconstants.indexspeed);
-    rightindexermotor.set(Indexconstants.indexspeed);
+    Indexmotor.set(Indexconstants.indexspeed);
   }
 
   public void backwards() {
-    leftindexermotor.set(-Indexconstants.indexspeed);
-    rightindexermotor.set(-Indexconstants.indexspeed);
+    Indexmotor.set(-Indexconstants.indexspeed);
   }
 
   public void stoprotate() {
-    leftindexermotor.set(0);
-    rightindexermotor.set(0);
+    Indexmotor.set(0);
   }
 
   public void setvoltage(double voltage) {
@@ -36,12 +29,11 @@ public class IndexerSubsystem extends SubsystemBase {
       voltage = Indexconstants.indexvoltage;
     }
 
-    leftindexermotor.setVoltage(voltage);
+    Indexmotor.setVoltage(voltage);
   }
 
   @Override
   public void periodic() {
-    SmartDashboard.putNumber("Leftcurrent: ", leftindexermotor.getOutputCurrent());
-    SmartDashboard.putNumber("rightcurrent: ", rightindexermotor.getOutputCurrent());
+    SmartDashboard.putNumber("indexcurrent: ", Indexmotor.getOutputCurrent());
   }
 }

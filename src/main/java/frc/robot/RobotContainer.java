@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
-import frc.robot.subsystems.Index.IndexerCommands;
+import frc.robot.commands.IndexerCommands;
 import frc.robot.subsystems.Index.IndexerSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -190,23 +190,24 @@ public class RobotContainer {
         .rightTrigger(0.5)
         .whileTrue(
             Commands.parallel(
-                IndexerCommands.feed(index), 
-                Commands.run(
+                    IndexerCommands.feed(index),
+                    Commands.run(
+                        () -> {
+                          var params = ShotCalculator.getInstance().calculate();
+                          shooter.setHoodPosition(params.hoodAngleRad());
+                          shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
+                          if (params.isValid() && shooter.isReadyToShoot()) {
+                            shooter.feedNote();
+                          } else {
+                            shooter.stopIndexer();
+                          }
+                        },
+                        shooter))
+                .finallyDo(
                     () -> {
-                      var params = ShotCalculator.getInstance().calculate();
-                      shooter.setHoodPosition(params.hoodAngleRad());
-                      shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
-                      if (params.isValid() && shooter.isReadyToShoot()) {
-                        shooter.feedNote();
-                      } else {
-                        shooter.stopIndexer();
-                      }
-                    },
-                    shooter))
-                .finallyDo(() -> {
-                    shooter.stop();
-                    IndexerCommands.stopmotor(index);
-                }));
+                      shooter.stop();
+                      IndexerCommands.stopmotor(index);
+                    }));
     // Left trigger — eject ball back toward hopper
     operator
         .leftTrigger(0.5)
@@ -214,27 +215,23 @@ public class RobotContainer {
 
     // Right bumper — deploy slapdown + run roller; retract when released
     operator
-    .rightBumper()
-    .whileTrue(
-        Commands.parallel(
-            IndexerCommands.feed(index),
-            intake.slapdownAndIntakeCommand())
-        .finallyDo(() -> IndexerCommands.stopmotor(index)))
-    .onFalse(intake.retractCommand());
+        .rightBumper()
+        .whileTrue(
+            Commands.parallel(IndexerCommands.feed(index), intake.slapdownAndIntakeCommand())
+                .finallyDo(() -> IndexerCommands.stopmotor(index)))
+        .onFalse(intake.retractCommand());
 
     // Left bumper — roller only (arm already down), stops on release
-    operator.leftBumper()
-    .whileTrue(
-        Commands.parallel(
-            IndexerCommands.feed(index),
-            intake.intakeCommand())
-        .finallyDo(() -> IndexerCommands.stopmotor(index)));
-        
+    operator
+        .leftBumper()
+        .whileTrue(
+            Commands.parallel(IndexerCommands.feed(index), intake.intakeCommand())
+                .finallyDo(() -> IndexerCommands.stopmotor(index)));
 
     // A — outtake
     operator.a().whileTrue(intake.outtakeCommand());
 
-    //B - outtake by intake spot 
+    // B - outtake by intake spot
     operator.b().whileTrue(IndexerCommands.unfeed(index));
 
     // Left stick button — test flywheel at default speed
@@ -267,9 +264,5 @@ public class RobotContainer {
 
   public Intake getIntake() {
     return intake;
-  }
-
-  public IndexerSubsystem getIndex(){
-    return index;
   }
 }

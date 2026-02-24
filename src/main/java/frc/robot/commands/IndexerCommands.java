@@ -1,7 +1,7 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.IndexerSubsystem;
+import frc.robot.subsystems.Index.IndexerSubsystem;
 
 public class IndexerCommands {
   public static Command feed(IndexerSubsystem indexer) {
