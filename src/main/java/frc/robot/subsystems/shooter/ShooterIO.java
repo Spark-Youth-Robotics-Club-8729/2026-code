@@ -34,12 +34,12 @@ public interface ShooterIO {
     public double hoodCurrentAmps = 0.0;
     public double hoodTempCelsius = 0.0;
 
-    // Indexer
-    public boolean indexerConnected = false;
-    public double indexerVelocityRPM = 0.0;
-    public double indexerAppliedVolts = 0.0;
-    public double indexerCurrentAmps = 0.0;
-    public double indexerTempCelsius = 0.0;
+    // Feeder (green wheels, feeds ball from hopper up to shooter — NOT the hopper indexer)
+    public boolean feederConnected = false;
+    public double feederVelocityRPM = 0.0;
+    public double feederAppliedVolts = 0.0;
+    public double feederCurrentAmps = 0.0;
+    public double feederTempCelsius = 0.0;
   }
 
   /** Updates the set of loggable inputs. */
@@ -54,11 +54,8 @@ public interface ShooterIO {
   /** Set the hood position in radians (mechanism angle, after gear reduction). */
   public default void setHoodPosition(double positionRad) {}
 
-  /**
-   * Set the indexer velocity in RPM. Positive = counter-clockwise = feeds ball up toward shooter.
-   * Negative = clockwise = ejects ball back toward hopper.
-   */
-  public default void setIndexerVelocity(double velocityRPM) {}
+  /** Set the feeder (green wheels) velocity in RPM. Positive = toward shooter, negative = eject. */
+  public default void setFeederVelocity(double velocityRPM) {}
 
   /** Stop all shooter motors. */
   public default void stop() {}

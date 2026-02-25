@@ -31,8 +31,8 @@ public class IntakeConstants {
   public static final double slapdownToleranceRad = Units.degreesToRadians(2.0);
 
   // Roller voltages (positive = intake in, negative = outtake)
-  public static final double rollerIntakeVolts = 10.0; // TODO: Tune
-  public static final double rollerOuttakeVolts = -6.0; // TODO: Tune
+  public static final double rollerIntakeVolts = 6.0; // Reduced from 10.0 — TODO: Tune
+  public static final double rollerOuttakeVolts = -4.0; // Reduced from -6.0 — TODO: Tune
 
   private IntakeConstants() {}
 }

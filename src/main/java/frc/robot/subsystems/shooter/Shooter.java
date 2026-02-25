@@ -21,7 +21,8 @@ public class Shooter extends SubsystemBase {
   // Store setpoints so at-goal checks can compare against them properly
   private double leftFlywheelSetpointRPM = 0.0;
   private double rightFlywheelSetpointRPM = 0.0;
-  private double hoodSetpointRad = 0.0;
+  // Initialize to min angle — matches where the encoder is seeded on startup
+  private double hoodSetpointRad = hoodMinAngleRad;
 
   // Disconnection alerts
   private final Alert leftFlywheelDisconnected =
@@ -30,8 +31,8 @@ public class Shooter extends SubsystemBase {
       new Alert("Right flywheel motor disconnected!", Alert.AlertType.kWarning);
   private final Alert hoodDisconnected =
       new Alert("Hood motor disconnected!", Alert.AlertType.kWarning);
-  private final Alert indexerDisconnected =
-      new Alert("Indexer motor disconnected!", Alert.AlertType.kWarning);
+  private final Alert feederDisconnected =
+      new Alert("Feeder motor disconnected!", Alert.AlertType.kWarning);
 
   /** Creates a new Shooter subsystem. */
   public Shooter(ShooterIO io) {
@@ -52,16 +53,20 @@ public class Shooter extends SubsystemBase {
     leftFlywheelDisconnected.set(!inputs.leftFlywheelConnected);
     rightFlywheelDisconnected.set(!inputs.rightFlywheelConnected);
     hoodDisconnected.set(!inputs.hoodConnected);
-    indexerDisconnected.set(!inputs.indexerConnected);
+    feederDisconnected.set(!inputs.feederConnected);
 
     // Log computed values
     Logger.recordOutput("Shooter/LeftFlywheelAtSpeed", isLeftFlywheelAtSpeed());
     Logger.recordOutput("Shooter/RightFlywheelAtSpeed", isRightFlywheelAtSpeed());
     Logger.recordOutput("Shooter/FlywheelsAtSpeed", areFlywheelsAtSpeed());
     Logger.recordOutput("Shooter/HoodAtPosition", isHoodAtPosition());
+    Logger.recordOutput("Shooter/HoodPositionErrorRad", inputs.hoodPositionRad - hoodSetpointRad);
+    Logger.recordOutput("Shooter/HoodPositionErrorDeg",
+        Math.toDegrees(inputs.hoodPositionRad - hoodSetpointRad));
     Logger.recordOutput("Shooter/LeftFlywheelSetpointRPM", leftFlywheelSetpointRPM);
     Logger.recordOutput("Shooter/RightFlywheelSetpointRPM", rightFlywheelSetpointRPM);
     Logger.recordOutput("Shooter/HoodSetpointRad", hoodSetpointRad);
+    Logger.recordOutput("Shooter/IsReadyToShoot", isReadyToShoot());
   }
 
   /**
@@ -99,22 +104,22 @@ public class Shooter extends SubsystemBase {
     io.setHoodPosition(angleRad);
   }
 
-  /** Runs the indexer counter-clockwise to feed a ball up to the shooter. */
+  /** Runs the feeder (green wheels) to feed a ball up to the shooter. */
   public void feedNote() {
-    io.setIndexerVelocity(indexerFeedSpeedRPM);
-    Logger.recordOutput("Shooter/IndexerState", "Feeding");
+    io.setFeederVelocity(feederFeedSpeedRPM);
+    Logger.recordOutput("Shooter/FeederState", "Feeding");
   }
 
-  /** Runs the indexer clockwise to eject a ball back toward the hopper. */
+  /** Runs the feeder in reverse to eject a ball back toward the hopper. */
   public void ejectNote() {
-    io.setIndexerVelocity(indexerEjectSpeedRPM);
-    Logger.recordOutput("Shooter/IndexerState", "Ejecting");
+    io.setFeederVelocity(feederEjectSpeedRPM);
+    Logger.recordOutput("Shooter/FeederState", "Ejecting");
   }
 
-  /** Stops the indexer. */
-  public void stopIndexer() {
-    io.setIndexerVelocity(0.0);
-    Logger.recordOutput("Shooter/IndexerState", "Stopped");
+  /** Stops the feeder. */
+  public void stopFeeder() {
+    io.setFeederVelocity(0.0);
+    Logger.recordOutput("Shooter/FeederState", "Stopped");
   }
 
   /** Stops all shooter motors and clears setpoints. */
@@ -122,7 +127,7 @@ public class Shooter extends SubsystemBase {
     leftFlywheelSetpointRPM = 0.0;
     rightFlywheelSetpointRPM = 0.0;
     io.stop();
-    Logger.recordOutput("Shooter/IndexerState", "Stopped");
+    Logger.recordOutput("Shooter/FeederState", "Stopped");
   }
 
   // ---------------------------------------------------------------------------

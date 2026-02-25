@@ -30,7 +30,7 @@ public class ShooterIOKrakenX60 implements ShooterIO {
   private final TalonFX leftFlywheelMotor;
   private final TalonFX rightFlywheelMotor;
   private final TalonFX hoodMotor;
-  private final TalonFX indexerMotor;
+  private final TalonFX feederMotor; // Renamed from indexerMotor
 
   // Status signals - left flywheel
   private final StatusSignal<AngularVelocity> leftFlywheelVelocity;
@@ -51,17 +51,17 @@ public class ShooterIOKrakenX60 implements ShooterIO {
   private final StatusSignal<Current> hoodCurrent;
   private final StatusSignal<Temperature> hoodTemp;
 
-  // Status signals - indexer
-  private final StatusSignal<AngularVelocity> indexerVelocity;
-  private final StatusSignal<Voltage> indexerAppliedVolts;
-  private final StatusSignal<Current> indexerCurrent;
-  private final StatusSignal<Temperature> indexerTemp;
+  // Status signals - feeder (green wheels)
+  private final StatusSignal<AngularVelocity> feederVelocity;
+  private final StatusSignal<Voltage> feederAppliedVolts;
+  private final StatusSignal<Current> feederCurrent;
+  private final StatusSignal<Temperature> feederTemp;
 
   // Control requests
   private final VelocityVoltage leftFlywheelVelocityControl = new VelocityVoltage(0);
   private final VelocityVoltage rightFlywheelVelocityControl = new VelocityVoltage(0);
   private final PositionVoltage hoodPositionControl = new PositionVoltage(0);
-  private final VelocityVoltage indexerVelocityControl = new VelocityVoltage(0);
+  private final VelocityVoltage feederVelocityControl = new VelocityVoltage(0);
   private final VoltageOut voltageControl = new VoltageOut(0);
 
   public ShooterIOKrakenX60() {
@@ -70,7 +70,7 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     leftFlywheelMotor = new TalonFX(leftFlywheelID, canBusInstance);
     rightFlywheelMotor = new TalonFX(rightFlywheelID, canBusInstance);
     hoodMotor = new TalonFX(hoodMotorID, canBusInstance);
-    indexerMotor = new TalonFX(indexerMotorID, canBusInstance);
+    feederMotor = new TalonFX(feederMotorID, canBusInstance);
 
     // -------------------------------------------------------------------------
     // Left flywheel — spins counter-clockwise to shoot
@@ -85,6 +85,8 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     leftConfig.Slot0.kI = flywheelKi;
     leftConfig.Slot0.kD = flywheelKd;
     leftConfig.Slot0.kV = flywheelKv;
+    // Add kS to both flywheel configs to maintain speed when a ball loads
+    leftConfig.Slot0.kS = flywheelKs;
     leftFlywheelMotor.getConfigurator().apply(leftConfig);
 
     // -------------------------------------------------------------------------
@@ -100,6 +102,7 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     rightConfig.Slot0.kI = flywheelKi;
     rightConfig.Slot0.kD = flywheelKd;
     rightConfig.Slot0.kV = flywheelKv;
+    rightConfig.Slot0.kS = flywheelKs;
     rightFlywheelMotor.getConfigurator().apply(rightConfig);
 
     // -------------------------------------------------------------------------
@@ -123,22 +126,25 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     hoodConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = hoodMinAngleRad / (2.0 * Math.PI);
     hoodMotor.getConfigurator().apply(hoodConfig);
 
+    // Seed the hood encoder to the minimum angle (resting/home position) so the
+    // controller knows where the hood actually is on startup.
+    // Convert radians → rotations (mechanism units after SensorToMechanismRatio).
+    hoodMotor.setPosition(hoodMinAngleRad / (2.0 * Math.PI));
+
     // -------------------------------------------------------------------------
-    // Indexer motor — counter-clockwise = positive = feeds ball up to shooter
-    // Gear ratio 1:1.375 stored as motor/mechanism = 1/1.375 ≈ 0.7273
+    // Feeder motor (green wheels) — CCW = positive = feeds ball up to shooter
     // -------------------------------------------------------------------------
-    var indexerConfig = new TalonFXConfiguration();
-    indexerConfig.CurrentLimits.SupplyCurrentLimit = 30.0;
-    indexerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
-    // CCW_Positive means positive setpoint spins counter-clockwise → feeds ball up
-    indexerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-    indexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    indexerConfig.Feedback.SensorToMechanismRatio = indexerGearRatio; // ≈ 0.7273
-    indexerConfig.Slot0.kP = indexerKp;
-    indexerConfig.Slot0.kI = indexerKi;
-    indexerConfig.Slot0.kD = indexerKd;
-    indexerConfig.Slot0.kV = indexerKv;
-    indexerMotor.getConfigurator().apply(indexerConfig);
+    var feederConfig = new TalonFXConfiguration();
+    feederConfig.CurrentLimits.SupplyCurrentLimit = 30.0;
+    feederConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+    feederConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+    feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    feederConfig.Feedback.SensorToMechanismRatio = feederGearRatio;
+    feederConfig.Slot0.kP = feederKp;
+    feederConfig.Slot0.kI = feederKi;
+    feederConfig.Slot0.kD = feederKd;
+    feederConfig.Slot0.kV = feederKv;
+    feederMotor.getConfigurator().apply(feederConfig);
 
     // -------------------------------------------------------------------------
     // Status signals
@@ -159,21 +165,19 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     hoodCurrent = hoodMotor.getSupplyCurrent();
     hoodTemp = hoodMotor.getDeviceTemp();
 
-    indexerVelocity = indexerMotor.getVelocity();
-    indexerAppliedVolts = indexerMotor.getMotorVoltage();
-    indexerCurrent = indexerMotor.getSupplyCurrent();
-    indexerTemp = indexerMotor.getDeviceTemp();
+    feederVelocity = feederMotor.getVelocity();
+    feederAppliedVolts = feederMotor.getMotorVoltage();
+    feederCurrent = feederMotor.getSupplyCurrent();
+    feederTemp = feederMotor.getDeviceTemp();
 
-    // High-frequency signals (50 Hz)
     BaseStatusSignal.setUpdateFrequencyForAll(
         50.0,
         leftFlywheelVelocity,
         rightFlywheelVelocity,
         hoodPosition,
         hoodVelocity,
-        indexerVelocity);
+        feederVelocity);
 
-    // Low-frequency telemetry signals (4 Hz)
     BaseStatusSignal.setUpdateFrequencyForAll(
         4.0,
         leftFlywheelAppliedVolts,
@@ -185,14 +189,14 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         hoodAppliedVolts,
         hoodCurrent,
         hoodTemp,
-        indexerAppliedVolts,
-        indexerCurrent,
-        indexerTemp);
+        feederAppliedVolts,
+        feederCurrent,
+        feederTemp);
 
     leftFlywheelMotor.optimizeBusUtilization();
     rightFlywheelMotor.optimizeBusUtilization();
     hoodMotor.optimizeBusUtilization();
-    indexerMotor.optimizeBusUtilization();
+    feederMotor.optimizeBusUtilization();
   }
 
   @Override
@@ -219,9 +223,8 @@ public class ShooterIOKrakenX60 implements ShooterIO {
                 hoodPosition, hoodVelocity, hoodAppliedVolts, hoodCurrent, hoodTemp)
             .isOK();
 
-    inputs.indexerConnected =
-        BaseStatusSignal.refreshAll(
-                indexerVelocity, indexerAppliedVolts, indexerCurrent, indexerTemp)
+    inputs.feederConnected =
+        BaseStatusSignal.refreshAll(feederVelocity, feederAppliedVolts, feederCurrent, feederTemp)
             .isOK();
 
     // Left flywheel (rotations/sec → RPM)
@@ -244,11 +247,11 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     inputs.hoodCurrentAmps = hoodCurrent.getValueAsDouble();
     inputs.hoodTempCelsius = hoodTemp.getValueAsDouble();
 
-    // Indexer (rotations/sec → RPM)
-    inputs.indexerVelocityRPM = indexerVelocity.getValueAsDouble() * 60.0;
-    inputs.indexerAppliedVolts = indexerAppliedVolts.getValueAsDouble();
-    inputs.indexerCurrentAmps = indexerCurrent.getValueAsDouble();
-    inputs.indexerTempCelsius = indexerTemp.getValueAsDouble();
+    // Feeder (rotations/sec → RPM)
+    inputs.feederVelocityRPM = feederVelocity.getValueAsDouble() * 60.0;
+    inputs.feederAppliedVolts = feederAppliedVolts.getValueAsDouble();
+    inputs.feederCurrentAmps = feederCurrent.getValueAsDouble();
+    inputs.feederTempCelsius = feederTemp.getValueAsDouble();
   }
 
   @Override
@@ -269,9 +272,8 @@ public class ShooterIOKrakenX60 implements ShooterIO {
   }
 
   @Override
-  public void setIndexerVelocity(double velocityRPM) {
-    // Positive RPM → CCW → feeds ball up to shooter
-    indexerMotor.setControl(indexerVelocityControl.withVelocity(velocityRPM / 60.0));
+  public void setFeederVelocity(double velocityRPM) {
+    feederMotor.setControl(feederVelocityControl.withVelocity(velocityRPM / 60.0));
   }
 
   @Override
@@ -279,6 +281,6 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     leftFlywheelMotor.setControl(voltageControl.withOutput(0));
     rightFlywheelMotor.setControl(voltageControl.withOutput(0));
     hoodMotor.setControl(voltageControl.withOutput(0));
-    indexerMotor.setControl(voltageControl.withOutput(0));
+    feederMotor.setControl(voltageControl.withOutput(0));
   }
 }

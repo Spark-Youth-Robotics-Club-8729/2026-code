@@ -14,7 +14,7 @@ public class ShooterConstants {
   public static final int leftFlywheelID = 10; // TODO: Set actual CAN ID
   public static final int rightFlywheelID = 11; // TODO: Set actual CAN ID
   public static final int hoodMotorID = 12; // TODO: Set actual CAN ID
-  public static final int indexerMotorID = 13; // TODO: Set actual CAN ID
+  public static final int feederMotorID = 13; // renamed from indexerMotorID — green feeder wheels
   public static final String canBus = "rio"; // Change to "canivore" if using CANivore
 
   // ---------------------------------------------------------------------------
@@ -28,9 +28,9 @@ public class ShooterConstants {
   // 13.7778 motor degrees per hood degree = 13.7778 motor rotations per hood rotation.
   public static final double hoodGearRatio = 13.7778;
 
-  // Indexer: 1:1.375  (1 motor rotation = 1.375 mechanism rotations)
+  // Feeder (green wheels, hopper→shooter): 1:1.375  (1 motor rotation = 1.375 mechanism rotations)
   // Stored as motor-rotations / mechanism-rotations for SensorToMechanismRatio.
-  public static final double indexerGearRatio = 1.0 / 1.375; // ≈ 0.7273
+  public static final double feederGearRatio = 1.0 / 1.375; // ≈ 0.7273
 
   // ---------------------------------------------------------------------------
   // Flywheel physical constants
@@ -44,25 +44,26 @@ public class ShooterConstants {
   // ---------------------------------------------------------------------------
   // Flywheel PID / feedforward constants
   // ---------------------------------------------------------------------------
-  public static final double flywheelKp = 0.1; // TODO: Tune
+  public static final double flywheelKp = 0.1;
   public static final double flywheelKi = 0.0;
   public static final double flywheelKd = 0.0;
-  public static final double flywheelKv = 0.12; // Volts per RPS feedforward
+  public static final double flywheelKv = 0.12; // Volts per RPS
+  public static final double flywheelKs = 0.25; // Static friction — helps hold speed under load
 
   // ---------------------------------------------------------------------------
   // Hood PID constants
   // ---------------------------------------------------------------------------
-  public static final double hoodKp = 0.0; // TODO: Tune
+  public static final double hoodKp = 5.0; // Increased — 1.0 may be too weak against gravity/load
   public static final double hoodKi = 0.0;
-  public static final double hoodKd = 0.5;
+  public static final double hoodKd = 0.1; // Small D to damp oscillation
 
   // ---------------------------------------------------------------------------
-  // Indexer PID / feedforward constants
+  // Feeder (green wheels, hopper→shooter) PID / feedforward constants
   // ---------------------------------------------------------------------------
-  public static final double indexerKp = 0.1; // TODO: Tune
-  public static final double indexerKi = 0.0;
-  public static final double indexerKd = 0.0;
-  public static final double indexerKv = 0.12;
+  public static final double feederKp = 0.1; // TODO: Tune
+  public static final double feederKi = 0.0;
+  public static final double feederKd = 0.0;
+  public static final double feederKv = 0.12;
 
   // ---------------------------------------------------------------------------
   // Hood angle limits (radians, at the mechanism — after gear reduction)
@@ -74,16 +75,16 @@ public class ShooterConstants {
   // Tolerances
   // ---------------------------------------------------------------------------
   public static final double flywheelToleranceRPM = 50.0;
-  public static final double hoodToleranceRad = Units.degreesToRadians(1.0);
+  public static final double hoodToleranceRad = Units.degreesToRadians(3.0); // Widened from 1° to 3° while tuning
 
   // ---------------------------------------------------------------------------
-  // Default / indexer speeds
+  // Default / feeder speeds
   // ---------------------------------------------------------------------------
   public static final double defaultFlywheelSpeedRPM = 3000.0; // TODO: Tune
-  // Positive = counter-clockwise (brings ball up from hopper to shooter)
-  public static final double indexerFeedSpeedRPM = 500.0;
-  // Negative = clockwise (ejects ball back down)
-  public static final double indexerEjectSpeedRPM = -300.0;
+  // Positive = feeds ball up from hopper to shooter
+  public static final double feederFeedSpeedRPM = 500.0;
+  // Negative = ejects ball back down toward hopper
+  public static final double feederEjectSpeedRPM = -300.0;
 
   private ShooterConstants() {}
 }

@@ -74,9 +74,9 @@ public class DriveCommands {
           double omegaRaw = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), 0.05);
 
           // Square inputs for finer low-speed control while preserving sign
-          double x = Math.copySign(xRaw * xRaw, xRaw);
-          double y = Math.copySign(yRaw * yRaw, yRaw);
-          double omega = Math.copySign(omegaRaw * omegaRaw, omegaRaw);
+          double x = Math.copySign(xRaw * xRaw * xRaw, xRaw);
+          double y = Math.copySign(yRaw * yRaw * yRaw, yRaw);
+          double omega = Math.copySign(omegaRaw * omegaRaw * omegaRaw, omegaRaw);
 
           // Convert to field-relative speeds
           ChassisSpeeds speeds =

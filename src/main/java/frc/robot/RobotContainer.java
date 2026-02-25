@@ -180,7 +180,20 @@ public class RobotContainer {
     // OPERATOR (port 1)
     // -------------------------------------------------------------------------
 
-    // Right trigger — spin up + aim hood, fire when ready
+    // Left trigger — aim (spin up flywheels + move hood to calculated position, no feed)
+    operator
+        .leftTrigger(0.5)
+        .whileTrue(
+            Commands.run(
+                    () -> {
+                      var params = ShotCalculator.getInstance().calculate();
+                      shooter.setHoodPosition(params.hoodAngleRad());
+                      shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
+                    },
+                    shooter)
+                .finallyDo(shooter::stop));
+
+    // Right trigger — shoot (spin up + aim + feed when ready)
     operator
         .rightTrigger(0.5)
         .whileTrue(
@@ -192,30 +205,30 @@ public class RobotContainer {
                       if (params.isValid() && shooter.isReadyToShoot()) {
                         shooter.feedNote();
                       } else {
-                        shooter.stopIndexer();
+                        shooter.stopFeeder();
                       }
                     },
                     shooter)
                 .finallyDo(shooter::stop));
 
-    // Left trigger — eject ball back toward hopper
-    operator
-        .leftTrigger(0.5)
-        .whileTrue(Commands.startEnd(shooter::ejectNote, shooter::stopIndexer, shooter));
-
-    // Right bumper — deploy slapdown + run roller; retract when released
-    operator
-        .rightBumper()
-        .whileTrue(intake.slapdownAndIntakeCommand())
-        .onFalse(intake.retractCommand());
-
-    // Left bumper — roller only (arm already down), stops on release
+    // Left bumper — run intake roller only (no slapdown); stops on release
     operator.leftBumper().whileTrue(intake.intakeCommand());
 
-    // A — outtake
-    operator.a().whileTrue(intake.outtakeCommand());
+    // Right bumper — manual feeder (commented out — hopper indexer subsystem not yet implemented)
+    // operator
+    //     .rightBumper()
+    //     .whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder, shooter));
 
-    // Left stick button — test flywheel at default speed
+    // Left arrow (POV 270°) — lower slapdown arm only (hopper down); raises on release
+    operator.povLeft().whileTrue(intake.slapdownDownCommand()).onFalse(intake.retractCommand());
+
+    // B — outtake from intake roller
+    operator.b().whileTrue(intake.outtakeCommand());
+
+    // Y — force-feed (green feeder wheels) for testing, bypasses ready checks
+    operator.y().whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder, shooter));
+
+    // Left stick — test flywheel at default speed
     operator
         .leftStick()
         .whileTrue(

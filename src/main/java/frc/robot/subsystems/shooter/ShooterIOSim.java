@@ -51,11 +51,11 @@ public class ShooterIOSim implements ShooterIO {
           (hoodMinAngleRad + hoodMaxAngleRad) / 2.0); // Start at middle
 
   // ---------------------------------------------------------------------------
-  // Indexer sim
+  // Feeder sim (green wheels)
   // ---------------------------------------------------------------------------
-  private final FlywheelSim indexerSim =
+  private final FlywheelSim feederSim =
       new FlywheelSim(
-          LinearSystemId.createFlywheelSystem(DCMotor.getKrakenX60(1), 0.001, indexerGearRatio),
+          LinearSystemId.createFlywheelSystem(DCMotor.getKrakenX60(1), 0.001, feederGearRatio),
           DCMotor.getKrakenX60(1));
 
   // ---------------------------------------------------------------------------
@@ -66,19 +66,19 @@ public class ShooterIOSim implements ShooterIO {
   private final PIDController rightFlywheelPID =
       new PIDController(flywheelKp, flywheelKi, flywheelKd);
   private final PIDController hoodPID = new PIDController(hoodKp, hoodKi, hoodKd);
-  private final PIDController indexerPID = new PIDController(indexerKp, indexerKi, indexerKd);
+  private final PIDController feederPID = new PIDController(feederKp, feederKi, feederKd);
 
   // Setpoints
   private double leftFlywheelSetpointRPM = 0.0;
   private double rightFlywheelSetpointRPM = 0.0;
   private double hoodSetpointRad = (hoodMinAngleRad + hoodMaxAngleRad) / 2.0;
-  private double indexerSetpointRPM = 0.0;
+  private double feederSetpointRPM = 0.0;
 
   // Applied voltages
   private double leftFlywheelAppliedVolts = 0.0;
   private double rightFlywheelAppliedVolts = 0.0;
   private double hoodAppliedVolts = 0.0;
-  private double indexerAppliedVolts = 0.0;
+  private double feederAppliedVolts = 0.0;
 
   @Override
   public void updateInputs(ShooterIOInputs inputs) {
@@ -113,15 +113,15 @@ public class ShooterIOSim implements ShooterIO {
     hoodSim.setInputVoltage(hoodAppliedVolts);
     hoodSim.update(dt);
 
-    // Indexer — positive setpoint → CCW → feed ball up to shooter
-    indexerAppliedVolts =
+    // Feeder
+    feederAppliedVolts =
         MathUtil.clamp(
-            indexerPID.calculate(indexerSim.getAngularVelocityRPM(), indexerSetpointRPM)
-                + indexerKv * indexerSetpointRPM / 60.0,
+            feederPID.calculate(feederSim.getAngularVelocityRPM(), feederSetpointRPM)
+                + feederKv * feederSetpointRPM / 60.0,
             -12.0,
             12.0);
-    indexerSim.setInputVoltage(indexerAppliedVolts);
-    indexerSim.update(dt);
+    feederSim.setInputVoltage(feederAppliedVolts);
+    feederSim.update(dt);
 
     // Write back to inputs
     inputs.leftFlywheelConnected = true;
@@ -143,11 +143,11 @@ public class ShooterIOSim implements ShooterIO {
     inputs.hoodCurrentAmps = hoodSim.getCurrentDrawAmps();
     inputs.hoodTempCelsius = 25.0;
 
-    inputs.indexerConnected = true;
-    inputs.indexerVelocityRPM = indexerSim.getAngularVelocityRPM();
-    inputs.indexerAppliedVolts = indexerAppliedVolts;
-    inputs.indexerCurrentAmps = indexerSim.getCurrentDrawAmps();
-    inputs.indexerTempCelsius = 25.0;
+    inputs.feederConnected = true;
+    inputs.feederVelocityRPM = feederSim.getAngularVelocityRPM();
+    inputs.feederAppliedVolts = feederAppliedVolts;
+    inputs.feederCurrentAmps = feederSim.getCurrentDrawAmps();
+    inputs.feederTempCelsius = 25.0;
   }
 
   @Override
@@ -166,16 +166,14 @@ public class ShooterIOSim implements ShooterIO {
   }
 
   @Override
-  public void setIndexerVelocity(double velocityRPM) {
-    // Positive = CCW = feeds ball up; negative = CW = ejects back to hopper
-    indexerSetpointRPM = velocityRPM;
+  public void setFeederVelocity(double velocityRPM) {
+    feederSetpointRPM = velocityRPM;
   }
 
   @Override
   public void stop() {
     leftFlywheelSetpointRPM = 0.0;
     rightFlywheelSetpointRPM = 0.0;
-    indexerSetpointRPM = 0.0;
-    // Hood holds last position on stop
+    feederSetpointRPM = 0.0;
   }
 }
