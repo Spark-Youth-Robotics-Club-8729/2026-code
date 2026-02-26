@@ -61,8 +61,8 @@ public class Shooter extends SubsystemBase {
     Logger.recordOutput("Shooter/FlywheelsAtSpeed", areFlywheelsAtSpeed());
     Logger.recordOutput("Shooter/HoodAtPosition", isHoodAtPosition());
     Logger.recordOutput("Shooter/HoodPositionErrorRad", inputs.hoodPositionRad - hoodSetpointRad);
-    Logger.recordOutput("Shooter/HoodPositionErrorDeg",
-        Math.toDegrees(inputs.hoodPositionRad - hoodSetpointRad));
+    Logger.recordOutput(
+        "Shooter/HoodPositionErrorDeg", Math.toDegrees(inputs.hoodPositionRad - hoodSetpointRad));
     Logger.recordOutput("Shooter/LeftFlywheelSetpointRPM", leftFlywheelSetpointRPM);
     Logger.recordOutput("Shooter/RightFlywheelSetpointRPM", rightFlywheelSetpointRPM);
     Logger.recordOutput("Shooter/HoodSetpointRad", hoodSetpointRad);

@@ -75,7 +75,8 @@ public class ShooterConstants {
   // Tolerances
   // ---------------------------------------------------------------------------
   public static final double flywheelToleranceRPM = 50.0;
-  public static final double hoodToleranceRad = Units.degreesToRadians(3.0); // Widened from 1° to 3° while tuning
+  public static final double hoodToleranceRad =
+      Units.degreesToRadians(3.0); // Widened from 1° to 3° while tuning
 
   // ---------------------------------------------------------------------------
   // Default / feeder speeds
