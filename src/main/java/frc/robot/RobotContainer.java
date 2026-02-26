@@ -10,6 +10,7 @@ package frc.robot;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -131,6 +132,51 @@ public class RobotContainer {
         "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
+
+    // Add every .path file as a standalone auto option
+    String[] pathNames = {
+      // Starting position paths
+      "BlueS1toN1", "BlueS1toN2", "BlueS1toN3", "BlueS1toN4", "BlueS1toN5", "BlueS1toN6",
+      "BlueS1toT", "BlueS1toO",
+      "BlueS2toN1", "BlueS2toN2", "BlueS2toN3", "BlueS2toN4", "BlueS2toN5", "BlueS2toN6",
+      "BlueS2toT", "BlueS2toO", "BlueS2toD",
+      "BlueS3toN1", "BlueS3toN2", "BlueS3toN3", "BlueS3toN4", "BlueS3toN5", "BlueS3toN6",
+      "BlueS3toT", "BlueS3toO", "BlueS3toD",
+      "BlueS4toN1", "BlueS4toN2", "BlueS4toN3", "BlueS4toN4", "BlueS4toN5", "BlueS4toN6",
+      "BlueS4toT", "BlueS4toO", "BlueS4toD",
+      // Note-to-target paths
+      "BlueN1toTthorughT1", "BlueN1toTthorughB1", "BlueN1toHthroughT1", "BlueN1toHthroughB1",
+      "BlueN2toTthorughT1", "BlueN2toTthorughB1", "BlueN2toHthroughT1", "BlueN2toHthroughB1",
+      "BlueN3toTthorughT1", "BlueN3toTthorughT2", "BlueN3toTthorughB1", "BlueN3toTthorughB2",
+      "BlueN3toHthroughT1", "BlueN3toHthroughB2",
+      "BlueN4toTthorughT2", "BlueN4toHthroughT2", "BlueN4toHthroughB2",
+      "BlueN5toTthorughT2", "BlueN5toTthorughB2", "BlueN5toHthroughT2", "BlueN5toHthroughB2",
+      "BlueN6toTthorughT2", "BlueN6toTthorughB2", "BlueN6toHthroughT2", "BlueN6toHthroughB2",
+      // Hopper/other paths
+      "BlueHtoT", "BlueHtoO", "BlueHtoD",
+      "BlueHtoN1throughT1", "BlueHtoN1throughB1",
+      "BlueHtoN2throughT1", "BlueHtoN2throughB1",
+      "BlueHtoN3throughT2", "BlueHtoN3ThroughT1", "BlueHtoN3throughB2", "BlueHtoN3throughB1",
+      "BlueHtoN4throughT2", "BlueHtoN4throughT1", "BlueHtoN4throughB2", "BlueHtoN4throughB1",
+      "BlueHtoN5throughT2", "BlueHtoN5throughB2",
+      "BlueHtoN6throughT2", "BlueHtoN6throughB2",
+      // Outpost paths
+      "BlueOtoT", "BlueOtoH",
+      "BlueOtoS1", "BlueOtoS2", "BlueOtoS3", "BlueOtoS4",
+      // D paths
+      "BlueDtoT", "BlueDtoH",
+      "BlueDtoS1", "BlueDtoS2", "BlueDtoS3", "BlueDtoS4",
+      // NBlue special path
+      "NBlueN4toTthorughB2"
+    };
+    for (String pathName : pathNames) {
+      try {
+        PathPlannerPath path = PathPlannerPath.fromPathFile(pathName);
+        autoChooser.addOption("Path: " + pathName, AutoBuilder.followPath(path));
+      } catch (Exception e) {
+        System.err.println("Failed to load path: " + pathName);
+      }
+    }
 
     configureButtonBindings();
   }
