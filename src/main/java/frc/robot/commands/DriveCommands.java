@@ -68,31 +68,29 @@ public class DriveCommands {
       DoubleSupplier omegaSupplier) {
     return Commands.run(
         () -> {
-          // Get linear velocity
-          Translation2d linearVelocity =
-              getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+          // Apply deadband
+          double xRaw = MathUtil.applyDeadband(xSupplier.getAsDouble(), 0.05);
+          double yRaw = MathUtil.applyDeadband(ySupplier.getAsDouble(), 0.05);
+          double omegaRaw = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), 0.05);
 
-          // Apply rotation deadband
-          double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
+          // Square inputs for finer low-speed control while preserving sign
+          double x = Math.copySign(xRaw * xRaw * xRaw, xRaw);
+          double y = Math.copySign(yRaw * yRaw * yRaw, yRaw);
+          double omega = Math.copySign(omegaRaw * omegaRaw * omegaRaw, omegaRaw);
 
-          // Square rotation value for more precise control
-          omega = Math.copySign(omega * omega, omega);
-
-          // Convert to field relative speeds & send command
+          // Convert to field-relative speeds
           ChassisSpeeds speeds =
               new ChassisSpeeds(
-                  linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
-                  linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+                  x * drive.getMaxLinearSpeedMetersPerSec(),
+                  y * drive.getMaxLinearSpeedMetersPerSec(),
                   omega * drive.getMaxAngularSpeedRadPerSec());
           boolean isFlipped =
               DriverStation.getAlliance().isPresent()
-                  && DriverStation.getAlliance().get() == Alliance.Red;
+                  && DriverStation.getAlliance().get() == DriverStation.Alliance.Red;
           drive.runVelocity(
               ChassisSpeeds.fromFieldRelativeSpeeds(
                   speeds,
-                  isFlipped
-                      ? drive.getRotation().plus(new Rotation2d(Math.PI))
-                      : drive.getRotation()));
+                  isFlipped ? drive.getRotation().plus(Rotation2d.kPi) : drive.getRotation()));
         },
         drive);
   }

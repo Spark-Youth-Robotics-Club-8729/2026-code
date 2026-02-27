@@ -14,17 +14,14 @@ import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.PersistMode;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
-import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
 import com.revrobotics.spark.SparkBase;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkClosedLoopController;
-import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
-import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.config.AbsoluteEncoderConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkFlexConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer;
@@ -39,7 +36,7 @@ import java.util.function.DoubleSupplier;
 public class ModuleIOSpark implements ModuleIO {
   private final Rotation2d zeroRotation;
 
-  // Hardware objects
+  // Hardware objects — both drive and turn are SparkMax
   private final SparkBase driveSpark;
   private final SparkBase turnSpark;
   private final RelativeEncoder driveEncoder;
@@ -70,7 +67,7 @@ public class ModuleIOSpark implements ModuleIO {
           default -> Rotation2d.kZero;
         };
     driveSpark =
-        new SparkFlex(
+        new SparkMax(
             switch (module) {
               case 0 -> frontLeftDriveCanId;
               case 1 -> frontRightDriveCanId;
@@ -94,8 +91,8 @@ public class ModuleIOSpark implements ModuleIO {
     driveController = driveSpark.getClosedLoopController();
     turnController = turnSpark.getClosedLoopController();
 
-    // Configure drive motor
-    var driveConfig = new SparkFlexConfig();
+    // Configure drive motor — velocity in m/s, position in meters
+    var driveConfig = new SparkMaxConfig();
     driveConfig
         .idleMode(IdleMode.kBrake)
         .smartCurrentLimit(driveMotorCurrentLimit)
@@ -109,7 +106,10 @@ public class ModuleIOSpark implements ModuleIO {
     driveConfig
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-        .pid(driveKp, 0.0, driveKd);
+        .pid(driveKp, 0.0, driveKd)
+        .outputRange(-1, 1)
+        .feedForward
+        .kV(driveKv);
     driveConfig
         .signals
         .primaryEncoderPositionAlwaysOn(true)
@@ -139,13 +139,15 @@ public class ModuleIOSpark implements ModuleIO {
         .inverted(turnEncoderInverted)
         .positionConversionFactor(turnEncoderPositionFactor)
         .velocityConversionFactor(turnEncoderVelocityFactor)
-        .averageDepth(2);
+        .averageDepth(2)
+        .apply(AbsoluteEncoderConfig.Presets.REV_ThroughBoreEncoderV2);
     turnConfig
         .closedLoop
         .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
         .positionWrappingEnabled(true)
         .positionWrappingInputRange(turnPIDMinInput, turnPIDMaxInput)
-        .pid(turnKp, 0.0, turnKd);
+        .pid(turnKp, 0.0, turnKd)
+        .outputRange(-1, 1);
     turnConfig
         .signals
         .absoluteEncoderPositionAlwaysOn(true)
@@ -174,8 +176,14 @@ public class ModuleIOSpark implements ModuleIO {
   public void updateInputs(ModuleIOInputs inputs) {
     // Update drive inputs
     sparkStickyFault = false;
-    ifOk(driveSpark, driveEncoder::getPosition, (value) -> inputs.drivePositionRad = value);
-    ifOk(driveSpark, driveEncoder::getVelocity, (value) -> inputs.driveVelocityRadPerSec = value);
+    ifOk(
+        driveSpark,
+        driveEncoder::getPosition,
+        (value) -> inputs.drivePositionRad = value / wheelRadiusMeters);
+    ifOk(
+        driveSpark,
+        driveEncoder::getVelocity,
+        (value) -> inputs.driveVelocityRadPerSec = value / wheelRadiusMeters);
     ifOk(
         driveSpark,
         new DoubleSupplier[] {driveSpark::getAppliedOutput, driveSpark::getBusVoltage},
@@ -201,7 +209,9 @@ public class ModuleIOSpark implements ModuleIO {
     inputs.odometryTimestamps =
         timestampQueue.stream().mapToDouble((Double value) -> value).toArray();
     inputs.odometryDrivePositionsRad =
-        drivePositionQueue.stream().mapToDouble((Double value) -> value).toArray();
+        drivePositionQueue.stream()
+            .mapToDouble((Double value) -> value / wheelRadiusMeters)
+            .toArray();
     inputs.odometryTurnPositions =
         turnPositionQueue.stream()
             .map((Double value) -> new Rotation2d(value).minus(zeroRotation))
@@ -223,13 +233,9 @@ public class ModuleIOSpark implements ModuleIO {
 
   @Override
   public void setDriveVelocity(double velocityRadPerSec) {
-    double ffVolts = driveKs * Math.signum(velocityRadPerSec) + driveKv * velocityRadPerSec;
-    driveController.setSetpoint(
-        velocityRadPerSec,
-        ControlType.kVelocity,
-        ClosedLoopSlot.kSlot0,
-        ffVolts,
-        ArbFFUnits.kVoltage);
+    // Convert rad/sec -> m/s for the closed-loop controller (encoder is in m/s)
+    double velocityMps = velocityRadPerSec * wheelRadiusMeters;
+    driveController.setSetpoint(velocityMps, ControlType.kVelocity);
   }
 
   @Override
