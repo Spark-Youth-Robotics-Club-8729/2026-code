@@ -198,15 +198,14 @@ public class Shooter extends SubsystemBase {
     return areFlywheelsAtSpeed() && isHoodAtPosition();
   }
 
-
-  public void applyShootingParameters(
-    double hoodAngleRad,
-    double flywheelSpeedRPM) {
-
-  // Move hood to correct angle
+  /**
+   * Convenience method used by AutoShootCommand — sets hood and both flywheels in one call.
+   *
+   * @param hoodAngleRad Target hood angle in radians.
+   * @param flywheelSpeedRPM Target flywheel speed in RPM (applied to both wheels equally).
+   */
+  public void applyShootingParameters(double hoodAngleRad, double flywheelSpeedRPM) {
     setHoodPosition(hoodAngleRad);
-
-  // Spin flywheels to required speed
     setFlywheelVelocity(flywheelSpeedRPM);
-}
+  }
 }
