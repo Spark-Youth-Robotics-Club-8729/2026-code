@@ -35,7 +35,8 @@ public interface VisionIO {
       double ambiguity,
       int tagCount,
       double averageTagDistance,
-      PoseObservationType type) {}
+      PoseObservationType type,
+      double[] stdDevs) {}  // [MT1x,MT1y,MT1yaw, MT2x,MT2y,MT2yaw] from LL stddevs NT key; may be null
 
   public static enum PoseObservationType {
     MEGATAG_1,

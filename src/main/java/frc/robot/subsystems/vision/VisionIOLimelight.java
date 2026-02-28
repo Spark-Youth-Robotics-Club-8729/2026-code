@@ -11,6 +11,7 @@ import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import frc.robot.LimelightHelpers;
 import frc.robot.LimelightHelpers.RawFiducial;
 import java.util.ArrayList;
@@ -105,11 +106,33 @@ public class VisionIOLimelight implements VisionIO {
     inputs.avgTagDistance = rawFiducials.length > 0 ? totalDist / rawFiducials.length : 0.0;
 
     // -----------------------------------------------------------------------
+    // Read LL-provided standard deviations
+    // stddevs = [MT1x, MT1y, MT1z, MT1roll, MT1pitch, MT1yaw,
+    //            MT2x, MT2y, MT2z, MT2roll, MT2pitch, MT2yaw]
+    // -----------------------------------------------------------------------
+    double[] llStdDevs = NetworkTableInstance.getDefault()
+        .getTable(name)
+        .getEntry("stddevs")
+        .getDoubleArray(new double[0]);
+
+    // MT1: indices 0(x), 1(y), 5(yaw)
+    double[] mt1StdDevs = null;
+    if (llStdDevs.length >= 6) {
+      mt1StdDevs = new double[]{llStdDevs[0], llStdDevs[1], llStdDevs[5]};
+    }
+
+    // MT2: indices 6(x), 7(y), 11(yaw)
+    double[] mt2StdDevs = null;
+    if (llStdDevs.length >= 12) {
+      mt2StdDevs = new double[]{llStdDevs[6], llStdDevs[7], llStdDevs[11]};
+    }
+
+    // -----------------------------------------------------------------------
     // Pose observations — collect MegaTag1 and MegaTag2
     // -----------------------------------------------------------------------
     List<PoseObservation> observations = new ArrayList<>();
 
-    // MegaTag1 — full multi-tag 3D solve, best when 2+ tags visible
+    // MegaTag1
     var mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
     if (mt1 != null && mt1.tagCount >= megatag1MinTags && mt1.pose != null) {
       double ambiguity = (mt1.rawFiducials != null && mt1.rawFiducials.length > 0)
@@ -122,20 +145,22 @@ public class VisionIOLimelight implements VisionIO {
               ambiguity,
               mt1.tagCount,
               mt1.avgTagDist,
-              PoseObservationType.MEGATAG_1));
+              PoseObservationType.MEGATAG_1,
+              mt1StdDevs));
     }
 
-    // MegaTag2 — gyro-fused, higher accuracy, works with single tag
+    // MegaTag2
     var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(name);
     if (mt2 != null && mt2.tagCount >= megatag2MinTags && mt2.pose != null) {
       observations.add(
           new PoseObservation(
               mt2.timestampSeconds,
               new Pose3d(mt2.pose),
-              0.0, // MegaTag2 is already disambiguated
+              0.0,
               mt2.tagCount,
               mt2.avgTagDist,
-              PoseObservationType.MEGATAG_2));
+              PoseObservationType.MEGATAG_2,
+              mt2StdDevs));
     }
 
     inputs.poseObservations = observations.toArray(new PoseObservation[0]);

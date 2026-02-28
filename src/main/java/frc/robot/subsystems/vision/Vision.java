@@ -19,6 +19,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import java.util.ArrayList;
@@ -80,6 +81,40 @@ public class Vision extends SubsystemBase {
   /** Returns the average tag distance for camera 0, useful for range estimation. */
   public double getAvgTagDistance(int cameraIndex) {
     return inputs[cameraIndex].avgTagDistance;
+  }
+
+  /**
+   * Returns the average distance (meters) to visible hub AprilTags for the current alliance.
+   * Only considers tags belonging to the scoring hub the robot is shooting at.
+   * Returns {@link Double#NaN} if no relevant hub tags are visible.
+   *
+   * @param cameraIndex Camera to query.
+   */
+  public double getDistanceToHub(int cameraIndex) {
+    var alliance = DriverStation.getAlliance();
+    var hubIds = (alliance.isPresent() && alliance.get() == Alliance.Red)
+        ? VisionConstants.redHubTagIds
+        : VisionConstants.blueHubTagIds;
+
+    int[] tagIds = inputs[cameraIndex].tagIds;
+    double[] dists = inputs[cameraIndex].rawFiducialDistances;
+
+    double total = 0.0;
+    int count = 0;
+    for (int i = 0; i < tagIds.length && i < dists.length; i++) {
+      if (hubIds.contains(tagIds[i])) {
+        total += dists[i];
+        count++;
+      }
+    }
+    return count > 0 ? total / count : Double.NaN;
+  }
+
+  /**
+   * Returns true if the camera can currently see at least one hub tag for the current alliance.
+   */
+  public boolean hasHubTarget(int cameraIndex) {
+    return !Double.isNaN(getDistanceToHub(cameraIndex));
   }
 
   @Override
@@ -150,15 +185,26 @@ public class Vision extends SubsystemBase {
         }
         robotPosesAccepted.add(observation.pose());
 
-        // Calculate std devs — scale with distance² / tagCount
-        double stdDevFactor =
-            Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
-        double linearStdDev = linearStdDevBaseline * stdDevFactor * cameraStdDevFactor;
-        double angularStdDev = angularStdDevBaseline * stdDevFactor * cameraStdDevFactor;
+        // Calculate std devs — prefer LL-provided values, fall back to distance²/tagCount formula
+        double linearStdDev;
+        double angularStdDev;
 
-        if (observation.type() == PoseObservationType.MEGATAG_2) {
-          linearStdDev *= linearStdDevMegatag2Factor;
-          angularStdDev *= angularStdDevMegatag2Factor; // effectively infinite — no rotation data
+        if (observation.stdDevs() != null && observation.stdDevs().length >= 3
+            && observation.stdDevs()[0] > 0.0) {
+          // Use Limelight's own stddevs [x, y, yaw]
+          linearStdDev  = observation.stdDevs()[0]; // x ~= y for our purposes
+          angularStdDev = observation.stdDevs()[2];
+        } else {
+          // Fallback: scale with distance² / tagCount
+          double stdDevFactor =
+              Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
+          linearStdDev  = linearStdDevBaseline  * stdDevFactor * cameraStdDevFactor;
+          angularStdDev = angularStdDevBaseline * stdDevFactor * cameraStdDevFactor;
+
+          if (observation.type() == PoseObservationType.MEGATAG_2) {
+            linearStdDev  *= linearStdDevMegatag2Factor;
+            angularStdDev *= angularStdDevMegatag2Factor;
+          }
         }
 
         consumer.accept(
