@@ -19,6 +19,10 @@ public interface VisionIO {
         new TargetObservation(Rotation2d.kZero, Rotation2d.kZero);
     public PoseObservation[] poseObservations = new PoseObservation[0];
     public int[] tagIds = new int[0];
+    // LL4-specific: raw fiducial data for advanced use
+    public double[] rawFiducialDistances = new double[0]; // distToRobot per tag
+    public double avgTagDistance = 0.0;
+    public int tagCount = 0;
   }
 
   /** Represents the angle to a simple target, not used for pose estimation. */
@@ -35,8 +39,7 @@ public interface VisionIO {
 
   public static enum PoseObservationType {
     MEGATAG_1,
-    MEGATAG_2,
-    PHOTONVISION
+    MEGATAG_2
   }
 
   public default void updateInputs(VisionIOInputs inputs) {}

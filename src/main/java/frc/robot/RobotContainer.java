@@ -25,15 +25,16 @@ import frc.robot.subsystems.drive.GyroIONavX;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOSpark;
-import frc.robot.subsystems.intake.Intake;
-import frc.robot.subsystems.intake.IntakeIO;
-import frc.robot.subsystems.intake.IntakeIOHardware;
-import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.indexer.IndexerIO;
 import frc.robot.subsystems.indexer.IndexerIOSim;
 import frc.robot.subsystems.indexer.IndexerIOSparkMax;
+import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.IntakeIO;
+import frc.robot.subsystems.intake.IntakeIOHardware;
+import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.shooter.ShooterIO;
 import frc.robot.subsystems.shooter.ShooterIOKrakenX60;
 import frc.robot.subsystems.shooter.ShooterIOSim;
@@ -41,7 +42,6 @@ import frc.robot.subsystems.shooter.ShotCalculator;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
-import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 public class RobotContainer {
@@ -73,13 +73,11 @@ public class RobotContainer {
                 new ModuleIOSpark(2),
                 new ModuleIOSpark(3));
 
-        // Limelight cameras — pass rotation supplier for MegaTag 2
-        // camera0Name / camera1Name must match names in the Limelight web UI
+        // Single Limelight 4 — pass rotation supplier for MegaTag 2 and IMU assist
         vision =
             new Vision(
                 drive::addVisionMeasurement,
-                new VisionIOLimelight(camera0Name, () -> drive.getRotation()),
-                new VisionIOLimelight(camera1Name, () -> drive.getRotation()));
+                new VisionIOLimelight(camera0Name, drive::getRotation));
 
         shooter = new Shooter(new ShooterIOKrakenX60());
         intake = new Intake(new IntakeIOHardware());
@@ -95,12 +93,8 @@ public class RobotContainer {
                 new ModuleIOSim(),
                 new ModuleIOSim());
 
-        // PhotonVision sim still works great for simulation even though real robot uses Limelight
-        vision =
-            new Vision(
-                drive::addVisionMeasurement,
-                new VisionIOPhotonVisionSim(camera0Name, robotToCamera0, drive::getPose),
-                new VisionIOPhotonVisionSim(camera1Name, robotToCamera1, drive::getPose));
+        // In sim there is no Limelight hardware — use a no-op VisionIO
+        vision = new Vision(drive::addVisionMeasurement, new VisionIO() {});
 
         shooter = new Shooter(new ShooterIOSim());
         intake = new Intake(new IntakeIOSim());
@@ -116,14 +110,14 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {});
-        vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+        vision = new Vision(drive::addVisionMeasurement, new VisionIO() {});
         shooter = new Shooter(new ShooterIO() {});
         intake = new Intake(new IntakeIO() {});
         indexer = new Indexer(new IndexerIO() {});
         break;
     }
 
-    ShotCalculator.initialize(drive::getPose, SHOOT_TARGET_POSITION);
+    ShotCalculator.initialize(drive::getPose, drive::getChassisSpeeds, SHOOT_TARGET_POSITION);
 
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
     autoChooser.addOption(
@@ -284,7 +278,8 @@ public class RobotContainer {
     // X — X-pattern brake
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // Y — auto-aim to best Limelight target while driving
+    // Y — auto-aim to shoot target using ShotCalculator drive angle (field-geometry based)
+    //     More accurate than Limelight tx since it accounts for robot velocity/lookahead
     driver
         .y()
         .whileTrue(
@@ -292,7 +287,17 @@ public class RobotContainer {
                 drive,
                 () -> -driver.getLeftY(),
                 () -> -driver.getLeftX(),
-                // vision.getTargetX(0) returns the tx offset; negate to turn toward the tag
+                () -> ShotCalculator.getInstance().calculate().driveAngle()));
+
+    // Right bumper (driver) — Limelight direct tag servoing (backup/game-piece tracking)
+    driver
+        .rightBumper()
+        .whileTrue(
+            DriveCommands.joystickDriveAtAngle(
+                drive,
+                () -> -driver.getLeftY(),
+                () -> -driver.getLeftX(),
+                // Add tx offset to current heading to turn toward the tag
                 () -> drive.getRotation().plus(vision.getTargetX(0))));
 
     // -------------------------------------------------------------------------
@@ -330,19 +335,19 @@ public class RobotContainer {
                     shooter)
                 .finallyDo(shooter::stop));
 
-    // Left bumper — run intake roller only (no slapdown); stops on release
+    // Left bumper — run intake roller only; stops on release
     operator.leftBumper().whileTrue(intake.intakeCommand());
 
-    // Right bumper — feed indexer toward shooter; stops on release
+    // Right bumper (operator) — feed indexer toward shooter; stops on release
     operator.rightBumper().whileTrue(indexer.feedCommand());
 
-    // Left arrow (POV 270°) — lower slapdown arm (hopper slapdown); raises on release
+    // Left arrow (POV 270°) — lower slapdown arm; raises on release
     operator.povLeft().whileTrue(intake.slapdownDownCommand()).onFalse(intake.retractCommand());
 
     // B — outtake from intake roller
     operator.b().whileTrue(intake.outtakeCommand());
 
-    // Y — force-feed (green feeder wheels) for testing, bypasses ready checks
+    // Y — force-feed for testing, bypasses ready checks
     operator.y().whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder, shooter));
 
     // Left stick — test flywheel at default speed
@@ -350,9 +355,7 @@ public class RobotContainer {
         .leftStick()
         .whileTrue(
             Commands.startEnd(
-                () ->
-                    shooter.setFlywheelVelocity(
-                        frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM),
+                () -> shooter.setFlywheelVelocity(ShooterConstants.defaultFlywheelSpeedRPM),
                 shooter::stop,
                 shooter));
   }
@@ -361,23 +364,9 @@ public class RobotContainer {
     return autoChooser.get();
   }
 
-  public Drive getDrive() {
-    return drive;
-  }
-
-  public Vision getVision() {
-    return vision;
-  }
-
-  public Shooter getShooter() {
-    return shooter;
-  }
-
-  public Intake getIntake() {
-    return intake;
-  }
-
-  public Indexer getIndexer() {
-    return indexer;
-  }
+  public Drive getDrive() { return drive; }
+  public Vision getVision() { return vision; }
+  public Shooter getShooter() { return shooter; }
+  public Intake getIntake() { return intake; }
+  public Indexer getIndexer() { return indexer; }
 }
