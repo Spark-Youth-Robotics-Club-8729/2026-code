@@ -44,9 +44,14 @@ public class Shooter extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("Shooter", inputs);
 
-    // Stop when disabled
+    // Stop flywheels and feeder when disabled, but let hood hold position via io.stop() brake
     if (DriverStation.isDisabled()) {
-      stop();
+      leftFlywheelSetpointRPM = 0.0;
+      rightFlywheelSetpointRPM = 0.0;
+      io.setLeftFlywheelVelocity(0.0);
+      io.setRightFlywheelVelocity(0.0);
+      io.setFeederVelocity(0.0);
+      Logger.recordOutput("Shooter/FeederState", "Stopped");
     }
 
     // Hardware disconnection alerts
@@ -122,12 +127,13 @@ public class Shooter extends SubsystemBase {
     Logger.recordOutput("Shooter/FeederState", "Stopped");
   }
 
-  /** Stops all shooter motors and clears setpoints. */
+  /** Stops flywheel and hood motors and clears flywheel setpoints. Does NOT stop the feeder. */
   public void stop() {
     leftFlywheelSetpointRPM = 0.0;
     rightFlywheelSetpointRPM = 0.0;
-    io.stop();
-    Logger.recordOutput("Shooter/FeederState", "Stopped");
+    io.setLeftFlywheelVelocity(0.0);
+    io.setRightFlywheelVelocity(0.0);
+    io.setHoodPosition(hoodSetpointRad); // hold hood position, don't cut power
   }
 
   // ---------------------------------------------------------------------------
@@ -182,7 +188,7 @@ public class Shooter extends SubsystemBase {
 
   /** Returns true when both flywheels are at their setpoints. */
   public boolean areFlywheelsAtSpeed() {
-    return isLeftFlywheelAtSpeed() && isRightFlywheelAtSpeed();
+    return leftFlywheelSetpointRPM > 0.0 && isLeftFlywheelAtSpeed() && isRightFlywheelAtSpeed();
   }
 
   /**
