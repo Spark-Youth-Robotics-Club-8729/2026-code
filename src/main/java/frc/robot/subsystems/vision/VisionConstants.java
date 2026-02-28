@@ -13,7 +13,7 @@ import edu.wpi.first.apriltag.AprilTagFields;
 public class VisionConstants {
   // AprilTag layout
     public static AprilTagFieldLayout aprilTagLayout =
-        AprilTagFieldLayout.loadField(AprilTagFields.k2026Rebuilt);
+        AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
   // Limelight 4 camera name — must match the name set in the Limelight web UI
   public static String camera0Name = "limelight";

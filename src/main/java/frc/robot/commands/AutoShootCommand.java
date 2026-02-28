@@ -1,95 +1,92 @@
 package frc.robot.commands;
 
+import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.math.geometry.Translation2d;
-
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.indexer.Indexer;
+import frc.robot.subsystems.indexer.Indexer.IndexerGoal;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShotCalculator;
-import frc.robot.subsystems.Index.IndexerSubsystem;
 
 
+/**
+ * Automatically aims the robot at the shoot target, spins up the shooter to the
+ * correct speed/hood angle, and feeds when ready. Runs while button held.
+ *
+ * <p>Uses the same ProfiledPIDController angle-control approach as
+ * {@link DriveCommands#joystickDriveAtAngle}, but with zero translation (robot
+ * stays still). Bind via {@code .whileTrue()}.
+ */
 public class AutoShootCommand extends Command {
+
+  // Match the PID constants used in DriveCommands
+  private static final double ANGLE_KP = 5.0;
+  private static final double ANGLE_KD = 0.4;
+  private static final double ANGLE_MAX_VELOCITY = 8.0;     // rad/s
+  private static final double ANGLE_MAX_ACCELERATION = 20.0; // rad/s²
 
   private final Drive drive;
   private final Shooter shooter;
-  private final IndexerSubsystem indexer;
+  private final Indexer indexer;
 
-  // HUB FIELD POSITION (meters)
-  // TODO: Replace with official 2026 coordinates later
-  private final Translation2d hubPosition =
-      new Translation2d(8.25, 4.10);
+  private final ProfiledPIDController angleController =
+      new ProfiledPIDController(
+          ANGLE_KP,
+          0.0,
+          ANGLE_KD,
+          new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
 
-  public AutoShootCommand(
-      Drive drive,
-      Shooter shooter,
-      IndexerSubsystem indexer) {
-
+  public AutoShootCommand(Drive drive, Shooter shooter, Indexer indexer) {
     this.drive = drive;
     this.shooter = shooter;
     this.indexer = indexer;
+    addRequirements(drive, shooter, indexer);
+    angleController.enableContinuousInput(-Math.PI, Math.PI);
+  }
 
-    addRequirements(shooter, indexer, drive);
+  @Override
+  public void initialize() {
+    angleController.reset(drive.getRotation().getRadians());
   }
 
   @Override
   public void execute() {
+    var params = ShotCalculator.getInstance().calculate();
 
-    
-    // Calculate shooting parameters based on robot position
-    ShotCalculator calculator = ShotCalculator.getInstance();
-    var params = calculator.calculate();
-
-    // If robot is outside shooting range → stop shooter
+    // Outside valid range — stop everything and wait
     if (!params.isValid()) {
       shooter.stop();
-      indexer.stoprotate();
+      indexer.setGoal(IndexerGoal.STOP);
+      drive.stop();
       return;
     }
 
+    // Set hood + flywheels via the convenience method
+    shooter.applyShootingParameters(params.hoodAngleRad(), params.flywheelSpeedRPM());
 
-    //Automatically set hood angle + flywheel speed
-    shooter.applyShootingParameters(
-        params.hoodAngleRad(),
-        params.flywheelSpeedRPM());
+    // Rotate toward target using ProfiledPIDController — no translation
+    double omega =
+        angleController.calculate(
+            drive.getRotation().getRadians(), params.driveAngle().getRadians());
+    drive.runVelocity(new ChassisSpeeds(0.0, 0.0, omega));
 
-
-    // rotate robot toward HUB
-
-    var pose = drive.getPose();
-
-    Translation2d robotToHub =
-        hubPosition.minus(pose.getTranslation());
-
-    double desiredAngle =
-        Math.atan2(robotToHub.getY(), robotToHub.getX());
-
-    drive.autoRotateToAngle(desiredAngle);
-
-    
-    // Feed note ONLY when shooter is ready
-    
+    // Feed only when fully ready (flywheels at speed + hood at angle)
     if (shooter.isReadyToShoot()) {
-
-      // Green feeder wheels inside shooter
       shooter.feedNote();
-
-      // Main indexer pushing balls upward
-      indexer.rotate();
-
+      indexer.setGoal(IndexerGoal.FEED);
     } else {
-
       shooter.stopFeeder();
-      indexer.stoprotate();
+      indexer.setGoal(IndexerGoal.STOP);
     }
   }
 
   @Override
   public void end(boolean interrupted) {
-
-    // Stop everything when button released
     shooter.stop();
-    indexer.stoprotate();
+    indexer.setGoal(IndexerGoal.STOP);
+    drive.stop();
   }
 
   @Override

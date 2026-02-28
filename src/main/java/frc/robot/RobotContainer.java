@@ -60,11 +60,8 @@ public class RobotContainer {
   // Dashboard
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  private final AutoShootCommand autoShootCommand =
-    new AutoShootCommand(drive, shooter, indexer);
-
   // TODO: Set to the actual field position of your shoot target (e.g. speaker center)
-  private static final Translation2d SHOOT_TARGET_POSITION = new Translation2d(0.0, 5.55);
+  private static final Translation2d SHOOT_TARGET_POSITION = new Translation2d(8.25, 4.10);
 
   public RobotContainer() {
     switch (Constants.currentMode) {
@@ -121,11 +118,8 @@ public class RobotContainer {
         break;
     }
 
+    // Single initialize call — use the hub position directly
     ShotCalculator.initialize(drive::getPose, drive::getChassisSpeeds, SHOOT_TARGET_POSITION);
-
-    ShotCalculator.initialize(
-      drive::getPose,
-      new Translation2d(8.25, 4.10)); // HUB position
 
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
     autoChooser.addOption(
@@ -366,8 +360,11 @@ public class RobotContainer {
                 () -> shooter.setFlywheelVelocity(ShooterConstants.defaultFlywheelSpeedRPM),
                 shooter::stop,
                 shooter));
-      operatorController.a()
-        .whileTrue(autoShootCommand);
+
+    // Operator A — full auto-shoot (aim + spin up + feed)
+    operator
+        .a()
+        .whileTrue(new AutoShootCommand(drive, shooter, indexer));
   }
 
   public Command getAutonomousCommand() {

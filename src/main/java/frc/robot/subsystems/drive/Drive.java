@@ -279,12 +279,6 @@ public class Drive extends SubsystemBase {
     return output;
   }
 
-  /** Returns the current odometry pose. */
-  @AutoLogOutput(key = "Odometry/Robot")
-  public Pose2d getPose() {
-    return poseEstimator.getEstimatedPosition();
-  }
-
   /** Returns the current odometry rotation. */
   public Rotation2d getRotation() {
     return getPose().getRotation();
@@ -314,22 +308,9 @@ public class Drive extends SubsystemBase {
     return maxSpeedMetersPerSec / driveBaseRadius;
   }
 
-
+  /** Returns the current odometry pose. */
+  @AutoLogOutput(key = "Odometry/Robot")
   public Pose2d getPose() {
     return poseEstimator.getEstimatedPosition();
   }
-
-  public void autoRotateToAngle(double targetAngleRad) {
-
-    double current = getPose().getRotation().getRadians();
-
-    double error = targetAngleRad - current;
-
-  // simple proportional control (easy to tune)
-    double kP = 4.0;
-
-    double omega = kP * error;
-
-    runVelocity(new ChassisSpeeds(0.0, 0.0, omega));
-}
 }
