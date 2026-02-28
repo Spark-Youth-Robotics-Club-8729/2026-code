@@ -358,7 +358,7 @@ public class RobotContainer {
     operator
         .y()
         .whileTrue(
-            Commands.startEnd(shooter::feedNote, shooter::stopFeeder, shooter));
+            Commands.startEnd(shooter::feedNote, shooter::stopFeeder));
 
     // Right Bumper — indexer only
     operator.rightBumper().whileTrue(indexer.feedCommand());

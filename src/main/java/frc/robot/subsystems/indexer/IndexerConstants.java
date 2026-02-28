@@ -9,7 +9,7 @@ package frc.robot.subsystems.indexer;
 
 public class IndexerConstants {
   // CAN ID
-  public static final int motorID = 41; // TODO: confirm CAN ID
+  public static final int motorID = 22;
 
   // CAN bus ("rio" for roboRIO bus, or CANivore name)
   public static final String canBus = "rio";
