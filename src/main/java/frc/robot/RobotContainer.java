@@ -25,6 +25,10 @@ import frc.robot.subsystems.drive.GyroIONavX;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOSpark;
+import frc.robot.subsystems.indexer.Indexer;
+import frc.robot.subsystems.indexer.IndexerIO;
+import frc.robot.subsystems.indexer.IndexerIOSim;
+import frc.robot.subsystems.indexer.IndexerIOSparkMax;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.intake.IntakeIOHardware;
@@ -46,6 +50,7 @@ public class RobotContainer {
   private final Vision vision;
   private final Shooter shooter;
   private final Intake intake;
+  private final Indexer indexer;
 
   // Controllers
   private final CommandXboxController driver = new CommandXboxController(0);
@@ -78,6 +83,7 @@ public class RobotContainer {
 
         shooter = new Shooter(new ShooterIOKrakenX60());
         intake = new Intake(new IntakeIOHardware());
+        indexer = new Indexer(new IndexerIOSparkMax());
         break;
 
       case SIM:
@@ -98,6 +104,7 @@ public class RobotContainer {
 
         shooter = new Shooter(new ShooterIOSim());
         intake = new Intake(new IntakeIOSim());
+        indexer = new Indexer(new IndexerIOSim());
         break;
 
       default:
@@ -112,6 +119,7 @@ public class RobotContainer {
         vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
         shooter = new Shooter(new ShooterIO() {});
         intake = new Intake(new IntakeIO() {});
+        indexer = new Indexer(new IndexerIO() {});
         break;
     }
 
@@ -284,7 +292,6 @@ public class RobotContainer {
                 drive,
                 () -> -driver.getLeftY(),
                 () -> -driver.getLeftX(),
-                // vision.getTargetX(0) returns the tx offset; negate to turn toward the tag
                 () -> drive.getRotation().plus(vision.getTargetX(0))));
 
     // -------------------------------------------------------------------------
@@ -325,30 +332,14 @@ public class RobotContainer {
     // Left bumper — run intake roller only (no slapdown); stops on release
     operator.leftBumper().whileTrue(intake.intakeCommand());
 
-    // Right bumper — manual feeder (commented out — hopper indexer subsystem not yet implemented)
-    // operator
-    //     .rightBumper()
-    //     .whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder, shooter));
+    // Right bumper — feed indexer toward shooter; stops on release
+    operator.rightBumper().whileTrue(indexer.feedCommand());
 
-    // Left arrow (POV 270°) — lower slapdown arm only (hopper down); raises on release
-    operator.povLeft().whileTrue(intake.slapdownDownCommand()).onFalse(intake.retractCommand());
+    // Left arrow (POV 270°) — lower slapdown arm (hopper slapdown); raises on release
+    operator.povLeft().whileTrue(intake.slapdownDownCommand());
 
     // B — outtake from intake roller
     operator.b().whileTrue(intake.outtakeCommand());
-
-    // Y — force-feed (green feeder wheels) for testing, bypasses ready checks
-    operator.y().whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder, shooter));
-
-    // Left stick — test flywheel at default speed
-    operator
-        .leftStick()
-        .whileTrue(
-            Commands.startEnd(
-                () ->
-                    shooter.setFlywheelVelocity(
-                        frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM),
-                shooter::stop,
-                shooter));
   }
 
   public Command getAutonomousCommand() {
@@ -369,5 +360,9 @@ public class RobotContainer {
 
   public Intake getIntake() {
     return intake;
+  }
+
+  public Indexer getIndexer() {
+    return indexer;
   }
 }

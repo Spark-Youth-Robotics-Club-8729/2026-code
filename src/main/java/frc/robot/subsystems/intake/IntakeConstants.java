@@ -11,12 +11,12 @@ import edu.wpi.first.math.util.Units;
 
 public class IntakeConstants {
   // CAN IDs
-  public static final int rollerMotorID = 20; // TODO: Set actual CAN ID
-  public static final int slapdownMotorID = 21; // TODO: Set actual CAN ID
+  public static final int rollerMotorID = 20;
+  public static final int slapdownMotorID = 21;
   public static final String canBus = "rio"; // Change to "canivore" if needed
 
   // Slapdown gear ratio (motor rotations per mechanism rotation)
-  public static final double slapdownGearRatio = 1.0; // TODO: Set actual gear ratio
+  public static final double slapdownGearRatio = 270.0; // 9 x 5 x 3 x 2
 
   // Slapdown angle limits (radians, at the mechanism after gear reduction)
   public static final double slapdownUpAngleRad = Units.degreesToRadians(0.0); // TODO: Set actual
@@ -24,7 +24,7 @@ public class IntakeConstants {
       Units.degreesToRadians(90.0); // TODO: Set actual
 
   // Slapdown PID gains
-  public static final double slapdownKp = 0.0; // TODO: Tune
+  public static final double slapdownKp = 0.5; // TODO: Tune
   public static final double slapdownKd = 0.5; // TODO: Tune
 
   // Slapdown tolerance
