@@ -204,9 +204,8 @@ public class Intake extends SubsystemBase {
         () -> setRollerGoal(RollerGoal.OUTTAKE), () -> setRollerGoal(RollerGoal.STOP), this);
   }
 
-  /** Lowers the slapdown arm only, without running the roller. Raises again on release. */
+  /** Lowers the slapdown arm only, without running the roller. */
   public Command slapdownDownCommand() {
-    return Commands.startEnd(
-        () -> setSlapdownGoal(SlapdownGoal.DOWN), () -> setSlapdownGoal(SlapdownGoal.UP), this);
+    return Commands.runOnce(() -> setSlapdownGoal(SlapdownGoal.DOWN), this);
   }
 }

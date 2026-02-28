@@ -175,5 +175,7 @@ public class ShooterIOSim implements ShooterIO {
     leftFlywheelSetpointRPM = 0.0;
     rightFlywheelSetpointRPM = 0.0;
     feederSetpointRPM = 0.0;
+    // Hold hood at current position rather than letting it fall
+    hoodSetpointRad = hoodSim.getAngleRads();
   }
 }

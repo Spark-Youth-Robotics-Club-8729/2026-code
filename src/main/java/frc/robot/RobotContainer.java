@@ -263,53 +263,40 @@ public class RobotContainer {
         DriveCommands.joystickDrive(
             drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
 
-    // A — lock heading to 0°
-    driver
-        .a()
-        .whileTrue(
-            DriveCommands.joystickDriveAtAngle(
-                drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> Rotation2d.kZero));
+    driver.a().whileTrue(
+        DriveCommands.joystickDriveAtAngle(
+            drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> Rotation2d.kZero));
 
-    // B — reset gyro to 0°
-    driver
-        .b()
-        .onTrue(
-            Commands.runOnce(
-                    () ->
-                        drive.setPose(
-                            new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
-                    drive)
-                .ignoringDisable(true));
+    driver.b().onTrue(
+        Commands.runOnce(
+                () -> drive.setPose(
+                    new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)), drive)
+            .ignoringDisable(true));
 
-    // X — X-pattern brake
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // Y — auto-aim to best Limelight target while driving
-    driver
-        .y()
-        .whileTrue(
-            DriveCommands.joystickDriveAtAngle(
-                drive,
-                () -> -driver.getLeftY(),
-                () -> -driver.getLeftX(),
-                () -> drive.getRotation().plus(vision.getTargetX(0))));
+    driver.y().whileTrue(
+        DriveCommands.joystickDriveAtAngle(
+            drive,
+            () -> -driver.getLeftY(),
+            () -> -driver.getLeftX(),
+            () -> drive.getRotation().plus(vision.getTargetX(0))));
 
     // -------------------------------------------------------------------------
     // OPERATOR (port 1)
     //
-    // Button layout:
-    //   Right Trigger — EVERYTHING: aim + spin flywheels + green feeder + indexer (when ready)
-    //   Left Trigger  — AIM ONLY: spin flywheels + move hood (no feeding)
-    //   Y             — GREEN FEEDER WHEELS only (force-feed, bypasses ready check)
-    //   Right Bumper  — INDEXER only (feed toward shooter)
-    //   Left Bumper   — INTAKE roller only
-    //   B             — INTAKE outtake
-    //   POV Up        — SLAPDOWN UP (raise arm)
-    //   POV Down      — SLAPDOWN DOWN (lower arm)
-    //   Left Stick    — TEST flywheels at default speed
+    // Right Trigger — EVERYTHING: flywheels + hood + feeder + indexer (when ready)
+    // Left Trigger  — AIM: flywheels + hood only (no feeding)
+    // Y             — FEEDER WHEELS only (no requirement — won't interrupt flywheel commands)
+    // Right Bumper  — INDEXER only
+    // Left Bumper   — INTAKE roller only
+    // B             — INTAKE outtake
+    // POV Down      — SLAPDOWN DOWN
+    // POV Up        — SLAPDOWN UP
+    // Left Stick    — TEST flywheels at default speed
     // -------------------------------------------------------------------------
 
-    // Right Trigger — full shot sequence: aim + spin + green feeder + indexer when ready
+    // Right Trigger — EVERYTHING when ready
     operator
         .rightTrigger(0.5)
         .whileTrue(
@@ -335,13 +322,13 @@ public class RobotContainer {
                           }
                         },
                         indexer))
-                .finallyDo(
-                    () -> {
-                      shooter.stop();
-                      indexer.stop();
-                    }));
+                .finallyDo(() -> {
+                  shooter.stop();
+                  shooter.stopFeeder();
+                  indexer.stop();
+                }));
 
-    // Left Trigger — aim only: spin flywheels + move hood (no feeding)
+    // Left Trigger — AIM only: flywheels + hood, no feeding
     operator
         .leftTrigger(0.5)
         .whileTrue(
@@ -352,37 +339,44 @@ public class RobotContainer {
                       shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
                     },
                     shooter)
-                .finallyDo(shooter::stop));
+                .finallyDo(() -> {
+                  shooter.stop();
+                  shooter.stopFeeder();
+                }));
 
-    // Y — green feeder wheels only (force-feed for testing, does NOT interrupt flywheel command)
+    // Y — FEEDER WHEELS only (no subsystem requirement — coexists with flywheel commands)
     operator
         .y()
         .whileTrue(
-            Commands.startEnd(shooter::feedNote, shooter::stopFeeder));
+            Commands.startEnd(
+                shooter::feedNote,
+                shooter::stopFeeder
+                // intentionally no subsystem requirement so it doesn't interrupt
+                // left/right trigger flywheel commands
+            ));
 
-    // Right Bumper — indexer only
+    // Right Bumper — INDEXER only
     operator.rightBumper().whileTrue(indexer.feedCommand());
 
-    // Left Bumper — intake roller only
+    // Left Bumper — INTAKE roller only
     operator.leftBumper().whileTrue(intake.intakeCommand());
 
-    // B — outtake from intake roller
+    // B — INTAKE outtake
     operator.b().whileTrue(intake.outtakeCommand());
 
-    // POV Down — lower slapdown arm
+    // POV Down — SLAPDOWN DOWN
     operator.povDown().onTrue(intake.slapdownDownCommand());
 
-    // POV Up — raise slapdown arm
+    // POV Up — SLAPDOWN UP
     operator.povUp().onTrue(intake.retractCommand());
 
-    // Left Stick — test flywheels at default speed
+    // Left Stick — TEST flywheels at default speed
     operator
         .leftStick()
         .whileTrue(
             Commands.startEnd(
-                () ->
-                    shooter.setFlywheelVelocity(
-                        frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM),
+                () -> shooter.setFlywheelVelocity(
+                    frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM),
                 shooter::stop,
                 shooter));
   }
