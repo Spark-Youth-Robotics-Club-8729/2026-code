@@ -11,8 +11,8 @@ import edu.wpi.first.math.util.Units;
 
 public class IntakeConstants {
   // CAN IDs
-  public static final int rollerMotorID = 20;
-  public static final int slapdownMotorID = 21;
+  public static final int rollerMotorID = 20; // TODO: Set actual CAN ID
+  public static final int slapdownMotorID = 21; // TODO: Set actual CAN ID
   public static final String canBus = "rio"; // Change to "canivore" if needed
 
   // Slapdown gear ratio (motor rotations per mechanism rotation)

@@ -25,14 +25,14 @@ import frc.robot.subsystems.drive.GyroIONavX;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOSpark;
-import frc.robot.subsystems.indexer.Indexer;
-import frc.robot.subsystems.indexer.IndexerIO;
-import frc.robot.subsystems.indexer.IndexerIOSim;
-import frc.robot.subsystems.indexer.IndexerIOSparkMax;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.intake.IntakeIOHardware;
 import frc.robot.subsystems.intake.IntakeIOSim;
+import frc.robot.subsystems.indexer.Indexer;
+import frc.robot.subsystems.indexer.IndexerIO;
+import frc.robot.subsystems.indexer.IndexerIOSim;
+import frc.robot.subsystems.indexer.IndexerIOSparkMax;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterIO;
 import frc.robot.subsystems.shooter.ShooterIOKrakenX60;
@@ -292,6 +292,7 @@ public class RobotContainer {
                 drive,
                 () -> -driver.getLeftY(),
                 () -> -driver.getLeftX(),
+                // vision.getTargetX(0) returns the tx offset; negate to turn toward the tag
                 () -> drive.getRotation().plus(vision.getTargetX(0))));
 
     // -------------------------------------------------------------------------
@@ -336,10 +337,24 @@ public class RobotContainer {
     operator.rightBumper().whileTrue(indexer.feedCommand());
 
     // Left arrow (POV 270°) — lower slapdown arm (hopper slapdown); raises on release
-    operator.povLeft().whileTrue(intake.slapdownDownCommand());
+    operator.povLeft().whileTrue(intake.slapdownDownCommand()).onFalse(intake.retractCommand());
 
     // B — outtake from intake roller
     operator.b().whileTrue(intake.outtakeCommand());
+
+    // Y — force-feed (green feeder wheels) for testing, bypasses ready checks
+    operator.y().whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder, shooter));
+
+    // Left stick — test flywheel at default speed
+    operator
+        .leftStick()
+        .whileTrue(
+            Commands.startEnd(
+                () ->
+                    shooter.setFlywheelVelocity(
+                        frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM),
+                shooter::stop,
+                shooter));
   }
 
   public Command getAutonomousCommand() {
