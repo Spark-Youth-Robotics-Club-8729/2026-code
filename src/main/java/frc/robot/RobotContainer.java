@@ -292,27 +292,24 @@ public class RobotContainer {
                 drive,
                 () -> -driver.getLeftY(),
                 () -> -driver.getLeftX(),
-                // vision.getTargetX(0) returns the tx offset; negate to turn toward the tag
                 () -> drive.getRotation().plus(vision.getTargetX(0))));
 
     // -------------------------------------------------------------------------
     // OPERATOR (port 1)
+    //
+    // Button layout:
+    //   Right Trigger — EVERYTHING: aim + spin flywheels + green feeder + indexer (when ready)
+    //   Left Trigger  — AIM ONLY: spin flywheels + move hood (no feeding)
+    //   Y             — GREEN FEEDER WHEELS only (force-feed, bypasses ready check)
+    //   Right Bumper  — INDEXER only (feed toward shooter)
+    //   Left Bumper   — INTAKE roller only
+    //   B             — INTAKE outtake
+    //   POV Up        — SLAPDOWN UP (raise arm)
+    //   POV Down      — SLAPDOWN DOWN (lower arm)
+    //   Left Stick    — TEST flywheels at default speed
     // -------------------------------------------------------------------------
 
-    // Left trigger — aim (spin up flywheels + move hood to calculated position, no feed)
-    operator
-        .leftTrigger(0.5)
-        .whileTrue(
-            Commands.run(
-                    () -> {
-                      var params = ShotCalculator.getInstance().calculate();
-                      shooter.setHoodPosition(params.hoodAngleRad());
-                      shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
-                    },
-                    shooter)
-                .finallyDo(shooter::stop));
-
-    // Right trigger — shoot (spin up + aim + feed when ready)
+    // Right Trigger — full shot sequence: aim + spin + green feeder + indexer when ready
     operator
         .rightTrigger(0.5)
         .whileTrue(
@@ -328,24 +325,57 @@ public class RobotContainer {
                       }
                     },
                     shooter)
+                .alongWith(
+                    Commands.run(
+                        () -> {
+                          if (shooter.isReadyToShoot()) {
+                            indexer.feed();
+                          } else {
+                            indexer.stop();
+                          }
+                        },
+                        indexer))
+                .finallyDo(
+                    () -> {
+                      shooter.stop();
+                      indexer.stop();
+                    }));
+
+    // Left Trigger — aim only: spin flywheels + move hood (no feeding)
+    operator
+        .leftTrigger(0.5)
+        .whileTrue(
+            Commands.run(
+                    () -> {
+                      var params = ShotCalculator.getInstance().calculate();
+                      shooter.setHoodPosition(params.hoodAngleRad());
+                      shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
+                    },
+                    shooter)
                 .finallyDo(shooter::stop));
 
-    // Left bumper — run intake roller only (no slapdown); stops on release
-    operator.leftBumper().whileTrue(intake.intakeCommand());
+    // Y — green feeder wheels only (force-feed for testing, does NOT interrupt flywheel command)
+    operator
+        .y()
+        .whileTrue(
+            Commands.startEnd(shooter::feedNote, shooter::stopFeeder, shooter));
 
-    // Right bumper — feed indexer toward shooter; stops on release
+    // Right Bumper — indexer only
     operator.rightBumper().whileTrue(indexer.feedCommand());
 
-    // Left arrow (POV 270°) — lower slapdown arm (hopper slapdown); raises on release
-    operator.povLeft().whileTrue(intake.slapdownDownCommand()).onFalse(intake.retractCommand());
+    // Left Bumper — intake roller only
+    operator.leftBumper().whileTrue(intake.intakeCommand());
 
     // B — outtake from intake roller
     operator.b().whileTrue(intake.outtakeCommand());
 
-    // Y — force-feed (green feeder wheels) for testing, bypasses ready checks
-    operator.y().whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder, shooter));
+    // POV Down — lower slapdown arm
+    operator.povDown().onTrue(intake.slapdownDownCommand());
 
-    // Left stick — test flywheel at default speed
+    // POV Up — raise slapdown arm
+    operator.povUp().onTrue(intake.retractCommand());
+
+    // Left Stick — test flywheels at default speed
     operator
         .leftStick()
         .whileTrue(
