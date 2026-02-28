@@ -313,4 +313,23 @@ public class Drive extends SubsystemBase {
   public double getMaxAngularSpeedRadPerSec() {
     return maxSpeedMetersPerSec / driveBaseRadius;
   }
+
+
+  public Pose2d getPose() {
+    return poseEstimator.getEstimatedPosition();
+  }
+
+  public void autoRotateToAngle(double targetAngleRad) {
+
+    double current = getPose().getRotation().getRadians();
+
+    double error = targetAngleRad - current;
+
+  // simple proportional control (easy to tune)
+    double kP = 4.0;
+
+    double omega = kP * error;
+
+    runVelocity(new ChassisSpeeds(0.0, 0.0, omega));
+}
 }

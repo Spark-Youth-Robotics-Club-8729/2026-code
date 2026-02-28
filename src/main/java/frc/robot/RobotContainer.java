@@ -43,6 +43,7 @@ import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+import frc.robot.commands.AutoShootCommand;
 
 public class RobotContainer {
   // Subsystems
@@ -58,6 +59,9 @@ public class RobotContainer {
 
   // Dashboard
   private final LoggedDashboardChooser<Command> autoChooser;
+
+  private final AutoShootCommand autoShootCommand =
+    new AutoShootCommand(drive, shooter, indexer);
 
   // TODO: Set to the actual field position of your shoot target (e.g. speaker center)
   private static final Translation2d SHOOT_TARGET_POSITION = new Translation2d(0.0, 5.55);
@@ -118,6 +122,10 @@ public class RobotContainer {
     }
 
     ShotCalculator.initialize(drive::getPose, drive::getChassisSpeeds, SHOOT_TARGET_POSITION);
+
+    ShotCalculator.initialize(
+      drive::getPose,
+      new Translation2d(8.25, 4.10)); // HUB position
 
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
     autoChooser.addOption(
@@ -358,6 +366,8 @@ public class RobotContainer {
                 () -> shooter.setFlywheelVelocity(ShooterConstants.defaultFlywheelSpeedRPM),
                 shooter::stop,
                 shooter));
+      operatorController.a()
+        .whileTrue(autoShootCommand);
   }
 
   public Command getAutonomousCommand() {
