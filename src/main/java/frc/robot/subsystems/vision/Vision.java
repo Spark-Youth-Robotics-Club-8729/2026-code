@@ -59,16 +59,14 @@ public class Vision extends SubsystemBase {
   }
 
   /**
-   * Returns the X angle to the best target from the specified camera index.
-   * Useful for simple servoing (e.g. auto-aim while driving).
+   * Returns the X angle to the best target from the specified camera index. Useful for simple
+   * servoing (e.g. auto-aim while driving).
    */
   public Rotation2d getTargetX(int cameraIndex) {
     return inputs[cameraIndex].latestTargetObservation.tx();
   }
 
-  /**
-   * Returns the Y angle to the best target from the specified camera index.
-   */
+  /** Returns the Y angle to the best target from the specified camera index. */
   public Rotation2d getTargetY(int cameraIndex) {
     return inputs[cameraIndex].latestTargetObservation.ty();
   }
@@ -84,17 +82,18 @@ public class Vision extends SubsystemBase {
   }
 
   /**
-   * Returns the average distance (meters) to visible hub AprilTags for the current alliance.
-   * Only considers tags belonging to the scoring hub the robot is shooting at.
-   * Returns {@link Double#NaN} if no relevant hub tags are visible.
+   * Returns the average distance (meters) to visible hub AprilTags for the current alliance. Only
+   * considers tags belonging to the scoring hub the robot is shooting at. Returns {@link
+   * Double#NaN} if no relevant hub tags are visible.
    *
    * @param cameraIndex Camera to query.
    */
   public double getDistanceToHub(int cameraIndex) {
     var alliance = DriverStation.getAlliance();
-    var hubIds = (alliance.isPresent() && alliance.get() == Alliance.Red)
-        ? VisionConstants.redHubTagIds
-        : VisionConstants.blueHubTagIds;
+    var hubIds =
+        (alliance.isPresent() && alliance.get() == Alliance.Red)
+            ? VisionConstants.redHubTagIds
+            : VisionConstants.blueHubTagIds;
 
     int[] tagIds = inputs[cameraIndex].tagIds;
     double[] dists = inputs[cameraIndex].rawFiducialDistances;
@@ -110,9 +109,7 @@ public class Vision extends SubsystemBase {
     return count > 0 ? total / count : Double.NaN;
   }
 
-  /**
-   * Returns true if the camera can currently see at least one hub tag for the current alliance.
-   */
+  /** Returns true if the camera can currently see at least one hub tag for the current alliance. */
   public boolean hasHubTarget(int cameraIndex) {
     return !Double.isNaN(getDistanceToHub(cameraIndex));
   }
@@ -189,20 +186,21 @@ public class Vision extends SubsystemBase {
         double linearStdDev;
         double angularStdDev;
 
-        if (observation.stdDevs() != null && observation.stdDevs().length >= 3
+        if (observation.stdDevs() != null
+            && observation.stdDevs().length >= 3
             && observation.stdDevs()[0] > 0.0) {
           // Use Limelight's own stddevs [x, y, yaw]
-          linearStdDev  = observation.stdDevs()[0]; // x ~= y for our purposes
+          linearStdDev = observation.stdDevs()[0]; // x ~= y for our purposes
           angularStdDev = observation.stdDevs()[2];
         } else {
           // Fallback: scale with distance² / tagCount
           double stdDevFactor =
               Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
-          linearStdDev  = linearStdDevBaseline  * stdDevFactor * cameraStdDevFactor;
+          linearStdDev = linearStdDevBaseline * stdDevFactor * cameraStdDevFactor;
           angularStdDev = angularStdDevBaseline * stdDevFactor * cameraStdDevFactor;
 
           if (observation.type() == PoseObservationType.MEGATAG_2) {
-            linearStdDev  *= linearStdDevMegatag2Factor;
+            linearStdDev *= linearStdDevMegatag2Factor;
             angularStdDev *= angularStdDevMegatag2Factor;
           }
         }
@@ -214,13 +212,22 @@ public class Vision extends SubsystemBase {
       }
 
       // Per-camera logging
-      Logger.recordOutput("Vision/Camera" + cameraIndex + "/TagPoses", tagPoses.toArray(new Pose3d[0]));
-      Logger.recordOutput("Vision/Camera" + cameraIndex + "/RobotPoses", robotPoses.toArray(new Pose3d[0]));
-      Logger.recordOutput("Vision/Camera" + cameraIndex + "/RobotPosesAccepted", robotPosesAccepted.toArray(new Pose3d[0]));
-      Logger.recordOutput("Vision/Camera" + cameraIndex + "/RobotPosesRejected", robotPosesRejected.toArray(new Pose3d[0]));
-      Logger.recordOutput("Vision/Camera" + cameraIndex + "/TagCount", inputs[cameraIndex].tagCount);
-      Logger.recordOutput("Vision/Camera" + cameraIndex + "/AvgTagDistance", inputs[cameraIndex].avgTagDistance);
-      Logger.recordOutput("Vision/Camera" + cameraIndex + "/HasTarget", inputs[cameraIndex].tagCount > 0);
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/TagPoses", tagPoses.toArray(new Pose3d[0]));
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/RobotPoses", robotPoses.toArray(new Pose3d[0]));
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/RobotPosesAccepted",
+          robotPosesAccepted.toArray(new Pose3d[0]));
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/RobotPosesRejected",
+          robotPosesRejected.toArray(new Pose3d[0]));
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/TagCount", inputs[cameraIndex].tagCount);
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/AvgTagDistance", inputs[cameraIndex].avgTagDistance);
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/HasTarget", inputs[cameraIndex].tagCount > 0);
 
       allTagPoses.addAll(tagPoses);
       allRobotPoses.addAll(robotPoses);
@@ -231,8 +238,10 @@ public class Vision extends SubsystemBase {
     // Summary logging
     Logger.recordOutput("Vision/Summary/TagPoses", allTagPoses.toArray(new Pose3d[0]));
     Logger.recordOutput("Vision/Summary/RobotPoses", allRobotPoses.toArray(new Pose3d[0]));
-    Logger.recordOutput("Vision/Summary/RobotPosesAccepted", allRobotPosesAccepted.toArray(new Pose3d[0]));
-    Logger.recordOutput("Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
+    Logger.recordOutput(
+        "Vision/Summary/RobotPosesAccepted", allRobotPosesAccepted.toArray(new Pose3d[0]));
+    Logger.recordOutput(
+        "Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
   }
 
   @FunctionalInterface

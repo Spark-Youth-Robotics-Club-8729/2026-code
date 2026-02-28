@@ -10,11 +10,11 @@ import frc.robot.subsystems.vision.Vision;
  *   d = (targetHeightIn - cameraHeightIn) / tan(mountAngleDeg + tyDeg)
  * </pre>
  *
- * <p>All height values are in inches for ease of physical measurement;
- * the returned distance is in meters.
+ * <p>All height values are in inches for ease of physical measurement; the returned distance is in
+ * meters.
  *
- * <p>This is only meaningful when the camera mount height differs noticeably
- * from the target height. If heights are similar, use target area instead.
+ * <p>This is only meaningful when the camera mount height differs noticeably from the target
+ * height. If heights are similar, use target area instead.
  */
 public class LimelightDistanceEstimator {
 
@@ -28,8 +28,8 @@ public class LimelightDistanceEstimator {
   private final double targetHeightInches;
 
   /**
-   * Angle of the camera above perfectly horizontal (degrees, positive = tilted up).
-   * TODO: measure on real robot
+   * Angle of the camera above perfectly horizontal (degrees, positive = tilted up). TODO: measure
+   * on real robot
    */
   private final double mountAngleDegrees;
 
@@ -47,8 +47,8 @@ public class LimelightDistanceEstimator {
   }
 
   /**
-   * Returns estimated distance from the camera to the target in meters.
-   * Returns {@link Double#NaN} if no target is visible or the geometry is degenerate.
+   * Returns estimated distance from the camera to the target in meters. Returns {@link Double#NaN}
+   * if no target is visible or the geometry is degenerate.
    */
   public double getDistanceMeters() {
     if (!vision.hasTarget(cameraIndex)) {
@@ -67,9 +67,7 @@ public class LimelightDistanceEstimator {
     return Units.inchesToMeters(distanceInches);
   }
 
-  /**
-   * Returns estimated distance in inches, or {@link Double#NaN} if unavailable.
-   */
+  /** Returns estimated distance in inches, or {@link Double#NaN} if unavailable. */
   public double getDistanceInches() {
     double meters = getDistanceMeters();
     return Double.isNaN(meters) ? Double.NaN : Units.metersToInches(meters);

@@ -24,8 +24,8 @@ import java.util.function.Supplier;
  * VisionIO implementation for Limelight 4.
  *
  * <p>Uses LimelightHelpers for all NT communication. Runs both MegaTag1 (multi-tag, full 3D solve)
- * and MegaTag2 (gyro-fused, higher accuracy). LL4 internal IMU is seeded from the robot gyro
- * while disabled, then switched to internal+assist mode when enabled.
+ * and MegaTag2 (gyro-fused, higher accuracy). LL4 internal IMU is seeded from the robot gyro while
+ * disabled, then switched to internal+assist mode when enabled.
  */
 public class VisionIOLimelight implements VisionIO {
   private final String name;
@@ -45,8 +45,8 @@ public class VisionIOLimelight implements VisionIO {
   }
 
   /**
-   * Call once while disabled to seed the LL4 internal IMU from the robot gyro and put the camera
-   * in the correct IMU mode.
+   * Call once while disabled to seed the LL4 internal IMU from the robot gyro and put the camera in
+   * the correct IMU mode.
    */
   public void seedIMU() {
     LimelightHelpers.SetIMUMode(name, imuModeDisabled);
@@ -110,21 +110,22 @@ public class VisionIOLimelight implements VisionIO {
     // stddevs = [MT1x, MT1y, MT1z, MT1roll, MT1pitch, MT1yaw,
     //            MT2x, MT2y, MT2z, MT2roll, MT2pitch, MT2yaw]
     // -----------------------------------------------------------------------
-    double[] llStdDevs = NetworkTableInstance.getDefault()
-        .getTable(name)
-        .getEntry("stddevs")
-        .getDoubleArray(new double[0]);
+    double[] llStdDevs =
+        NetworkTableInstance.getDefault()
+            .getTable(name)
+            .getEntry("stddevs")
+            .getDoubleArray(new double[0]);
 
     // MT1: indices 0(x), 1(y), 5(yaw)
     double[] mt1StdDevs = null;
     if (llStdDevs.length >= 6) {
-      mt1StdDevs = new double[]{llStdDevs[0], llStdDevs[1], llStdDevs[5]};
+      mt1StdDevs = new double[] {llStdDevs[0], llStdDevs[1], llStdDevs[5]};
     }
 
     // MT2: indices 6(x), 7(y), 11(yaw)
     double[] mt2StdDevs = null;
     if (llStdDevs.length >= 12) {
-      mt2StdDevs = new double[]{llStdDevs[6], llStdDevs[7], llStdDevs[11]};
+      mt2StdDevs = new double[] {llStdDevs[6], llStdDevs[7], llStdDevs[11]};
     }
 
     // -----------------------------------------------------------------------
@@ -135,9 +136,10 @@ public class VisionIOLimelight implements VisionIO {
     // MegaTag1
     var mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
     if (mt1 != null && mt1.tagCount >= megatag1MinTags && mt1.pose != null) {
-      double ambiguity = (mt1.rawFiducials != null && mt1.rawFiducials.length > 0)
-          ? mt1.rawFiducials[0].ambiguity
-          : 0.0;
+      double ambiguity =
+          (mt1.rawFiducials != null && mt1.rawFiducials.length > 0)
+              ? mt1.rawFiducials[0].ambiguity
+              : 0.0;
       observations.add(
           new PoseObservation(
               mt1.timestampSeconds,

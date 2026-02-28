@@ -155,8 +155,7 @@ public class ShotCalculator {
     double tof = timeOfFlightMap.get(finalDistance);
 
     // Drive angle: aim robot center at target from the lookahead position
-    Rotation2d driveAngle =
-        targetPosition.minus(lookaheadTranslation).getAngle();
+    Rotation2d driveAngle = targetPosition.minus(lookaheadTranslation).getAngle();
 
     boolean isValid = finalDistance >= minDistance && finalDistance <= maxDistance;
     double hoodAngle = hoodAngleMap.get(finalDistance) + Units.degreesToRadians(hoodAngleOffsetDeg);
@@ -166,8 +165,8 @@ public class ShotCalculator {
         new ShootingParameters(isValid, hoodAngle, flywheelSpeed, finalDistance, tof, driveAngle);
 
     Logger.recordOutput("ShotCalculator/DistanceToTarget", finalDistance);
-    Logger.recordOutput("ShotCalculator/DistanceNoLookahead",
-        pose.getTranslation().getDistance(targetPosition));
+    Logger.recordOutput(
+        "ShotCalculator/DistanceNoLookahead", pose.getTranslation().getDistance(targetPosition));
     Logger.recordOutput("ShotCalculator/IsValid", isValid);
     Logger.recordOutput("ShotCalculator/HoodAngleRad", hoodAngle);
     Logger.recordOutput("ShotCalculator/FlywheelSpeedRPM", flywheelSpeed);
@@ -208,21 +207,23 @@ public class ShotCalculator {
   }
 
   /**
-   * Calculates shooting parameters directly from a vision-measured distance.
-   * Bypasses the lookahead and pose math — use when the LL4 can see hub tags
-   * and provides a reliable direct range.
+   * Calculates shooting parameters directly from a vision-measured distance. Bypasses the lookahead
+   * and pose math — use when the LL4 can see hub tags and provides a reliable direct range.
    *
    * @param distanceMeters Direct distance to the hub (e.g. from avgTagDistance).
-   * @param driveAngle     Desired robot heading toward the hub.
+   * @param driveAngle Desired robot heading toward the hub.
    * @return ShootingParameters with isValid based on range limits.
    */
-  public ShootingParameters calculateFromDistance(double distanceMeters, edu.wpi.first.math.geometry.Rotation2d driveAngle) {
+  public ShootingParameters calculateFromDistance(
+      double distanceMeters, edu.wpi.first.math.geometry.Rotation2d driveAngle) {
     boolean isValid = distanceMeters >= minDistance && distanceMeters <= maxDistance;
-    double hoodAngle = hoodAngleMap.get(distanceMeters) + Units.degreesToRadians(hoodAngleOffsetDeg);
+    double hoodAngle =
+        hoodAngleMap.get(distanceMeters) + Units.degreesToRadians(hoodAngleOffsetDeg);
     double flywheelSpeed = flywheelSpeedMap.get(distanceMeters);
     double tof = timeOfFlightMap.get(distanceMeters);
 
-    var params = new ShootingParameters(isValid, hoodAngle, flywheelSpeed, distanceMeters, tof, driveAngle);
+    var params =
+        new ShootingParameters(isValid, hoodAngle, flywheelSpeed, distanceMeters, tof, driveAngle);
 
     Logger.recordOutput("ShotCalculator/VisionDistance/DistanceM", distanceMeters);
     Logger.recordOutput("ShotCalculator/VisionDistance/IsValid", isValid);
@@ -233,8 +234,8 @@ public class ShotCalculator {
   }
 
   /**
-   * Returns the hub target position for the current alliance.
-   * Falls back to the configured targetPosition if alliance is unknown.
+   * Returns the hub target position for the current alliance. Falls back to the configured
+   * targetPosition if alliance is unknown.
    */
   public Translation2d getAllianceHubPosition() {
     var alliance = DriverStation.getAlliance();

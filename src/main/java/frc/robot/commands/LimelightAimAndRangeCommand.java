@@ -7,18 +7,18 @@ import frc.robot.subsystems.vision.Vision;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * Uses Limelight TX for aiming and TY for range adjustment simultaneously.
- * The robot drives toward/away from the target and rotates to face it.
- * No driver translation input — robot moves autonomously.
+ * Uses Limelight TX for aiming and TY for range adjustment simultaneously. The robot drives
+ * toward/away from the target and rotates to face it. No driver translation input — robot moves
+ * autonomously.
  *
  * <p>Useful for auto-align sequences. Bind via {@code .whileTrue()}.
  */
 public class LimelightAimAndRangeCommand extends Command {
 
-  private static final double KP_AIM      = 0.035;
+  private static final double KP_AIM = 0.035;
   private static final double KP_DISTANCE = 0.1;
   private static final double MIN_AIM_COMMAND_RAD_S = 0.3;
-  private static final double AIM_DEAD_BAND_DEG  = 1.0;
+  private static final double AIM_DEAD_BAND_DEG = 1.0;
   private static final double RANGE_DEAD_BAND_DEG = 1.0;
 
   private final Drive drive;

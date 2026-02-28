@@ -12,9 +12,9 @@ import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * Drives the robot while using proportional control to aim at the best Limelight target.
- * TX from the Limelight replaces the driver's rotation input.
- * If no target is visible, the robot spins slowly to seek.
+ * Drives the robot while using proportional control to aim at the best Limelight target. TX from
+ * the Limelight replaces the driver's rotation input. If no target is visible, the robot spins
+ * slowly to seek.
  *
  * <p>Bind via {@code .whileTrue()}.
  */
@@ -41,11 +41,11 @@ public class LimelightAimCommand extends Command {
   private final SlewRateLimiter yLimiter = new SlewRateLimiter(3.0);
 
   /**
-   * @param drive         The drive subsystem.
-   * @param vision        The vision subsystem.
-   * @param cameraIndex   Which camera to use (0 = camera0Name).
-   * @param xSupplier     Driver left-Y (forward/back).
-   * @param ySupplier     Driver left-X (strafe).
+   * @param drive The drive subsystem.
+   * @param vision The vision subsystem.
+   * @param cameraIndex Which camera to use (0 = camera0Name).
+   * @param xSupplier Driver left-Y (forward/back).
+   * @param ySupplier Driver left-X (strafe).
    */
   public LimelightAimCommand(
       Drive drive,

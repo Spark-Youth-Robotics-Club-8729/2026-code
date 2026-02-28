@@ -10,12 +10,12 @@ import frc.robot.subsystems.shooter.ShotCalculator;
 import frc.robot.subsystems.vision.Vision;
 import org.littletonrobotics.junction.Logger;
 
-
 /**
- * Automatically aims the robot at the shoot target using Limelight TX for visual servoing,
- * spins up the shooter to the correct speed/hood angle via ShotCalculator, and feeds when ready.
+ * Automatically aims the robot at the shoot target using Limelight TX for visual servoing, spins up
+ * the shooter to the correct speed/hood angle via ShotCalculator, and feeds when ready.
  *
  * <p>Aiming strategy:
+ *
  * <ul>
  *   <li>If a Limelight target is visible: proportional TX control rotates the robot toward the
  *       target (fast, direct visual feedback — no field-pose math needed).
@@ -45,13 +45,14 @@ public class AutoShootCommand extends Command {
   private final int cameraIndex;
 
   /**
-   * @param drive         Drive subsystem.
-   * @param shooter       Shooter subsystem.
-   * @param indexer       Indexer subsystem.
-   * @param vision        Vision subsystem (for TX-based aiming).
-   * @param cameraIndex   Which camera to use for aiming (0 = camera0Name).
+   * @param drive Drive subsystem.
+   * @param shooter Shooter subsystem.
+   * @param indexer Indexer subsystem.
+   * @param vision Vision subsystem (for TX-based aiming).
+   * @param cameraIndex Which camera to use for aiming (0 = camera0Name).
    */
-  public AutoShootCommand(Drive drive, Shooter shooter, Indexer indexer, Vision vision, int cameraIndex) {
+  public AutoShootCommand(
+      Drive drive, Shooter shooter, Indexer indexer, Vision vision, int cameraIndex) {
     this.drive = drive;
     this.shooter = shooter;
     this.indexer = indexer;
@@ -119,12 +120,12 @@ public class AutoShootCommand extends Command {
     drive.runVelocity(new ChassisSpeeds(0.0, 0.0, omega));
 
     // ---- Gyro rate guard (from Limelight localization example) ----
-    double gyroRateDegS = Math.toDegrees(
-        Math.abs(drive.getChassisSpeeds().omegaRadiansPerSecond));
+    double gyroRateDegS = Math.toDegrees(Math.abs(drive.getChassisSpeeds().omegaRadiansPerSecond));
     boolean spinningTooFast = gyroRateDegS > MAX_FEED_GYRO_RATE_DEG_S;
 
     // ---- Feed only when fully aligned and ready ----
-    boolean aimed = hasTarget && Math.abs(vision.getTargetX(cameraIndex).getDegrees()) < AIM_DEAD_BAND_DEG;
+    boolean aimed =
+        hasTarget && Math.abs(vision.getTargetX(cameraIndex).getDegrees()) < AIM_DEAD_BAND_DEG;
     boolean readyToFeed = aimed && shooter.isReadyToShoot() && !spinningTooFast;
 
     if (readyToFeed) {
@@ -134,14 +135,18 @@ public class AutoShootCommand extends Command {
     } else {
       shooter.stopFeeder();
       indexer.setGoal(IndexerGoal.STOP);
-      Logger.recordOutput("AutoShoot/State",
-          !hasTarget ? "Seeking" :
-          spinningTooFast ? "SpinningTooFast" :
-          !shooter.isReadyToShoot() ? "SpinningUp" : "Aligning");
+      Logger.recordOutput(
+          "AutoShoot/State",
+          !hasTarget
+              ? "Seeking"
+              : spinningTooFast
+                  ? "SpinningTooFast"
+                  : !shooter.isReadyToShoot() ? "SpinningUp" : "Aligning");
     }
 
     Logger.recordOutput("AutoShoot/HasTarget", hasTarget);
-    Logger.recordOutput("AutoShoot/TXDeg", hasTarget ? vision.getTargetX(cameraIndex).getDegrees() : 0.0);
+    Logger.recordOutput(
+        "AutoShoot/TXDeg", hasTarget ? vision.getTargetX(cameraIndex).getDegrees() : 0.0);
     Logger.recordOutput("AutoShoot/OmegaRadS", omega);
     Logger.recordOutput("AutoShoot/GyroRateDegS", gyroRateDegS);
     Logger.recordOutput("AutoShoot/Aimed", aimed);
