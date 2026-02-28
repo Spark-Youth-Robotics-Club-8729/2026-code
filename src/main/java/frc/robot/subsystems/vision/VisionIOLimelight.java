@@ -74,6 +74,10 @@ public class VisionIOLimelight implements VisionIO {
     List<PoseObservation> poseObservations = new LinkedList<>();
     for (var rawSample : megatag1Subscriber.readQueue()) {
       if (rawSample.value.length == 0) continue;
+      
+      // Ignore invalid zero poses sometimes sent by Limelight when no tags are visible
+      if (rawSample.value[0] == 0.0 && rawSample.value[1] == 0.0) continue;
+
       for (int i = 11; i < rawSample.value.length; i += 7) {
         tagIds.add((int) rawSample.value[i]);
       }

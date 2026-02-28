@@ -197,4 +197,16 @@ public class Shooter extends SubsystemBase {
   public boolean isReadyToShoot() {
     return areFlywheelsAtSpeed() && isHoodAtPosition();
   }
+
+
+  public void applyShootingParameters(
+    double hoodAngleRad,
+    double flywheelSpeedRPM) {
+
+  // Move hood to correct angle
+    setHoodPosition(hoodAngleRad);
+
+  // Spin flywheels to required speed
+    setFlywheelVelocity(flywheelSpeedRPM);
+}
 }
