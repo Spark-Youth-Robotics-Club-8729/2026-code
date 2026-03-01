@@ -282,6 +282,37 @@ public class DriveCommands {
                     })));
   }
 
+  /** Robot-relative joystick drive — no field rotation applied. */
+  public static Command joystickDriveRobotRelative(
+      Drive drive,
+      DoubleSupplier xSupplier,
+      DoubleSupplier ySupplier,
+      DoubleSupplier omegaSupplier) {
+    return Commands.run(
+        () -> {
+          double x = xSupplier.getAsDouble();
+          double y = ySupplier.getAsDouble();
+          double omega = omegaSupplier.getAsDouble();
+
+          // Apply deadband
+          double linearMagnitude = MathUtil.applyDeadband(Math.hypot(x, y), DEADBAND);
+          double rawOmega = MathUtil.applyDeadband(omega, DEADBAND);
+
+          // Square inputs for finer control at low speeds
+          linearMagnitude = linearMagnitude * linearMagnitude;
+          double omegaScaled = Math.copySign(rawOmega * rawOmega, rawOmega);
+
+          // Reconstruct x/y from magnitude (no field rotation)
+          double angle = Math.atan2(y, x);
+          double vx = linearMagnitude * Math.cos(angle) * drive.getMaxLinearSpeedMetersPerSec();
+          double vy = linearMagnitude * Math.sin(angle) * drive.getMaxLinearSpeedMetersPerSec();
+          double vomega = omegaScaled * drive.getMaxAngularSpeedRadPerSec();
+
+          drive.runVelocity(new ChassisSpeeds(vx, vy, vomega));
+        },
+        drive);
+  }
+
   private static class WheelRadiusCharacterizationState {
     double[] positions = new double[4];
     Rotation2d lastAngle = Rotation2d.kZero;

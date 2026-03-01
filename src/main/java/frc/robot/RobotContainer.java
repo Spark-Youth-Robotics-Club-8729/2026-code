@@ -282,7 +282,7 @@ public class RobotContainer {
     // -------------------------------------------------------------------------
 
     drive.setDefaultCommand(
-        DriveCommands.joystickDrive(
+        DriveCommands.joystickDriveRobotRelative(
             drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
 
     driver
@@ -327,13 +327,18 @@ public class RobotContainer {
     //
     // Right Trigger — EVERYTHING: flywheels + hood + feeder + indexer (when ready)
     // Left Trigger  — AIM: flywheels + hood only (no feeding)
-    // Y             — FEEDER WHEELS only (no requirement — won't interrupt flywheel commands)
+    // Y             — FEEDER WHEELS only
     // Right Bumper  — INDEXER only
     // Left Bumper   — INTAKE roller only
     // B             — INTAKE outtake
+    // X             — SLAPDOWN DOWN
+    // Right Stick   — SLAPDOWN UP / retract
     // POV Down      — SLAPDOWN DOWN
     // POV Up        — SLAPDOWN UP
+    // POV Left      — cycle shoot preset DOWN
+    // POV Right     — cycle shoot preset UP
     // Left Stick    — TEST flywheels at default speed
+    // A             — Full auto-shoot
     // -------------------------------------------------------------------------
 
     // Right Trigger — EVERYTHING when ready (uses manual preset)
@@ -393,32 +398,52 @@ public class RobotContainer {
                 shooter::stopFeeder
             ));
 
-    // Right Bumper — INDEXER only
-    operator.rightBumper().whileTrue(indexer.feedCommand());
+    // Right Bumper — INTAKE IN
+    operator.rightBumper().whileTrue(intake.intakeCommand());
 
-    // Left Bumper — INTAKE roller only
-    operator.leftBumper().whileTrue(intake.intakeCommand());
+    // Left Bumper — INTAKE OUT
+    operator.leftBumper().whileTrue(intake.outtakeCommand());
 
-    // B — INTAKE outtake
-    operator.b().whileTrue(intake.outtakeCommand());
+    // B — INDEXER IN
+    operator.b().whileTrue(indexer.feedCommand());
 
-    // POV Down — cycle shoot preset DOWN
-    operator.povDown().onTrue(
-        Commands.runOnce(() -> {
-          shootPresetIndex = Math.max(0, shootPresetIndex - 1);
-          System.out.println("Shoot preset: " + shootPresetIndex
-              + " | Hood: " + Math.toDegrees(SHOOT_PRESETS[shootPresetIndex][0])
-              + "deg | RPM: " + SHOOT_PRESETS[shootPresetIndex][1]);
-        }));
+    // POV Down — SLAPDOWN DOWN
+    operator.povDown().onTrue(intake.slapdownDownCommand());
 
-    // POV Up — cycle shoot preset UP
-    operator.povUp().onTrue(
-        Commands.runOnce(() -> {
-          shootPresetIndex = Math.min(SHOOT_PRESETS.length - 1, shootPresetIndex + 1);
-          System.out.println("Shoot preset: " + shootPresetIndex
-              + " | Hood: " + Math.toDegrees(SHOOT_PRESETS[shootPresetIndex][0])
-              + "deg | RPM: " + SHOOT_PRESETS[shootPresetIndex][1]);
-        }));
+    // POV Up — SLAPDOWN UP
+    operator.povUp().onTrue(intake.retractCommand());
+
+    // POV Left — cycle shoot preset DOWN
+    operator
+        .povLeft()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  shootPresetIndex = Math.max(0, shootPresetIndex - 1);
+                  System.out.println(
+                      "Shoot preset: "
+                          + shootPresetIndex
+                          + " | Hood: "
+                          + Math.toDegrees(SHOOT_PRESETS[shootPresetIndex][0])
+                          + "deg | RPM: "
+                          + SHOOT_PRESETS[shootPresetIndex][1]);
+                }));
+
+    // POV Right — cycle shoot preset UP
+    operator
+        .povRight()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  shootPresetIndex = Math.min(SHOOT_PRESETS.length - 1, shootPresetIndex + 1);
+                  System.out.println(
+                      "Shoot preset: "
+                          + shootPresetIndex
+                          + " | Hood: "
+                          + Math.toDegrees(SHOOT_PRESETS[shootPresetIndex][0])
+                          + "deg | RPM: "
+                          + SHOOT_PRESETS[shootPresetIndex][1]);
+                }));
 
     // Left Stick — TEST flywheels at default speed
     operator
