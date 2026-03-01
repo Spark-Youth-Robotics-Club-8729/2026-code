@@ -14,6 +14,7 @@ import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -62,6 +63,15 @@ public class RobotContainer {
 
   // TODO: Set to the actual field position of your shoot target (e.g. speaker center)
   private static final Translation2d SHOOT_TARGET_POSITION = new Translation2d(8.25, 4.10);
+
+  // Manual preset shooting positions for bench/garage testing (no field target needed)
+  // { hoodAngleRad, flywheelRPM }
+  private static final double[][] SHOOT_PRESETS = {
+    { Units.degreesToRadians(15.0), 2000.0 }, // Preset 0: close
+    { Units.degreesToRadians(30.0), 3000.0 }, // Preset 1: mid
+    { Units.degreesToRadians(45.0), 4000.0 }, // Preset 2: far
+  };
+  private int shootPresetIndex = 0;
 
   public RobotContainer() {
     switch (Constants.currentMode) {
@@ -292,19 +302,18 @@ public class RobotContainer {
     // Left Stick    — TEST flywheels at default speed
     // -------------------------------------------------------------------------
 
-    // Right Trigger — EVERYTHING when ready
+    // Right Trigger — EVERYTHING when ready (uses manual preset)
     operator
         .rightTrigger(0.5)
         .whileTrue(
             Commands.run(
                     () -> {
-                      var params = ShotCalculator.getInstance().calculate();
-                      shooter.setHoodPosition(params.hoodAngleRad());
-                      shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
-                      if (params.isValid() && shooter.isReadyToShoot()) {
+                      shooter.setHoodPosition(SHOOT_PRESETS[shootPresetIndex][0]);
+                      shooter.setFlywheelVelocity(SHOOT_PRESETS[shootPresetIndex][1]);
+                      if (shooter.isReadyToShoot()) {
                         shooter.feedNote();
-                      } else {
-                        shooter.stopFeeder();
+                        // Don't call stopFeeder() in the else branch —
+                        // doing so would stomp on the Y-button feeder command every loop.
                       }
                     },
                     shooter)
@@ -324,20 +333,20 @@ public class RobotContainer {
                   indexer.stop();
                 }));
 
-    // Left Trigger — AIM only: flywheels + hood, no feeding
+    // Left Trigger — AIM only: flywheels + hood, no feeding (uses manual preset)
     operator
         .leftTrigger(0.5)
         .whileTrue(
             Commands.run(
                     () -> {
-                      var params = ShotCalculator.getInstance().calculate();
-                      shooter.setHoodPosition(params.hoodAngleRad());
-                      shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
+                      shooter.setHoodPosition(SHOOT_PRESETS[shootPresetIndex][0]);
+                      shooter.setFlywheelVelocity(SHOOT_PRESETS[shootPresetIndex][1]);
                     },
                     shooter)
                 .finallyDo(() -> {
                   shooter.stop();
-                  shooter.stopFeeder();
+                  // Do NOT call stopFeeder() here — left trigger never owned the feeder,
+                  // and calling it would interrupt a concurrent Y-button feed.
                 }));
 
     // Y — FEEDER WHEELS only (no subsystem requirement — coexists with flywheel commands)
@@ -360,11 +369,23 @@ public class RobotContainer {
     // B — INTAKE outtake
     operator.b().whileTrue(intake.outtakeCommand());
 
-    // POV Down — SLAPDOWN DOWN
-    operator.povDown().onTrue(intake.slapdownDownCommand());
+    // POV Down — cycle shoot preset DOWN
+    operator.povDown().onTrue(
+        Commands.runOnce(() -> {
+          shootPresetIndex = Math.max(0, shootPresetIndex - 1);
+          System.out.println("Shoot preset: " + shootPresetIndex
+              + " | Hood: " + Math.toDegrees(SHOOT_PRESETS[shootPresetIndex][0])
+              + "deg | RPM: " + SHOOT_PRESETS[shootPresetIndex][1]);
+        }));
 
-    // POV Up — SLAPDOWN UP
-    operator.povUp().onTrue(intake.retractCommand());
+    // POV Up — cycle shoot preset UP
+    operator.povUp().onTrue(
+        Commands.runOnce(() -> {
+          shootPresetIndex = Math.min(SHOOT_PRESETS.length - 1, shootPresetIndex + 1);
+          System.out.println("Shoot preset: " + shootPresetIndex
+              + " | Hood: " + Math.toDegrees(SHOOT_PRESETS[shootPresetIndex][0])
+              + "deg | RPM: " + SHOOT_PRESETS[shootPresetIndex][1]);
+        }));
 
     // Left Stick — TEST flywheels at default speed
     operator
