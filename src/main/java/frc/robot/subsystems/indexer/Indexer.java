@@ -71,7 +71,10 @@ public class Indexer extends SubsystemBase {
     this.goal = goal;
   }
 
-  /** Feeds notes toward the shooter. Call from within a command that already requires this subsystem. */
+  /**
+   * Feeds notes toward the shooter. Call from within a command that already requires this
+   * subsystem.
+   */
   public void feed() {
     setGoal(IndexerGoal.FEED);
   }

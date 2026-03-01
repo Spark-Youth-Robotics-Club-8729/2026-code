@@ -13,12 +13,14 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.commands.AutoShootCommand;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.LimelightAimAndRangeCommand;
+import frc.robot.commands.LimelightAimCommand;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIONavX;
@@ -34,16 +36,16 @@ import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.intake.IntakeIOHardware;
 import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.shooter.Shooter;
-import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.shooter.ShooterIO;
 import frc.robot.subsystems.shooter.ShooterIOKrakenX60;
 import frc.robot.subsystems.shooter.ShooterIOSim;
 import frc.robot.subsystems.shooter.ShotCalculator;
 import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionConstants;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
+import frc.robot.util.LimelightDistanceEstimator;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-import frc.robot.commands.AutoShootCommand;
 
 public class RobotContainer {
   // Subsystems
@@ -60,8 +62,8 @@ public class RobotContainer {
   // Dashboard
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  // TODO: Set to the actual field position of your shoot target (e.g. speaker center)
-  private static final Translation2d SHOOT_TARGET_POSITION = new Translation2d(8.25, 4.10);
+  // Distance estimator — TODO: fill in real measurements before competition
+  private final LimelightDistanceEstimator distanceEstimator;
 
   public RobotContainer() {
     switch (Constants.currentMode) {
@@ -118,8 +120,15 @@ public class RobotContainer {
         break;
     }
 
-    // Single initialize call — use the hub position directly
-    ShotCalculator.initialize(drive::getPose, drive::getChassisSpeeds, SHOOT_TARGET_POSITION);
+    // Alliance-aware hub position supplier — ShotCalculator.getAllianceHubPosition() handles
+    // the per-alliance lookup, but we still need an initial Translation2d for the constructor.
+    // We pass a lambda so the pose supplier always reads the latest estimated position,
+    // and use the blue hub as the default (will be corrected once DS connects).
+    ShotCalculator.initialize(
+        drive::getPose,
+        drive::getChassisSpeeds,
+        VisionConstants
+            .BLUE_HUB_POSITION); // default; getAllianceHubPosition() overrides at runtime
 
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
     autoChooser.addOption(
@@ -247,6 +256,13 @@ public class RobotContainer {
       }
     }
 
+    // Distance estimator (only meaningful on real hardware; values are placeholders)
+    distanceEstimator =
+        new LimelightDistanceEstimator(
+            vision, 0, 20.0, // TODO: camera height above floor (inches)
+            60.0, // TODO: target height above floor (inches)
+            25.0); // TODO: camera mount angle above horizontal (degrees)
+
     configureButtonBindings();
   }
 
@@ -259,24 +275,42 @@ public class RobotContainer {
         DriveCommands.joystickDrive(
             drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
 
-    driver.a().whileTrue(
-        DriveCommands.joystickDriveAtAngle(
-            drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> Rotation2d.kZero));
+    driver
+        .a()
+        .whileTrue(
+            DriveCommands.joystickDriveAtAngle(
+                drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> Rotation2d.kZero));
 
-    driver.b().onTrue(
-        Commands.runOnce(
-                () -> drive.setPose(
-                    new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)), drive)
-            .ignoringDisable(true));
+    driver
+        .b()
+        .onTrue(
+            Commands.runOnce(
+                    () ->
+                        drive.setPose(
+                            new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
+                    drive)
+                .ignoringDisable(true));
 
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    driver.y().whileTrue(
-        DriveCommands.joystickDriveAtAngle(
-            drive,
-            () -> -driver.getLeftY(),
-            () -> -driver.getLeftX(),
-            () -> drive.getRotation().plus(vision.getTargetX(0))));
+    driver
+        .y()
+        .whileTrue(
+            DriveCommands.joystickDriveAtAngle(
+                drive,
+                () -> -driver.getLeftY(),
+                () -> -driver.getLeftX(),
+                () -> drive.getRotation().plus(vision.getTargetX(0))));
+
+    // Driver LEFT BUMPER — Limelight proportional aim + driver translation
+    driver
+        .leftBumper()
+        .whileTrue(
+            new LimelightAimCommand(
+                drive, vision, 0, () -> -driver.getLeftY(), () -> -driver.getLeftX()));
+
+    // Driver RIGHT BUMPER — Limelight aim + auto range (no translation)
+    driver.rightBumper().whileTrue(new LimelightAimAndRangeCommand(drive, vision, 0));
 
     // -------------------------------------------------------------------------
     // OPERATOR (port 1)
@@ -318,11 +352,12 @@ public class RobotContainer {
                           }
                         },
                         indexer))
-                .finallyDo(() -> {
-                  shooter.stop();
-                  shooter.stopFeeder();
-                  indexer.stop();
-                }));
+                .finallyDo(
+                    () -> {
+                      shooter.stop();
+                      shooter.stopFeeder();
+                      indexer.stop();
+                    }));
 
     // Left Trigger — AIM only: flywheels + hood, no feeding
     operator
@@ -335,21 +370,21 @@ public class RobotContainer {
                       shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
                     },
                     shooter)
-                .finallyDo(() -> {
-                  shooter.stop();
-                  shooter.stopFeeder();
-                }));
+                .finallyDo(
+                    () -> {
+                      shooter.stop();
+                      shooter.stopFeeder();
+                    }));
 
     // Y — FEEDER WHEELS only (no subsystem requirement — coexists with flywheel commands)
     operator
         .y()
         .whileTrue(
             Commands.startEnd(
-                shooter::feedNote,
-                shooter::stopFeeder
+                shooter::feedNote, shooter::stopFeeder
                 // intentionally no subsystem requirement so it doesn't interrupt
                 // left/right trigger flywheel commands
-            ));
+                ));
 
     // Right Bumper — INDEXER only
     operator.rightBumper().whileTrue(indexer.feedCommand());
@@ -371,24 +406,41 @@ public class RobotContainer {
         .leftStick()
         .whileTrue(
             Commands.startEnd(
-                () -> shooter.setFlywheelVelocity(
-                    frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM),
+                () ->
+                    shooter.setFlywheelVelocity(
+                        frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM),
                 shooter::stop,
                 shooter));
 
-    // Operator A — full auto-shoot (aim + spin up + feed)
-    operator
-        .a()
-        .whileTrue(new AutoShootCommand(drive, shooter, indexer));
+    // Operator A — full auto-shoot (visual TX aim + spin up + feed)
+    operator.a().whileTrue(new AutoShootCommand(drive, shooter, indexer, vision, 0));
   }
 
   public Command getAutonomousCommand() {
     return autoChooser.get();
   }
 
-  public Drive getDrive() { return drive; }
-  public Vision getVision() { return vision; }
-  public Shooter getShooter() { return shooter; }
-  public Intake getIntake() { return intake; }
-  public Indexer getIndexer() { return indexer; }
+  public Drive getDrive() {
+    return drive;
+  }
+
+  public Vision getVision() {
+    return vision;
+  }
+
+  public Shooter getShooter() {
+    return shooter;
+  }
+
+  public Intake getIntake() {
+    return intake;
+  }
+
+  public Indexer getIndexer() {
+    return indexer;
+  }
+
+  public LimelightDistanceEstimator getDistanceEstimator() {
+    return distanceEstimator;
+  }
 }

@@ -13,6 +13,8 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -153,8 +155,7 @@ public class ShotCalculator {
     double tof = timeOfFlightMap.get(finalDistance);
 
     // Drive angle: aim robot center at target from the lookahead position
-    Rotation2d driveAngle =
-        targetPosition.minus(lookaheadTranslation).getAngle();
+    Rotation2d driveAngle = targetPosition.minus(lookaheadTranslation).getAngle();
 
     boolean isValid = finalDistance >= minDistance && finalDistance <= maxDistance;
     double hoodAngle = hoodAngleMap.get(finalDistance) + Units.degreesToRadians(hoodAngleOffsetDeg);
@@ -164,8 +165,8 @@ public class ShotCalculator {
         new ShootingParameters(isValid, hoodAngle, flywheelSpeed, finalDistance, tof, driveAngle);
 
     Logger.recordOutput("ShotCalculator/DistanceToTarget", finalDistance);
-    Logger.recordOutput("ShotCalculator/DistanceNoLookahead",
-        pose.getTranslation().getDistance(targetPosition));
+    Logger.recordOutput(
+        "ShotCalculator/DistanceNoLookahead", pose.getTranslation().getDistance(targetPosition));
     Logger.recordOutput("ShotCalculator/IsValid", isValid);
     Logger.recordOutput("ShotCalculator/HoodAngleRad", hoodAngle);
     Logger.recordOutput("ShotCalculator/FlywheelSpeedRPM", flywheelSpeed);
@@ -203,5 +204,46 @@ public class ShotCalculator {
   /** Returns the target field position. */
   public Translation2d getTargetPosition() {
     return targetPosition;
+  }
+
+  /**
+   * Calculates shooting parameters directly from a vision-measured distance. Bypasses the lookahead
+   * and pose math — use when the LL4 can see hub tags and provides a reliable direct range.
+   *
+   * @param distanceMeters Direct distance to the hub (e.g. from avgTagDistance).
+   * @param driveAngle Desired robot heading toward the hub.
+   * @return ShootingParameters with isValid based on range limits.
+   */
+  public ShootingParameters calculateFromDistance(
+      double distanceMeters, edu.wpi.first.math.geometry.Rotation2d driveAngle) {
+    boolean isValid = distanceMeters >= minDistance && distanceMeters <= maxDistance;
+    double hoodAngle =
+        hoodAngleMap.get(distanceMeters) + Units.degreesToRadians(hoodAngleOffsetDeg);
+    double flywheelSpeed = flywheelSpeedMap.get(distanceMeters);
+    double tof = timeOfFlightMap.get(distanceMeters);
+
+    var params =
+        new ShootingParameters(isValid, hoodAngle, flywheelSpeed, distanceMeters, tof, driveAngle);
+
+    Logger.recordOutput("ShotCalculator/VisionDistance/DistanceM", distanceMeters);
+    Logger.recordOutput("ShotCalculator/VisionDistance/IsValid", isValid);
+    Logger.recordOutput("ShotCalculator/VisionDistance/HoodAngleRad", hoodAngle);
+    Logger.recordOutput("ShotCalculator/VisionDistance/FlywheelSpeedRPM", flywheelSpeed);
+
+    return params;
+  }
+
+  /**
+   * Returns the hub target position for the current alliance. Falls back to the configured
+   * targetPosition if alliance is unknown.
+   */
+  public Translation2d getAllianceHubPosition() {
+    var alliance = DriverStation.getAlliance();
+    if (alliance.isPresent()) {
+      return alliance.get() == Alliance.Red
+          ? frc.robot.subsystems.vision.VisionConstants.RED_HUB_POSITION
+          : frc.robot.subsystems.vision.VisionConstants.BLUE_HUB_POSITION;
+    }
+    return targetPosition; // fallback
   }
 }

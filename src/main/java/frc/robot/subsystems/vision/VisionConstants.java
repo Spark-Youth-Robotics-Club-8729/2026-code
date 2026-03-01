@@ -9,11 +9,13 @@ package frc.robot.subsystems.vision;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.geometry.Translation2d;
+import java.util.Set;
 
 public class VisionConstants {
   // AprilTag layout
-    public static AprilTagFieldLayout aprilTagLayout =
-        AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
+  public static AprilTagFieldLayout aprilTagLayout =
+      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
   // Limelight 4 camera name — must match the name set in the Limelight web UI
   public static String camera0Name = "limelight";
@@ -22,8 +24,8 @@ public class VisionConstants {
   //   0 = External IMU only (default, we push robot orientation every loop)
   //   1 = Seed internal IMU from external (call once while disabled)
   //   4 = Internal IMU + external IMU assist (best accuracy during matches)
-  public static final int imuModeDisabled = 1;   // seed on startup
-  public static final int imuModeEnabled  = 4;   // internal + assist during match
+  public static final int imuModeDisabled = 1; // seed on startup
+  public static final int imuModeEnabled = 4; // internal + assist during match
 
   // How strongly the external gyro corrects the LL4 internal IMU (0.001 is gentle)
   public static final double imuAssistAlpha = 0.001;
@@ -51,4 +53,19 @@ public class VisionConstants {
 
   // Heartbeat timeout — if heartbeat hasn't changed in this many ms, camera is disconnected
   public static final long heartbeatTimeoutMs = 500;
+
+  // -----------------------------------------------------------------------
+  // Hub / Reef AprilTag ID sets (2026 field, see field image)
+  // -----------------------------------------------------------------------
+  // RED scoring hub face tags
+  public static final Set<Integer> redHubTagIds = Set.of(5, 8, 9, 10, 3, 4, 2, 11);
+  // BLUE scoring hub face tags
+  public static final Set<Integer> blueHubTagIds = Set.of(27, 18, 25, 26, 24, 21, 20, 19);
+
+  // Hub center field positions (Blue alliance WPILib origin, meters)
+  // Red hub is at approx x=4.49, y=4.02 (center of red reef)
+  // Blue hub is at approx x=13.06, y=4.02 (center of blue reef)
+  // TODO: Verify these with the official 2026 field drawing
+  public static final Translation2d RED_HUB_POSITION = new Translation2d(4.49, 4.02);
+  public static final Translation2d BLUE_HUB_POSITION = new Translation2d(13.06, 4.02);
 }
