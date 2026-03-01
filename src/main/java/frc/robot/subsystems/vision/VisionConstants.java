@@ -15,7 +15,7 @@ import java.util.Set;
 public class VisionConstants {
   // AprilTag layout
   public static AprilTagFieldLayout aprilTagLayout =
-      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
+      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   // Limelight 4 camera name — must match the name set in the Limelight web UI
   public static String camera0Name = "limelight";
