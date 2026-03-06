@@ -13,7 +13,6 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -66,14 +65,7 @@ public class RobotContainer {
   // Distance estimator — TODO: fill in real measurements before competition
   private final LimelightDistanceEstimator distanceEstimator;
 
-  // Manual preset shooting positions for bench/garage testing
-  // { hoodAngleRad, flywheelRPM }
-  private static final double[][] SHOOT_PRESETS = {
-    { Units.degreesToRadians(15.0), 2000.0 }, // Preset 0: close
-    { Units.degreesToRadians(30.0), 3000.0 }, // Preset 1: mid
-    { Units.degreesToRadians(45.0), 4000.0 }, // Preset 2: far
-  };
-  private int shootPresetIndex = 0;
+  // (SHOOT_PRESETS and shootPresetIndex removed — now using ShotCalculator)
 
   public RobotContainer() {
     switch (Constants.currentMode) {
@@ -325,47 +317,46 @@ public class RobotContainer {
     // -------------------------------------------------------------------------
     // OPERATOR (port 1)
     //
-    // Right Trigger — EVERYTHING: flywheels + hood + feeder + indexer (when ready)
-    // Left Trigger  — AIM: flywheels + hood only (no feeding)
+    // Right Trigger — EVERYTHING: ShotCalculator flywheels + hood + feeder + indexer (when ready)
+    // Left Trigger  — AIM only: ShotCalculator flywheels + hood, no feeding
     // Y             — FEEDER WHEELS only
-    // Right Bumper  — INDEXER only
-    // Left Bumper   — INTAKE roller only
-    // B             — INTAKE outtake
-    // X             — SLAPDOWN DOWN
-    // Right Stick   — SLAPDOWN UP / retract
+    // Right Bumper  — INTAKE IN
+    // Left Bumper   — INTAKE OUT
+    // B             — INDEXER IN
+    // Right Stick   — (unused)
     // POV Down      — SLAPDOWN DOWN
     // POV Up        — SLAPDOWN UP
-    // POV Left      — cycle shoot preset DOWN
-    // POV Right     — cycle shoot preset UP
+    // POV Left      — nudge hood angle offset DOWN (-1 deg)
+    // POV Right     — nudge hood angle offset UP (+1 deg)
     // Left Stick    — TEST flywheels at default speed
-    // A             — Full auto-shoot
+    // A             — Full auto-shoot (AutoShootCommand)
     // -------------------------------------------------------------------------
 
-    // Right Trigger — EVERYTHING when ready (uses manual preset)
+    // Right Trigger — ShotCalculator shoot: spin up + hood + feed when ready
     operator
         .rightTrigger(0.5)
         .whileTrue(
             Commands.run(
                     () -> {
-                      shooter.setHoodPosition(SHOOT_PRESETS[shootPresetIndex][0]);
-                      shooter.setFlywheelVelocity(SHOOT_PRESETS[shootPresetIndex][1]);
-                      if (shooter.isReadyToShoot()) {
+                      ShotCalculator.ShootingParameters params;
+                      if (vision.hasTarget(0)) {
+                        double dist = vision.getAvgTagDistance(0);
+                        params = ShotCalculator.getInstance().calculateFromDistance(
+                            dist, drive.getPose().getRotation());
+                      } else {
+                        params = ShotCalculator.getInstance().calculate();
+                      }
+                      shooter.setHoodPosition(params.hoodAngleRad());
+                      shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
+                      boolean readyToFire = params.isValid() && shooter.isReadyToShoot();
+                      if (readyToFire) {
                         shooter.feedNote();
-                        // Don't call stopFeeder() in the else branch —
-                        // doing so would stomp on the Y-button feeder command every loop.
+                        indexer.feed();
+                      } else {
+                        indexer.stop();
                       }
                     },
-                    shooter)
-                .alongWith(
-                    Commands.run(
-                        () -> {
-                          if (shooter.isReadyToShoot()) {
-                            indexer.feed();
-                          } else {
-                            indexer.stop();
-                          }
-                        },
-                        indexer))
+                    shooter, indexer) // both subsystems required in ONE command
                 .finallyDo(
                     () -> {
                       shooter.stop();
@@ -373,30 +364,28 @@ public class RobotContainer {
                       indexer.stop();
                     }));
 
-    // Left Trigger — AIM only: flywheels + hood, no feeding (uses manual preset)
+    // Left Trigger — ShotCalculator AIM only: flywheels + hood, no feeding
     operator
         .leftTrigger(0.5)
         .whileTrue(
             Commands.run(
                     () -> {
-                      shooter.setHoodPosition(SHOOT_PRESETS[shootPresetIndex][0]);
-                      shooter.setFlywheelVelocity(SHOOT_PRESETS[shootPresetIndex][1]);
+                      ShotCalculator.ShootingParameters params;
+                      if (vision.hasTarget(0)) {
+                        double dist = vision.getAvgTagDistance(0);
+                        params = ShotCalculator.getInstance().calculateFromDistance(
+                            dist, drive.getPose().getRotation());
+                      } else {
+                        params = ShotCalculator.getInstance().calculate();
+                      }
+                      shooter.setHoodPosition(params.hoodAngleRad());
+                      shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
                     },
                     shooter)
-                .finallyDo(
-                    () -> {
-                      shooter.stop();
-                      // Do NOT call stopFeeder() — left trigger never owned the feeder
-                    }));
+                .finallyDo(() -> shooter.stop()));
 
-    // Y — FEEDER WHEELS only (no subsystem requirement — coexists with flywheel commands)
-    operator
-        .y()
-        .whileTrue(
-            Commands.startEnd(
-                shooter::feedNote,
-                shooter::stopFeeder
-            ));
+    // Y — FEEDER WHEELS only (no subsystem requirement)
+    operator.y().whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder));
 
     // Right Bumper — INTAKE IN
     operator.rightBumper().whileTrue(intake.intakeCommand());
@@ -408,41 +397,35 @@ public class RobotContainer {
     operator.b().whileTrue(indexer.feedCommand());
 
     // POV Down — SLAPDOWN DOWN
-    operator.povDown().onTrue(intake.slapdownDownCommand());
+    operator.povDown().onTrue(Commands.runOnce(() -> intake.setSlapdownGoal(frc.robot.subsystems.intake.Intake.SlapdownGoal.DOWN), intake));
 
     // POV Up — SLAPDOWN UP
-    operator.povUp().onTrue(intake.retractCommand());
+    operator.povUp().onTrue(Commands.runOnce(() -> intake.setSlapdownGoal(frc.robot.subsystems.intake.Intake.SlapdownGoal.UP), intake));
 
-    // POV Left — cycle shoot preset DOWN
+    // POV Left — nudge hood angle offset DOWN by 1 degree
     operator
         .povLeft()
         .onTrue(
             Commands.runOnce(
                 () -> {
-                  shootPresetIndex = Math.max(0, shootPresetIndex - 1);
+                  ShotCalculator.getInstance().incrementHoodAngleOffset(-1.0);
                   System.out.println(
-                      "Shoot preset: "
-                          + shootPresetIndex
-                          + " | Hood: "
-                          + Math.toDegrees(SHOOT_PRESETS[shootPresetIndex][0])
-                          + "deg | RPM: "
-                          + SHOOT_PRESETS[shootPresetIndex][1]);
+                      "Hood offset: "
+                          + ShotCalculator.getInstance().getHoodAngleOffsetDeg()
+                          + " deg");
                 }));
 
-    // POV Right — cycle shoot preset UP
+    // POV Right — nudge hood angle offset UP by 1 degree
     operator
         .povRight()
         .onTrue(
             Commands.runOnce(
                 () -> {
-                  shootPresetIndex = Math.min(SHOOT_PRESETS.length - 1, shootPresetIndex + 1);
+                  ShotCalculator.getInstance().incrementHoodAngleOffset(1.0);
                   System.out.println(
-                      "Shoot preset: "
-                          + shootPresetIndex
-                          + " | Hood: "
-                          + Math.toDegrees(SHOOT_PRESETS[shootPresetIndex][0])
-                          + "deg | RPM: "
-                          + SHOOT_PRESETS[shootPresetIndex][1]);
+                      "Hood offset: "
+                          + ShotCalculator.getInstance().getHoodAngleOffsetDeg()
+                          + " deg");
                 }));
 
     // Left Stick — TEST flywheels at default speed
@@ -459,7 +442,6 @@ public class RobotContainer {
     // Operator A — full auto-shoot (visual TX aim + spin up + feed)
     operator.a().whileTrue(new AutoShootCommand(drive, shooter, indexer, vision, 0));
   }
-
   public Command getAutonomousCommand() {
     return autoChooser.get();
   }
