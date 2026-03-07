@@ -346,8 +346,9 @@ public class RobotContainer {
                       double hoodAngle;
                       double flywheelRPM;
                       if (vision.hasTarget(0) && !Double.isNaN(dist) && dist > 0.1) {
-                        var params = ShotCalculator.getInstance()
-                            .calculateFromDistance(dist, drive.getPose().getRotation());
+                        var params =
+                            ShotCalculator.getInstance()
+                                .calculateFromDistance(dist, drive.getPose().getRotation());
                         hoodAngle = params.hoodAngleRad();
                         flywheelRPM = params.flywheelSpeedRPM();
                       } else {
@@ -358,10 +359,11 @@ public class RobotContainer {
                       // --- Apply to all four mechanisms immediately ---
                       shooter.setHoodPosition(hoodAngle);
                       shooter.setFlywheelVelocity(flywheelRPM);
-                      shooter.feedNote();   // feeder always runs while RT held
-                      indexer.feed();       // indexer always runs while RT held
+                      shooter.feedNote(); // feeder always runs while RT held
+                      indexer.feed(); // indexer always runs while RT held
                     },
-                    shooter, indexer)
+                    shooter,
+                    indexer)
                 .finallyDo(
                     () -> {
                       shooter.stop();
@@ -411,9 +413,7 @@ public class RobotContainer {
         .povDown()
         .onTrue(
             Commands.runOnce(
-                () ->
-                    intake.setSlapdownGoal(
-                        frc.robot.subsystems.intake.Intake.SlapdownGoal.DOWN),
+                () -> intake.setSlapdownGoal(frc.robot.subsystems.intake.Intake.SlapdownGoal.DOWN),
                 intake));
 
     // POV Up — SLAPDOWN UP
@@ -421,8 +421,7 @@ public class RobotContainer {
         .povUp()
         .onTrue(
             Commands.runOnce(
-                () ->
-                    intake.setSlapdownGoal(frc.robot.subsystems.intake.Intake.SlapdownGoal.UP),
+                () -> intake.setSlapdownGoal(frc.robot.subsystems.intake.Intake.SlapdownGoal.UP),
                 intake));
 
     // POV Left — nudge hood angle offset DOWN by 1 degree

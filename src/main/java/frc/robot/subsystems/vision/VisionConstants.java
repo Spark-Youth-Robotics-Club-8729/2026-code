@@ -10,6 +10,7 @@ package frc.robot.subsystems.vision;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Translation2d;
+import frc.robot.FieldConstants;
 import java.util.Set;
 
 public class VisionConstants {
@@ -62,10 +63,11 @@ public class VisionConstants {
   // BLUE scoring hub face tags
   public static final Set<Integer> blueHubTagIds = Set.of(27, 18, 25, 26, 24, 21, 20, 19);
 
-  // Hub center field positions (Blue alliance WPILib origin, meters)
-  // Red hub is at approx x=4.49, y=4.02 (center of red reef)
-  // Blue hub is at approx x=13.06, y=4.02 (center of blue reef)
-  // TODO: Verify these with the official 2026 field drawing
-  public static final Translation2d RED_HUB_POSITION = new Translation2d(4.49, 4.02);
-  public static final Translation2d BLUE_HUB_POSITION = new Translation2d(13.06, 4.02);
+  // Hub center field positions — derived from AprilTag poses in FieldConstants.
+  // FieldConstants.Hub.innerCenterPoint is the 3-D center of the scoring zone;
+  // toTranslation2d() drops the Z to give the field-floor X/Y.
+  public static final Translation2d RED_HUB_POSITION =
+      FieldConstants.Hub.oppInnerCenterPoint.toTranslation2d();
+  public static final Translation2d BLUE_HUB_POSITION =
+      FieldConstants.Hub.innerCenterPoint.toTranslation2d();
 }

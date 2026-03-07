@@ -10,6 +10,7 @@ package frc.robot.subsystems.shooter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import frc.robot.FieldConstants;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
@@ -243,9 +244,26 @@ public class ShotCalculator {
     var alliance = DriverStation.getAlliance();
     if (alliance.isPresent()) {
       return alliance.get() == Alliance.Red
-          ? frc.robot.subsystems.vision.VisionConstants.RED_HUB_POSITION
-          : frc.robot.subsystems.vision.VisionConstants.BLUE_HUB_POSITION;
+          ? FieldConstants.Hub.oppInnerCenterPoint.toTranslation2d()
+          : FieldConstants.Hub.innerCenterPoint.toTranslation2d();
     }
     return targetPosition; // fallback
+  }
+
+  /**
+   * Returns a {@link Pose2d} at {@code robotPosition} aimed directly at the hub. Used by
+   * {@link frc.robot.AutoFieldConstants} to pre-compute launch poses for autonomous.
+   *
+   * @param robotPosition Where the robot will be positioned on the field.
+   * @param forBlue {@code true} to aim at the blue hub, {@code false} for the red hub.
+   * @return A Pose2d with the robot at {@code robotPosition} rotated to face the hub.
+   */
+  public static Pose2d getStationaryAimedPose(Translation2d robotPosition, boolean forBlue) {
+    Translation2d hubCenter =
+        forBlue
+            ? FieldConstants.Hub.innerCenterPoint.toTranslation2d()
+            : FieldConstants.Hub.oppInnerCenterPoint.toTranslation2d();
+    Rotation2d aimAngle = hubCenter.minus(robotPosition).getAngle();
+    return new Pose2d(robotPosition, aimAngle);
   }
 }
