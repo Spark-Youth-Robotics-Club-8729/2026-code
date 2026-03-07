@@ -60,7 +60,7 @@ public class ShooterIOKrakenX60 implements ShooterIO {
   // Control requests
   private final VelocityVoltage leftFlywheelVelocityControl = new VelocityVoltage(0);
   private final VelocityVoltage rightFlywheelVelocityControl = new VelocityVoltage(0);
-  private final PositionVoltage hoodPositionControl = new PositionVoltage(0);
+  private final PositionVoltage hoodPositionControl = new PositionVoltage(hoodMinAngleRad / (2.0 * Math.PI));
   private final VelocityVoltage feederVelocityControl = new VelocityVoltage(0);
   private final VoltageOut voltageControl = new VoltageOut(0);
 
