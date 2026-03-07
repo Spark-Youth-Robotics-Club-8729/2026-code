@@ -28,43 +28,45 @@ public class ShotCalculator {
   private static final InterpolatingDoubleTreeMap timeOfFlightMap =
       new InterpolatingDoubleTreeMap();
 
-  private static final double minDistance = 1.0; // meters
-  private static final double maxDistance = 6.0; // meters
+  private static final double minDistance = 0.9; // meters
+  private static final double maxDistance = 4.9; // meters
 
   static {
-    // TODO: Replace with values tuned on the actual robot.
-    // Format: distance (meters) -> value
-    hoodAngleMap.put(1.0, Units.degreesToRadians(15.0));
-    hoodAngleMap.put(1.5, Units.degreesToRadians(18.0));
-    hoodAngleMap.put(2.0, Units.degreesToRadians(22.0));
-    hoodAngleMap.put(2.5, Units.degreesToRadians(26.0));
-    hoodAngleMap.put(3.0, Units.degreesToRadians(30.0));
-    hoodAngleMap.put(3.5, Units.degreesToRadians(34.0));
-    hoodAngleMap.put(4.0, Units.degreesToRadians(38.0));
-    hoodAngleMap.put(4.5, Units.degreesToRadians(42.0));
-    hoodAngleMap.put(5.0, Units.degreesToRadians(46.0));
-    hoodAngleMap.put(5.5, Units.degreesToRadians(50.0));
-    hoodAngleMap.put(6.0, Units.degreesToRadians(54.0));
+    // Hood angle map — distance (meters) -> hood angle (radians)
+    hoodAngleMap.put(0.96, Units.degreesToRadians(10.0));
+    hoodAngleMap.put(1.16, Units.degreesToRadians(12.0));
+    hoodAngleMap.put(1.58, Units.degreesToRadians(14.0));
+    hoodAngleMap.put(2.07, Units.degreesToRadians(18.5));
+    hoodAngleMap.put(2.37, Units.degreesToRadians(22.0));
+    hoodAngleMap.put(2.47, Units.degreesToRadians(23.0));
+    hoodAngleMap.put(2.70, Units.degreesToRadians(24.0));
+    hoodAngleMap.put(2.94, Units.degreesToRadians(25.0));
+    hoodAngleMap.put(3.48, Units.degreesToRadians(27.0));
+    hoodAngleMap.put(3.92, Units.degreesToRadians(32.0));
+    hoodAngleMap.put(4.35, Units.degreesToRadians(34.0));
+    hoodAngleMap.put(4.84, Units.degreesToRadians(38.0));
 
-    flywheelSpeedMap.put(1.0, 2000.0);
-    flywheelSpeedMap.put(1.5, 2200.0);
-    flywheelSpeedMap.put(2.0, 2400.0);
-    flywheelSpeedMap.put(2.5, 2600.0);
-    flywheelSpeedMap.put(3.0, 2800.0);
-    flywheelSpeedMap.put(3.5, 3000.0);
-    flywheelSpeedMap.put(4.0, 3200.0);
-    flywheelSpeedMap.put(4.5, 3400.0);
-    flywheelSpeedMap.put(5.0, 3600.0);
-    flywheelSpeedMap.put(5.5, 3800.0);
-    flywheelSpeedMap.put(6.0, 4000.0);
+    // Flywheel speed map — distance (meters) -> RPM
+    // Note: reference uses ~150-190 in different units; scaled to RPM range for our Krakens
+    flywheelSpeedMap.put(0.96, 2000.0);
+    flywheelSpeedMap.put(1.16, 2100.0);
+    flywheelSpeedMap.put(1.58, 2200.0);
+    flywheelSpeedMap.put(2.07, 2350.0);
+    flywheelSpeedMap.put(2.37, 2500.0);
+    flywheelSpeedMap.put(2.47, 2500.0);
+    flywheelSpeedMap.put(2.70, 2500.0);
+    flywheelSpeedMap.put(2.94, 2650.0);
+    flywheelSpeedMap.put(3.48, 2650.0);
+    flywheelSpeedMap.put(3.92, 2800.0);
+    flywheelSpeedMap.put(4.35, 2950.0);
+    flywheelSpeedMap.put(4.84, 3100.0);
 
-    // Time of flight (seconds) vs distance (meters) — TODO: Tune on actual robot
-    timeOfFlightMap.put(1.0, 0.3);
-    timeOfFlightMap.put(2.0, 0.5);
-    timeOfFlightMap.put(3.0, 0.7);
-    timeOfFlightMap.put(4.0, 0.9);
-    timeOfFlightMap.put(5.0, 1.1);
-    timeOfFlightMap.put(6.0, 1.3);
+    // Time of flight map — distance (meters) -> seconds
+    timeOfFlightMap.put(1.38, 0.90);
+    timeOfFlightMap.put(1.88, 1.09);
+    timeOfFlightMap.put(3.15, 1.11);
+    timeOfFlightMap.put(4.55, 1.12);
+    timeOfFlightMap.put(5.68, 1.16);
   }
 
   /** Immutable result from a single calculate() call. */

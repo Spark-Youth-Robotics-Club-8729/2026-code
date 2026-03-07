@@ -36,6 +36,7 @@ import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.intake.IntakeIOHardware;
 import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.shooter.ShooterIO;
 import frc.robot.subsystems.shooter.ShooterIOKrakenX60;
 import frc.robot.subsystems.shooter.ShooterIOSim;
@@ -332,31 +333,35 @@ public class RobotContainer {
     // A             — Full auto-shoot (AutoShootCommand)
     // -------------------------------------------------------------------------
 
-    // Right Trigger — ShotCalculator shoot: spin up + hood + feed when ready
+    // Right Trigger — shoot: hood to vision-calculated angle + spin up flywheels + feed + index
+    // All four mechanisms run immediately when RT is held.
+    // Hood and flywheel targets come from ShotCalculator using nearest AprilTag distance.
     operator
         .rightTrigger(0.5)
         .whileTrue(
             Commands.run(
                     () -> {
-                      ShotCalculator.ShootingParameters params;
-                      if (vision.hasTarget(0)) {
-                        double dist = vision.getAvgTagDistance(0);
-                        params = ShotCalculator.getInstance().calculateFromDistance(
-                            dist, drive.getPose().getRotation());
+                      // --- Vision-based shot parameters ---
+                      double dist = vision.getNearestTagDistance(0);
+                      double hoodAngle;
+                      double flywheelRPM;
+                      if (vision.hasTarget(0) && !Double.isNaN(dist) && dist > 0.1) {
+                        var params = ShotCalculator.getInstance()
+                            .calculateFromDistance(dist, drive.getPose().getRotation());
+                        hoodAngle = params.hoodAngleRad();
+                        flywheelRPM = params.flywheelSpeedRPM();
                       } else {
-                        params = ShotCalculator.getInstance().calculate();
+                        // No tag — safe default (close range)
+                        hoodAngle = ShooterConstants.hoodMinAngleRad;
+                        flywheelRPM = ShooterConstants.defaultFlywheelSpeedRPM;
                       }
-                      shooter.setHoodPosition(params.hoodAngleRad());
-                      shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
-                      boolean readyToFire = params.isValid() && shooter.isReadyToShoot();
-                      if (readyToFire) {
-                        shooter.feedNote();
-                        indexer.feed();
-                      } else {
-                        indexer.stop();
-                      }
+                      // --- Apply to all four mechanisms immediately ---
+                      shooter.setHoodPosition(hoodAngle);
+                      shooter.setFlywheelVelocity(flywheelRPM);
+                      shooter.feedNote();   // feeder always runs while RT held
+                      indexer.feed();       // indexer always runs while RT held
                     },
-                    shooter, indexer) // both subsystems required in ONE command
+                    shooter, indexer)
                 .finallyDo(
                     () -> {
                       shooter.stop();
@@ -364,22 +369,27 @@ public class RobotContainer {
                       indexer.stop();
                     }));
 
-    // Left Trigger — ShotCalculator AIM only: flywheels + hood, no feeding
+    // Left Trigger — AIM only: hood + flywheels to vision-calculated targets, no feeding
     operator
         .leftTrigger(0.5)
         .whileTrue(
             Commands.run(
                     () -> {
-                      ShotCalculator.ShootingParameters params;
-                      if (vision.hasTarget(0)) {
-                        double dist = vision.getAvgTagDistance(0);
-                        params = ShotCalculator.getInstance().calculateFromDistance(
-                            dist, drive.getPose().getRotation());
+                      double dist = vision.getNearestTagDistance(0);
+                      double hoodAngle;
+                      double flywheelRPM;
+                      if (vision.hasTarget(0) && !Double.isNaN(dist) && dist > 0.1) {
+                        var params =
+                            ShotCalculator.getInstance()
+                                .calculateFromDistance(dist, drive.getPose().getRotation());
+                        hoodAngle = params.hoodAngleRad();
+                        flywheelRPM = params.flywheelSpeedRPM();
                       } else {
-                        params = ShotCalculator.getInstance().calculate();
+                        hoodAngle = ShooterConstants.hoodMinAngleRad;
+                        flywheelRPM = ShooterConstants.defaultFlywheelSpeedRPM;
                       }
-                      shooter.setHoodPosition(params.hoodAngleRad());
-                      shooter.setFlywheelVelocity(params.flywheelSpeedRPM());
+                      shooter.setHoodPosition(hoodAngle);
+                      shooter.setFlywheelVelocity(flywheelRPM);
                     },
                     shooter)
                 .finallyDo(() -> shooter.stop()));
@@ -397,10 +407,23 @@ public class RobotContainer {
     operator.b().whileTrue(indexer.feedCommand());
 
     // POV Down — SLAPDOWN DOWN
-    operator.povDown().onTrue(Commands.runOnce(() -> intake.setSlapdownGoal(frc.robot.subsystems.intake.Intake.SlapdownGoal.DOWN), intake));
+    operator
+        .povDown()
+        .onTrue(
+            Commands.runOnce(
+                () ->
+                    intake.setSlapdownGoal(
+                        frc.robot.subsystems.intake.Intake.SlapdownGoal.DOWN),
+                intake));
 
     // POV Up — SLAPDOWN UP
-    operator.povUp().onTrue(Commands.runOnce(() -> intake.setSlapdownGoal(frc.robot.subsystems.intake.Intake.SlapdownGoal.UP), intake));
+    operator
+        .povUp()
+        .onTrue(
+            Commands.runOnce(
+                () ->
+                    intake.setSlapdownGoal(frc.robot.subsystems.intake.Intake.SlapdownGoal.UP),
+                intake));
 
     // POV Left — nudge hood angle offset DOWN by 1 degree
     operator
@@ -442,6 +465,7 @@ public class RobotContainer {
     // Operator A — full auto-shoot (visual TX aim + spin up + feed)
     operator.a().whileTrue(new AutoShootCommand(drive, shooter, indexer, vision, 0));
   }
+
   public Command getAutonomousCommand() {
     return autoChooser.get();
   }

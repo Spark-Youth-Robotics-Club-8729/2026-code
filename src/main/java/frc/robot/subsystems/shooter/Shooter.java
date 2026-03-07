@@ -199,9 +199,9 @@ public class Shooter extends SubsystemBase {
     return Math.abs(inputs.hoodPositionRad - hoodSetpointRad) <= hoodToleranceRad;
   }
 
-  /** Returns true when the robot is ready to shoot (both flywheels at speed and hood at angle). */
+  /** Returns true when the robot is ready to shoot (both flywheels at speed). */
   public boolean isReadyToShoot() {
-    return areFlywheelsAtSpeed() && isHoodAtPosition();
+    return areFlywheelsAtSpeed(); // Hood check bypassed until PID is tuned
   }
 
   /**

@@ -82,6 +82,20 @@ public class Vision extends SubsystemBase {
   }
 
   /**
+   * Returns the distance to the nearest visible AprilTag in meters. Returns Double.NaN if no tags
+   * are visible.
+   */
+  public double getNearestTagDistance(int cameraIndex) {
+    double[] dists = inputs[cameraIndex].rawFiducialDistances;
+    if (dists.length == 0) return Double.NaN;
+    double min = Double.MAX_VALUE;
+    for (double d : dists) {
+      if (d > 0.0 && d < min) min = d;
+    }
+    return min == Double.MAX_VALUE ? Double.NaN : min;
+  }
+
+  /**
    * Returns the average distance (meters) to visible hub AprilTags for the current alliance. Only
    * considers tags belonging to the scoring hub the robot is shooting at. Returns {@link
    * Double#NaN} if no relevant hub tags are visible.

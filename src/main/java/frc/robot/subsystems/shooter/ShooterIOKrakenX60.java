@@ -280,7 +280,9 @@ public class ShooterIOKrakenX60 implements ShooterIO {
   public void stop() {
     leftFlywheelMotor.setControl(voltageControl.withOutput(0));
     rightFlywheelMotor.setControl(voltageControl.withOutput(0));
-    hoodMotor.setControl(voltageControl.withOutput(0));
+    // Hold hood at last commanded position rather than cutting power
+    // (voltageControl.withOutput(0) lets hood fall under gravity)
+    hoodMotor.setControl(hoodPositionControl); // re-sends last setpoint
     feederMotor.setControl(voltageControl.withOutput(0));
   }
 }
