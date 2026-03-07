@@ -333,8 +333,7 @@ public class RobotContainer {
     // A             — Full auto-shoot (AutoShootCommand)
     // -------------------------------------------------------------------------
 
-    // Right Trigger — shoot: hood to vision-calculated angle + spin up flywheels + feed + index
-    // All four mechanisms run immediately when RT is held.
+    // Right Trigger — shoot: spin up flywheels + hood, then feed once both are at target.
     // Hood and flywheel targets come from ShotCalculator using nearest AprilTag distance.
     operator
         .rightTrigger(0.5)
@@ -356,11 +355,17 @@ public class RobotContainer {
                         hoodAngle = ShooterConstants.hoodMinAngleRad;
                         flywheelRPM = ShooterConstants.defaultFlywheelSpeedRPM;
                       }
-                      // --- Apply to all four mechanisms immediately ---
+                      // Always spin up hood and flywheels
                       shooter.setHoodPosition(hoodAngle);
                       shooter.setFlywheelVelocity(flywheelRPM);
-                      shooter.feedNote(); // feeder always runs while RT held
-                      indexer.feed(); // indexer always runs while RT held
+                      // Only feed once flywheels are at speed AND hood is at position
+                      if (shooter.areFlywheelsAtSpeed() && shooter.isHoodAtPosition()) {
+                        shooter.feedNote();
+                        indexer.feed();
+                      } else {
+                        shooter.stopFeeder();
+                        indexer.stop();
+                      }
                     },
                     shooter,
                     indexer)

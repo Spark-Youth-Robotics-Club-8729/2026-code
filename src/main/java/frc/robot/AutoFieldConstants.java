@@ -16,8 +16,8 @@ import frc.robot.subsystems.shooter.ShotCalculator;
 /**
  * Waypoints and poses used by autonomous routines.
  *
- * <p>All positions are in the WPILib field coordinate system (blue alliance origin).
- * Robot width offsets use {@link DriveConstants#fullWidthX} to keep the robot clear of obstacles.
+ * <p>All positions are in the WPILib field coordinate system (blue alliance origin). Robot width
+ * offsets use {@link DriveConstants#fullWidthX} to keep the robot clear of obstacles.
  */
 public class AutoFieldConstants {
 
@@ -48,8 +48,7 @@ public class AutoFieldConstants {
         new Waypoint(
             new Translation2d(
                 FieldConstants.LinesVertical.starting - DriveConstants.fullWidthX / 2.0,
-                FieldConstants.LinesHorizontal.leftTrenchOpenEnd
-                    + DriveConstants.fullWidthX / 2.0),
+                FieldConstants.LinesHorizontal.leftTrenchOpenEnd + DriveConstants.fullWidthX / 2.0),
             Area.START);
 
     public static final Waypoint rightStart =
@@ -112,18 +111,14 @@ public class AutoFieldConstants {
         new Waypoint(
             new Translation2d(
                 FieldConstants.Depot.depth / 2.0 + 0.2,
-                FieldConstants.Depot.leftCorner.getY()
-                    + DriveConstants.fullWidthX / 2.0
-                    + 0.1),
+                FieldConstants.Depot.leftCorner.getY() + DriveConstants.fullWidthX / 2.0 + 0.1),
             Area.DEPOT);
 
     public static final Waypoint rightThrough =
         new Waypoint(
             new Translation2d(
                 FieldConstants.Depot.depth / 2.0 + 0.2,
-                FieldConstants.Depot.rightCorner.getY()
-                    - DriveConstants.fullWidthX / 2.0
-                    - 0.1),
+                FieldConstants.Depot.rightCorner.getY() - DriveConstants.fullWidthX / 2.0 - 0.1),
             Area.DEPOT);
   }
 
@@ -158,34 +153,28 @@ public class AutoFieldConstants {
         new Waypoint(
             new Translation2d(
                 FieldConstants.Tower.frontFaceX / 2.0,
-                FieldConstants.Tower.leftUpright.getY()
-                    + DriveConstants.fullWidthX / 2.0
-                    + 0.25),
+                FieldConstants.Tower.leftUpright.getY() + DriveConstants.fullWidthX / 2.0 + 0.25),
             Area.TOWER);
 
     public static final Waypoint rightThrough =
         new Waypoint(
             new Translation2d(
                 FieldConstants.Tower.frontFaceX / 2.0,
-                FieldConstants.Tower.rightUpright.getY()
-                    - DriveConstants.fullWidthX / 2.0
-                    - 0.25),
+                FieldConstants.Tower.rightUpright.getY() - DriveConstants.fullWidthX / 2.0 - 0.25),
             Area.TOWER);
 
     public static final Waypoint leftOutside =
         new Waypoint(
             FieldConstants.Tower.leftUpright.plus(
                 new Translation2d(
-                    DriveConstants.fullWidthX / 2.0 + 0.3,
-                    DriveConstants.fullWidthX / 2.0 + 0.3)),
+                    DriveConstants.fullWidthX / 2.0 + 0.3, DriveConstants.fullWidthX / 2.0 + 0.3)),
             Area.TOWER);
 
     public static final Waypoint rightOutside =
         new Waypoint(
             FieldConstants.Tower.rightUpright.plus(
                 new Translation2d(
-                    DriveConstants.fullWidthX / 2.0 + 0.3,
-                    -DriveConstants.fullWidthX / 2.0 - 0.3)),
+                    DriveConstants.fullWidthX / 2.0 + 0.3, -DriveConstants.fullWidthX / 2.0 - 0.3)),
             Area.TOWER);
   }
 

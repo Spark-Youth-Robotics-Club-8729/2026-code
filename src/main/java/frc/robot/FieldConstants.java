@@ -80,10 +80,7 @@ public class FieldConstants {
 
     /** X of the red alliance zone (from tag 10 on red hub). */
     public static final double oppAllianceZone =
-        aprilTagLayout
-            .getTagPose(10)
-            .map(p -> p.getX())
-            .orElse(RED_HUB_NEAR_X);
+        aprilTagLayout.getTagPose(10).map(p -> p.getX()).orElse(RED_HUB_NEAR_X);
   }
 
   // ---------------------------------------------------------------------------
@@ -188,12 +185,10 @@ public class FieldConstants {
 
     // Alliance side
     public static final Translation2d nearLeftCorner =
-        new Translation2d(
-            LinesVertical.hubCenter - width / 2.0, Units.inchesToMeters(255));
+        new Translation2d(LinesVertical.hubCenter - width / 2.0, Units.inchesToMeters(255));
     public static final Translation2d nearRightCorner = Hub.nearLeftCorner;
     public static final Translation2d farLeftCorner =
-        new Translation2d(
-            LinesVertical.hubCenter + width / 2.0, Units.inchesToMeters(255));
+        new Translation2d(LinesVertical.hubCenter + width / 2.0, Units.inchesToMeters(255));
     public static final Translation2d farRightCorner = Hub.farLeftCorner;
   }
 
@@ -206,12 +201,10 @@ public class FieldConstants {
     // Alliance side
     public static final Translation2d nearLeftCorner = Hub.nearRightCorner;
     public static final Translation2d nearRightCorner =
-        new Translation2d(
-            LinesVertical.hubCenter - width / 2.0, Units.inchesToMeters(255));
+        new Translation2d(LinesVertical.hubCenter - width / 2.0, Units.inchesToMeters(255));
     public static final Translation2d farLeftCorner = Hub.farRightCorner;
     public static final Translation2d farRightCorner =
-        new Translation2d(
-            LinesVertical.hubCenter + width / 2.0, Units.inchesToMeters(255));
+        new Translation2d(LinesVertical.hubCenter + width / 2.0, Units.inchesToMeters(255));
   }
 
   // ---------------------------------------------------------------------------
@@ -233,8 +226,7 @@ public class FieldConstants {
     public static final Translation3d oppOpeningTopLeft =
         new Translation3d(LinesVertical.oppHubCenter, fieldWidth, openingHeight);
     public static final Translation3d oppOpeningTopRight =
-        new Translation3d(
-            LinesVertical.oppHubCenter, fieldWidth - openingWidth, openingHeight);
+        new Translation3d(LinesVertical.oppHubCenter, fieldWidth - openingWidth, openingHeight);
   }
 
   /** Right trench (runs through the right-bump area into the hub). */
@@ -275,10 +267,7 @@ public class FieldConstants {
 
     // Blue tower — Y from tag 31
     private static final double blueTowerY =
-        aprilTagLayout
-            .getTagPose(31)
-            .map(p -> p.getY())
-            .orElse(fieldWidth / 2.0);
+        aprilTagLayout.getTagPose(31).map(p -> p.getY()).orElse(fieldWidth / 2.0);
 
     public static final Translation2d centerPoint = new Translation2d(frontFaceX, blueTowerY);
     public static final Translation2d leftUpright =
@@ -290,10 +279,7 @@ public class FieldConstants {
 
     // Red (opposing) tower — Y from tag 15
     private static final double redTowerY =
-        aprilTagLayout
-            .getTagPose(15)
-            .map(p -> p.getY())
-            .orElse(fieldWidth / 2.0);
+        aprilTagLayout.getTagPose(15).map(p -> p.getY()).orElse(fieldWidth / 2.0);
 
     public static final Translation2d oppCenterPoint =
         new Translation2d(fieldLength - frontFaceX, redTowerY);
@@ -321,11 +307,9 @@ public class FieldConstants {
     public static final Translation3d depotCenter =
         new Translation3d(depth, (fieldWidth / 2.0) + distanceFromCenterY, height);
     public static final Translation3d leftCorner =
-        new Translation3d(
-            depth, (fieldWidth / 2.0) + distanceFromCenterY + (width / 2.0), height);
+        new Translation3d(depth, (fieldWidth / 2.0) + distanceFromCenterY + (width / 2.0), height);
     public static final Translation3d rightCorner =
-        new Translation3d(
-            depth, (fieldWidth / 2.0) + distanceFromCenterY - (width / 2.0), height);
+        new Translation3d(depth, (fieldWidth / 2.0) + distanceFromCenterY - (width / 2.0), height);
   }
 
   // ---------------------------------------------------------------------------
@@ -340,10 +324,7 @@ public class FieldConstants {
 
     // Y from tag 29
     private static final double outpostY =
-        aprilTagLayout
-            .getTagPose(29)
-            .map(p -> p.getY())
-            .orElse(fieldWidth / 2.0);
+        aprilTagLayout.getTagPose(29).map(p -> p.getY()).orElse(fieldWidth / 2.0);
 
     public static final Translation2d centerPoint = new Translation2d(0, outpostY);
   }

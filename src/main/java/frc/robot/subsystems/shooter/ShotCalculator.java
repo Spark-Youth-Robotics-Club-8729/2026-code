@@ -10,12 +10,12 @@ package frc.robot.subsystems.shooter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import frc.robot.FieldConstants;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import frc.robot.FieldConstants;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -251,8 +251,8 @@ public class ShotCalculator {
   }
 
   /**
-   * Returns a {@link Pose2d} at {@code robotPosition} aimed directly at the hub. Used by
-   * {@link frc.robot.AutoFieldConstants} to pre-compute launch poses for autonomous.
+   * Returns a {@link Pose2d} at {@code robotPosition} aimed directly at the hub. Used by {@link
+   * frc.robot.AutoFieldConstants} to pre-compute launch poses for autonomous.
    *
    * @param robotPosition Where the robot will be positioned on the field.
    * @param forBlue {@code true} to aim at the blue hub, {@code false} for the red hub.
