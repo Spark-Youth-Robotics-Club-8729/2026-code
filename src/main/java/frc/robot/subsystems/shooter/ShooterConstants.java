@@ -82,12 +82,12 @@ public class ShooterConstants {
   // Hood angle limits (radians, at the mechanism — after gear reduction)
   // ---------------------------------------------------------------------------
   public static final double hoodMinAngleRad = Units.degreesToRadians(10.0); // TODO: Set actual
-  public static final double hoodMaxAngleRad = Units.degreesToRadians(60.0); // TODO: Set actual
+  public static final double hoodMaxAngleRad = Units.degreesToRadians(45.0); // TODO: Set actual
 
   // ---------------------------------------------------------------------------
   // Tolerances
   // ---------------------------------------------------------------------------
-  public static final double flywheelToleranceRPM = 100.8729; // widened 50 to 187.29
+  public static final double flywheelToleranceRPM = 100; // widened 50 to 100 RPM while tuning
   public static final double hoodToleranceRad =
       Units.degreesToRadians(5.0); // Widened from 3° to 5° while tuning
 
@@ -95,6 +95,7 @@ public class ShooterConstants {
   // Default / feeder speeds
   // ---------------------------------------------------------------------------
   public static final double defaultFlywheelSpeedRPM = 3000.0; // TODO: Tune
+  public static final double maxFlywheelSpeedRPM = 6000.0;
   // Positive = feeds ball up from hopper to shooter
   public static final double feederFeedSpeedRPM = 500.0;
   // Negative = ejects ball back down toward hopper

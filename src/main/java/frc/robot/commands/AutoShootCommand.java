@@ -73,7 +73,9 @@ public class AutoShootCommand extends Command {
     // fall back to pose-based calculation if hub tags not visible.
     ShotCalculator.ShootingParameters params;
     boolean usingVisionDistance = vision.hasHubTarget(cameraIndex);
-    System.out.println("usingVisionDistance: " + usingVisionDistance);
+
+    System.out.println("usingVisionDistance: " + usingVisionDistance);  // debug print
+
     if (usingVisionDistance) {
       double visionDist = vision.getDistanceToHub(cameraIndex);
 
@@ -82,6 +84,8 @@ public class AutoShootCommand extends Command {
       var robotPos = drive.getPose().getTranslation();
       var driveAngle = hubPos.minus(robotPos).getAngle();
       params = ShotCalculator.getInstance().calculateFromDistance(visionDist, driveAngle);
+
+      // debug prints
       System.out.println("visionDIst: " + visionDist);
       System.out.println("hubPos: " + hubPos);
       System.out.println("robotPos: " + robotPos);

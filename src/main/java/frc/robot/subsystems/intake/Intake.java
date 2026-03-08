@@ -20,6 +20,8 @@ import frc.robot.subsystems.intake.IntakeIO.IntakeIOOutputMode;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
+import edu.wpi.first.math.util.Units;
+
 public class Intake extends SubsystemBase {
 
   // ---------------------------------------------------------------------------
@@ -207,5 +209,26 @@ public class Intake extends SubsystemBase {
   /** Lowers the slapdown arm only, without running the roller. */
   public Command slapdownDownCommand() {
     return Commands.runOnce(() -> setSlapdownGoal(SlapdownGoal.DOWN), this);
+  }
+
+  /**
+   * Shakes the slapdown arm up and down slightly to agitate game pieces.
+   * Alternates between the DOWN position and a 5-degree offset.
+   */
+  public Command jitterCommand() {
+    return Commands.repeatingSequence(
+        // Move slightly up from the down position
+        Commands.runOnce(() -> {
+          this.slapdownGoal = SlapdownGoal.DOWN; 
+          outputs.slapdownPositionRad = slapdownDownAngleRad - Units.degreesToRadians(5.0);
+        }, this),
+        Commands.waitSeconds(0.08),
+        // Move back to the full down position
+        Commands.runOnce(() -> {
+          this.slapdownGoal = SlapdownGoal.DOWN;
+          outputs.slapdownPositionRad = slapdownDownAngleRad;
+        }, this),
+        Commands.waitSeconds(0.08)
+    ).finallyDo(() -> setSlapdownGoal(SlapdownGoal.DOWN));
   }
 }

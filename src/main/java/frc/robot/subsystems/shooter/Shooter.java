@@ -201,7 +201,7 @@ public class Shooter extends SubsystemBase {
 
   /** Returns true when the robot is ready to shoot (both flywheels at speed). */
   public boolean isReadyToShoot() {
-    return areFlywheelsAtSpeed(); // Hood check bypassed until PID is tuned
+    return areFlywheelsAtSpeed() && isHoodAtPosition();
   }
 
   /**

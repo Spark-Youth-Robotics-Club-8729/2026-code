@@ -58,10 +58,18 @@ public class VisionConstants {
   // -----------------------------------------------------------------------
   // Hub / Reef AprilTag ID sets (2026 field, see field image)
   // -----------------------------------------------------------------------
-  // RED scoring hub face tags
-  public static final Set<Integer> redHubTagIds = Set.of(5, 8, 9, 10, 3, 4, 2, 11);
-  // BLUE scoring hub face tags
-  public static final Set<Integer> blueHubTagIds = Set.of(27, 18, 25, 26, 24, 21, 20, 19);
+  
+  /** Tags that should never be used for pose estimation (IDs: 9, 25, 18, 5, 2, 21) */
+  public static final Set<Integer> BLOCKED_TAG_IDS = Set.of(9, 25, 18, 5, 2, 21);
+
+  /** High-priority tags for reliable scoring (IDs: 10, 8, 11, 26, 24, 27) */
+  public static final Set<Integer> PREFERRED_TAG_IDS = Set.of(10, 8, 11, 26, 24, 27);
+
+  // RED scoring hub face tags (Updated to exclude blocked tags)
+  public static final Set<Integer> redHubTagIds = Set.of(8, 10, 3, 4, 11);
+  
+  // BLUE scoring hub face tags (Updated to exclude blocked tags)
+  public static final Set<Integer> blueHubTagIds = Set.of(27, 26, 24, 20, 19);
 
   // Hub center field positions — derived from AprilTag poses in FieldConstants.
   // FieldConstants.Hub.innerCenterPoint is the 3-D center of the scoring zone;

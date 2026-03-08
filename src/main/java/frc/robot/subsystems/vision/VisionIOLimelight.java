@@ -100,7 +100,10 @@ public class VisionIOLimelight implements VisionIO {
       rawDistances.add(f.distToRobot);
       totalDist += f.distToRobot;
     }
-    inputs.tagIds = tagIdSet.stream().mapToInt(Integer::intValue).toArray();
+
+    int[] visibleTagIds = tagIdSet.stream().mapToInt(Integer::intValue).toArray();
+
+    inputs.tagIds = visibleTagIds;
     inputs.rawFiducialDistances = rawDistances.stream().mapToDouble(Double::doubleValue).toArray();
     inputs.tagCount = rawFiducials.length;
     inputs.avgTagDistance = rawFiducials.length > 0 ? totalDist / rawFiducials.length : 0.0;
@@ -146,6 +149,7 @@ public class VisionIOLimelight implements VisionIO {
               new Pose3d(mt1.pose),
               ambiguity,
               mt1.tagCount,
+              visibleTagIds,
               mt1.avgTagDist,
               PoseObservationType.MEGATAG_1,
               mt1StdDevs));
@@ -160,6 +164,7 @@ public class VisionIOLimelight implements VisionIO {
               new Pose3d(mt2.pose),
               0.0,
               mt2.tagCount,
+              visibleTagIds,
               mt2.avgTagDist,
               PoseObservationType.MEGATAG_2,
               mt2StdDevs));

@@ -164,7 +164,24 @@ public class Vision extends SubsystemBase {
     List<Pose3d> allRobotPosesRejected = new ArrayList<>();
 
     for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
+      io[cameraIndex].updateInputs(inputs[cameraIndex]);
       disconnectedAlerts[cameraIndex].set(!inputs[cameraIndex].connected);
+
+      // HYPOTHETICALLY, this should fix the shooter flickering
+      // We check if the target the shooter is looking at is one we've blocked.
+      // If the only tags visible are blocked, we hide the target from the shooter.
+      boolean onlyBlockedTagsVisible = true;
+      if (inputs[cameraIndex].tagCount > 0) {
+          for (int id : inputs[cameraIndex].tagIds) {
+              if (!VisionConstants.BLOCKED_TAG_IDS.contains(id)) {
+                  onlyBlockedTagsVisible = false;   // Found at least one good tag yippee!
+                  break;
+              }
+          }
+      }
+      if (onlyBlockedTagsVisible) {
+          inputs[cameraIndex].tagCount = 0;   // hides the target from the shooter (specifically it will make hasTarget() return false and getDistanceToHub() return NaN for these tags)
+      }
 
       List<Pose3d> tagPoses = new ArrayList<>();
       List<Pose3d> robotPoses = new ArrayList<>();
@@ -178,8 +195,18 @@ public class Vision extends SubsystemBase {
       }
 
       for (var observation : inputs[cameraIndex].poseObservations) {
-        boolean rejectPose =
-            observation.tagCount() == 0
+        // Check if this observation contains any of the blocked tags from VisionConstants
+        boolean containsBlockedTag = false;
+        for (int id : observation.tagIds()) {
+          if (VisionConstants.BLOCKED_TAG_IDS.contains(id)) {
+            containsBlockedTag = true;
+            break;
+          }
+        }
+
+          boolean rejectPose =
+              observation.tagCount() == 0
+                  || containsBlockedTag       // Reject if any part of the estimate uses a blocked tag
                 || (observation.tagCount() == 1
                     && observation.type() == PoseObservationType.MEGATAG_1
                     && observation.ambiguity() > maxAmbiguity)
