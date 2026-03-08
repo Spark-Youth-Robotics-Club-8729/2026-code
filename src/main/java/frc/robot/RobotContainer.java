@@ -339,14 +339,11 @@ public class RobotContainer {
     // Right Trigger — shoot: spin up flywheels + hood, then feed once both are at target.
     // Hood and flywheel targets come from ShotCalculator using nearest AprilTag distance.
 
-    // VERSION 1:
+    // VERSION 0: (initial version with indexer.feed() inside the if statement)
     double[] lastValidDist = {ShooterConstants.hoodMinAngleRad};
     operator
         .rightTrigger(0.5)
         .whileTrue(
-            Commands.parallel(
-              indexer.feedCommand(),
-
               Commands.run(
                     () -> {
                       // --- Vision-based shot parameters ---
@@ -391,20 +388,23 @@ public class RobotContainer {
 
                       // Only feed once flywheels are at speed AND hood is at position
                       if (shooter.areFlywheelsAtSpeed() && shooter.isHoodAtPosition()) {
+                        indexer.feed(); 
                         shooter.feedNote();
                       } else {
                         shooter.stopFeeder();
+                        indexer.stop();  // keep or leave it????? idk
                       }
                     },
-                    shooter)
+                    shooter,
+                    indexer)
                 .finallyDo(
                     () -> {
                       shooter.stop();
                       shooter.stopFeeder();
                       indexer.stop();
-                    })));
+                    }));
 
-    // VERSION 2: 
+    // VERSION 1: (put indexer.feed() outside of the if statement)
     /* 
     double[] lastValidDist = {ShooterConstants.hoodMinAngleRad};
     operator
@@ -470,6 +470,72 @@ public class RobotContainer {
                       shooter.stopFeeder();
                       indexer.stop();
                     })); */ 
+
+    // VERSION 2: (used feedCommand() and Commands.parallel)
+    /*
+    double[] lastValidDist = {ShooterConstants.hoodMinAngleRad};
+    operator
+        .rightTrigger(0.5)
+        .whileTrue(
+            Commands.parallel(
+              indexer.feedCommand(),
+
+              Commands.run(
+                    () -> {
+                      // --- Vision-based shot parameters ---
+                      double rawDist = vision.getNearestTagDistance(0);
+                      if (!Double.isNaN(rawDist) && rawDist > 0.1) {
+                        lastValidDist[0] = rawDist;
+                      }
+                      double dist = lastValidDist[0];           // assuming blocked tag ID code works, then the hood won't jitter up & down
+                      double hoodAngle;
+                      double flywheelRPM;
+                      if (vision.hasTarget(0) && !Double.isNaN(dist) && dist > 0.1) {
+                        var params =
+                            ShotCalculator.getInstance()
+                                .calculateFromDistance(dist, drive.getPose().getRotation());
+                        hoodAngle = params.hoodAngleRad();
+                        flywheelRPM = params.flywheelSpeedRPM() + 500;    // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
+                      } else {
+                        // No tag — safe default (close range)
+                        hoodAngle = ShooterConstants.hoodMinAngleRad;
+                        flywheelRPM = ShooterConstants.defaultFlywheelSpeedRPM;
+                      }
+
+                      // Always spin up hood and flywheels
+                      shooter.setHoodPosition(hoodAngle);
+                      shooter.setFlywheelVelocity(flywheelRPM);
+
+                      System.out.println("dist: " + dist);
+                      // System.out.println("hoodAngleCalculated: " +
+                      // Units.radiansToDegrees(hoodAngle) + " deg");
+                      System.out.println("calculatedFlywheelRPM: " + flywheelRPM);
+                      // System.out.println("flywheelSpeed: " + shooter.getLeftFlywheelVelocity());
+                      // System.out.println()"curHoodPosition: " +
+                      // Units.radiansToDegrees(shooter.getHoodPosition()) + " deg");
+                      System.out.println(
+                          "deltaFlywheelSpeed: "
+                              + (flywheelRPM - shooter.getLeftFlywheelVelocity()));
+                      System.out.println(
+                          "deltaHoodPosition(0=good): "
+                              + (Units.radiansToDegrees(hoodAngle)
+                                  - Units.radiansToDegrees(shooter.getHoodPosition()))
+                              + " deg");
+
+                      // Only feed once flywheels are at speed AND hood is at position
+                      if (shooter.areFlywheelsAtSpeed() && shooter.isHoodAtPosition()) {
+                        shooter.feedNote();
+                      } else {
+                        shooter.stopFeeder();
+                      }
+                    },
+                    shooter)
+                .finallyDo(
+                    () -> {
+                      shooter.stop();
+                      shooter.stopFeeder();
+                      indexer.stop();
+                    }))); */
 
     // Left Trigger — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the fuel to our side)
     operator
