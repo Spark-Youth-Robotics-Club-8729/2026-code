@@ -369,7 +369,8 @@ public class RobotContainer {
                       // Always spin up hood and flywheels
                       shooter.setHoodPosition(hoodAngle);
                       shooter.setFlywheelVelocity(flywheelRPM);
-
+                      
+                      // Debug prints
                       System.out.println("dist: " + dist);
                       // System.out.println("hoodAngleCalculated: " +
                       // Units.radiansToDegrees(hoodAngle) + " deg");
@@ -436,6 +437,7 @@ public class RobotContainer {
                       shooter.setHoodPosition(hoodAngle);
                       shooter.setFlywheelVelocity(flywheelRPM);
 
+                      // Debug prints
                       System.out.println("dist: " + dist);
                       // System.out.println("hoodAngleCalculated: " +
                       // Units.radiansToDegrees(hoodAngle) + " deg");
@@ -505,7 +507,8 @@ public class RobotContainer {
                       // Always spin up hood and flywheels
                       shooter.setHoodPosition(hoodAngle);
                       shooter.setFlywheelVelocity(flywheelRPM);
-
+                      
+                      // Debug prints
                       System.out.println("dist: " + dist);
                       // System.out.println("hoodAngleCalculated: " +
                       // Units.radiansToDegrees(hoodAngle) + " deg");
