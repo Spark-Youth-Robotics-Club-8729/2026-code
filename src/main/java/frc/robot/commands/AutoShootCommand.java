@@ -73,14 +73,20 @@ public class AutoShootCommand extends Command {
     // fall back to pose-based calculation if hub tags not visible.
     ShotCalculator.ShootingParameters params;
     boolean usingVisionDistance = vision.hasHubTarget(cameraIndex);
-
+    System.out.println("usingVisionDistance: " + usingVisionDistance);
     if (usingVisionDistance) {
       double visionDist = vision.getDistanceToHub(cameraIndex);
+
       // Drive angle toward the alliance hub from current pose
       var hubPos = ShotCalculator.getInstance().getAllianceHubPosition();
       var robotPos = drive.getPose().getTranslation();
       var driveAngle = hubPos.minus(robotPos).getAngle();
       params = ShotCalculator.getInstance().calculateFromDistance(visionDist, driveAngle);
+      System.out.println("visionDIst: " + visionDist);
+      System.out.println("hubPos: " + hubPos);
+      System.out.println("robotPos: " + robotPos);
+      System.out.println("driveAngle: " + driveAngle);
+      System.out.println("Params: " + params);
     } else {
       params = ShotCalculator.getInstance().calculate();
     }

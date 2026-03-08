@@ -54,6 +54,7 @@ public class DriveConstants {
   public static final int kDrivingMotorPinionTeeth = 12;
   public static final double driveMotorReduction =
       (45.0 * 22.0) / (kDrivingMotorPinionTeeth * 15.0); // 5.5 with 12T pinion
+  // speed slower
   public static final DCMotor driveGearbox = DCMotor.getNEO(1);
 
   // Drive encoder configuration — output in meters and meters/sec

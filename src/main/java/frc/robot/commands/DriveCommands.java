@@ -32,7 +32,7 @@ import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 public class DriveCommands {
-  private static final double DEADBAND = 0.1;
+  private static final double DEADBAND = 0.3; // changed from 0.1 for making it less sensitive
   private static final double ANGLE_KP = 5.0;
   private static final double ANGLE_KD = 0.4;
   private static final double ANGLE_MAX_VELOCITY = 8.0;
@@ -69,9 +69,9 @@ public class DriveCommands {
     return Commands.run(
         () -> {
           // Apply deadband
-          double xRaw = MathUtil.applyDeadband(xSupplier.getAsDouble(), 0.05);
-          double yRaw = MathUtil.applyDeadband(ySupplier.getAsDouble(), 0.05);
-          double omegaRaw = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), 0.05);
+          double xRaw = MathUtil.applyDeadband(xSupplier.getAsDouble(), DEADBAND);
+          double yRaw = MathUtil.applyDeadband(ySupplier.getAsDouble(), DEADBAND);
+          double omegaRaw = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
 
           // Square inputs for finer low-speed control while preserving sign
           double x = Math.copySign(xRaw * xRaw * xRaw, xRaw);
