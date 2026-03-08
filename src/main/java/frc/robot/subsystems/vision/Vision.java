@@ -172,15 +172,17 @@ public class Vision extends SubsystemBase {
       // If the only tags visible are blocked, we hide the target from the shooter.
       boolean onlyBlockedTagsVisible = true;
       if (inputs[cameraIndex].tagCount > 0) {
-          for (int id : inputs[cameraIndex].tagIds) {
-              if (!VisionConstants.BLOCKED_TAG_IDS.contains(id)) {
-                  onlyBlockedTagsVisible = false;   // Found at least one good tag yippee!
-                  break;
-              }
+        for (int id : inputs[cameraIndex].tagIds) {
+          if (!VisionConstants.BLOCKED_TAG_IDS.contains(id)) {
+            onlyBlockedTagsVisible = false; // Found at least one good tag yippee!
+            break;
           }
+        }
       }
       if (onlyBlockedTagsVisible) {
-          inputs[cameraIndex].tagCount = 0;   // hides the target from the shooter (specifically it will make hasTarget() return false and getDistanceToHub() return NaN for these tags)
+        inputs[cameraIndex].tagCount =
+            0; // hides the target from the shooter (specifically it will make hasTarget() return
+        // false and getDistanceToHub() return NaN for these tags)
       }
 
       List<Pose3d> tagPoses = new ArrayList<>();
@@ -204,9 +206,9 @@ public class Vision extends SubsystemBase {
           }
         }
 
-          boolean rejectPose =
-              observation.tagCount() == 0
-                  || containsBlockedTag       // Reject if any part of the estimate uses a blocked tag
+        boolean rejectPose =
+            observation.tagCount() == 0
+                || containsBlockedTag // Reject if any part of the estimate uses a blocked tag
                 || (observation.tagCount() == 1
                     && observation.type() == PoseObservationType.MEGATAG_1
                     && observation.ambiguity() > maxAmbiguity)

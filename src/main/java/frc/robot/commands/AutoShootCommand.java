@@ -74,7 +74,7 @@ public class AutoShootCommand extends Command {
     ShotCalculator.ShootingParameters params;
     boolean usingVisionDistance = vision.hasHubTarget(cameraIndex);
 
-    System.out.println("usingVisionDistance: " + usingVisionDistance);  // debug print
+    System.out.println("usingVisionDistance: " + usingVisionDistance); // debug print
 
     if (usingVisionDistance) {
       double visionDist = vision.getDistanceToHub(cameraIndex);

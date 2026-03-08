@@ -11,6 +11,7 @@ import static frc.robot.subsystems.intake.IntakeConstants.*;
 
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -19,8 +20,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.intake.IntakeIO.IntakeIOOutputMode;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
-
-import edu.wpi.first.math.util.Units;
 
 public class Intake extends SubsystemBase {
 
@@ -212,23 +211,27 @@ public class Intake extends SubsystemBase {
   }
 
   /**
-   * Shakes the slapdown arm up and down slightly to agitate game pieces.
-   * Alternates between the DOWN position and a 5-degree offset.
+   * Shakes the slapdown arm up and down slightly to agitate game pieces. Alternates between the
+   * DOWN position and a 5-degree offset.
    */
   public Command jitterCommand() {
     return Commands.repeatingSequence(
-        // Move slightly up from the down position
-        Commands.runOnce(() -> {
-          this.slapdownGoal = SlapdownGoal.DOWN; 
-          outputs.slapdownPositionRad = slapdownDownAngleRad - Units.degreesToRadians(5.0);
-        }, this),
-        Commands.waitSeconds(0.08),
-        // Move back to the full down position
-        Commands.runOnce(() -> {
-          this.slapdownGoal = SlapdownGoal.DOWN;
-          outputs.slapdownPositionRad = slapdownDownAngleRad;
-        }, this),
-        Commands.waitSeconds(0.08)
-    ).finallyDo(() -> setSlapdownGoal(SlapdownGoal.DOWN));
+            // Move slightly up from the down position
+            Commands.runOnce(
+                () -> {
+                  this.slapdownGoal = SlapdownGoal.DOWN;
+                  outputs.slapdownPositionRad = slapdownDownAngleRad - Units.degreesToRadians(5.0);
+                },
+                this),
+            Commands.waitSeconds(0.08),
+            // Move back to the full down position
+            Commands.runOnce(
+                () -> {
+                  this.slapdownGoal = SlapdownGoal.DOWN;
+                  outputs.slapdownPositionRad = slapdownDownAngleRad;
+                },
+                this),
+            Commands.waitSeconds(0.08))
+        .finallyDo(() -> setSlapdownGoal(SlapdownGoal.DOWN));
   }
 }

@@ -4,6 +4,7 @@
 // Use of this source code is governed by a BSD
 // license that can be found in the LICENSE file
 // at the root directory of this project.
+// vision slower turning speeds -- check osiliations
 
 package frc.robot.subsystems.vision;
 
@@ -58,7 +59,7 @@ public class VisionConstants {
   // -----------------------------------------------------------------------
   // Hub / Reef AprilTag ID sets (2026 field, see field image)
   // -----------------------------------------------------------------------
-  
+
   /** Tags that should never be used for pose estimation (IDs: 9, 25, 18, 5, 2, 21) */
   public static final Set<Integer> BLOCKED_TAG_IDS = Set.of(9, 25, 18, 5, 2, 21);
 
@@ -67,7 +68,7 @@ public class VisionConstants {
 
   // RED scoring hub face tags (Updated to exclude blocked tags)
   public static final Set<Integer> redHubTagIds = Set.of(8, 10, 3, 4, 11);
-  
+
   // BLUE scoring hub face tags (Updated to exclude blocked tags)
   public static final Set<Integer> blueHubTagIds = Set.of(27, 26, 24, 20, 19);
 
