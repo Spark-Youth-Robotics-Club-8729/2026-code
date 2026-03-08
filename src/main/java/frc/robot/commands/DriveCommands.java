@@ -32,15 +32,17 @@ import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 public class DriveCommands {
-  private static final double DEADBAND = 0.3; // changed from 0.1 for making it less sensitive
+  private static final double DEADBAND = 0.6; // changed from 0.1 for making it less sensitive
+  private static final double DRIVE_SPEED_SCALE = 0.2;
+  private static final double TURN_SPEED_SCALE = 0.2;
   private static final double ANGLE_KP = 5.0;
   private static final double ANGLE_KD = 0.4;
-  private static final double ANGLE_MAX_VELOCITY = 8.0;
-  private static final double ANGLE_MAX_ACCELERATION = 20.0;
+  private static final double ANGLE_MAX_VELOCITY = 5.0; // (changed from 8)
+  private static final double ANGLE_MAX_ACCELERATION = 10.0; // (changed from 20)
   private static final double FF_START_DELAY = 2.0; // Secs
   private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
-  private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
-  private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
+  private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.10; // Rad/Sec (changed from 0.25)
+  private static final double WHEEL_RADIUS_RAMP_RATE = 0.03; // Rad/Sec^2 (changed from 0.05)
 
   private DriveCommands() {}
 
@@ -73,17 +75,21 @@ public class DriveCommands {
           double yRaw = MathUtil.applyDeadband(ySupplier.getAsDouble(), DEADBAND);
           double omegaRaw = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
 
-          // Square inputs for finer low-speed control while preserving sign
-          double x = Math.copySign(xRaw * xRaw * xRaw, xRaw);
-          double y = Math.copySign(yRaw * yRaw * yRaw, yRaw);
-          double omega = Math.copySign(omegaRaw * omegaRaw * omegaRaw, omegaRaw);
+          // Square inputs for finer low-speed control while preserving sign (softer cubic function)
+          double x = Math.copySign(Math.pow(xRaw, 4), xRaw);
+          double y = Math.copySign(Math.pow(yRaw, 4), yRaw);
+          double omega = Math.copySign(Math.pow(omegaRaw, 4), omegaRaw);
+          // old inputs
+          // double x = Math.copySign(xRaw * xRaw * xRaw, xRaw);
+          // double y = Math.copySign(yRaw * yRaw * yRaw, yRaw);
+          // double omega = Math.copySign(omegaRaw * omegaRaw * omegaRaw, omegaRaw);
 
           // Convert to field-relative speeds
           ChassisSpeeds speeds =
               new ChassisSpeeds(
-                  x * drive.getMaxLinearSpeedMetersPerSec(),
-                  y * drive.getMaxLinearSpeedMetersPerSec(),
-                  omega * drive.getMaxAngularSpeedRadPerSec());
+                  x * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE,
+                  y * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE,
+                  omega * drive.getMaxAngularSpeedRadPerSec() * TURN_SPEED_SCALE);
           boolean isFlipped =
               DriverStation.getAlliance().isPresent()
                   && DriverStation.getAlliance().get() == DriverStation.Alliance.Red;
