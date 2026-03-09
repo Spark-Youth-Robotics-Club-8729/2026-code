@@ -148,7 +148,7 @@ public class VisionIOLimelight implements VisionIO {
           (mt1.rawFiducials != null && mt1.rawFiducials.length > 0)
               ? mt1.rawFiducials[0].ambiguity
               : 0.0;
-              
+
       observations.add(
           new PoseObservation(
               mt1.timestampSeconds,

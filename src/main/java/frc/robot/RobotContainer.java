@@ -326,7 +326,8 @@ public class RobotContainer {
     // OPERATOR (port 1)
     //
     // Right Trigger — EVERYTHING: ShotCalculator flywheels + hood + feeder + indexer (when ready)
-    // Left Trigger  — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the fuel to our side)
+    // Left Trigger  — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the
+    // fuel to our side)
     // Y             — FEEDER WHEELS only in
     // X             — FEEDER WHEELS and flywheel out
     // Right Bumper  — INTAKE IN
@@ -549,7 +550,8 @@ public class RobotContainer {
                       indexer.stop();
                     }))); */
 
-    // Left Trigger — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the fuel to our side)
+    // Left Trigger — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the fuel
+    // to our side)
     operator
         .leftTrigger(0.5)
         .whileTrue(
@@ -587,19 +589,19 @@ public class RobotContainer {
     operator.y().whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder));
 
     // X — FEEDER WHEELS and FLYWHEELS out
-    operator.x().whileTrue(
-        Commands.startEnd(
-            () -> {
-              shooter.ejectNote();
-              shooter.setFlywheelVelocity(-defaultFlywheelSpeedRPM);     // Adjust RPM if needed
-            },
-            () -> {
-              shooter.stopFeeder();
-              shooter.stop();
-            },
-            shooter
-        )
-    );
+    operator
+        .x()
+        .whileTrue(
+            Commands.startEnd(
+                () -> {
+                  shooter.ejectNote();
+                  shooter.setFlywheelVelocity(-defaultFlywheelSpeedRPM); // Adjust RPM if needed
+                },
+                () -> {
+                  shooter.stopFeeder();
+                  shooter.stop();
+                },
+                shooter));
 
     // Right Bumper — INTAKE IN
     operator.rightBumper().whileTrue(intake.intakeCommand());
@@ -613,7 +615,7 @@ public class RobotContainer {
     // POV Down — TOGGLE Slapdown (Down if Up, Up if Down)
     operator.povDown().onTrue(Commands.runOnce(intake::toggleSlapdown, intake));
 
-    // POV Up — JITTER while held (Agitate balls) 
+    // POV Up — JITTER while held (Agitate balls)
     operator.povUp().whileTrue(intake.jitterCommand());
 
     // POV Left — manually nudge hood DOWN by 1 degree
@@ -624,7 +626,7 @@ public class RobotContainer {
                 () -> {
                   double newAngle = shooter.getHoodPosition() - Units.degreesToRadians(1.0);
                   shooter.setHoodPosition(newAngle);
-                  
+
                   // debug prints
                   System.out.println(
                       "Hood calculated angle: " + Units.radiansToDegrees(newAngle) + " deg");
