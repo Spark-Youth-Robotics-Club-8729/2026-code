@@ -16,6 +16,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.FieldConstants;
+import frc.robot.subsystems.shooter.ShotCalculator.ShootingParameters;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -31,6 +32,21 @@ public class ShotCalculator {
 
   private static final double minDistance = 0.9; // meters
   private static final double maxDistance = 4.9; // meters
+
+  // --- TUNING CONSTANTS ---
+  // Flywheel: RPM = (Slope * distance) + Intercept
+  private static final double FLYWHEEL_SLOPE = 285.0;
+  private static final double FLYWHEEL_INTERCEPT = 1750.0;
+
+  // Hood Angle (Quadratic): Radians = (A * d^2) + (B * d) + C
+  private static final double HOOD_A = 0.021;
+  private static final double HOOD_B = 0.015;
+  private static final double HOOD_C = 0.145; // Base angle at close range
+
+  // Time of Flight (Quadratic): Seconds = (A * d^2) + (B * d) + C
+  private static final double TOF_A = -0.012;
+  private static final double TOF_B = 0.142;
+  private static final double TOF_C = 0.725;
 
   static {
     // Hood angle map — distance (meters) -> hood angle (radians)
@@ -145,7 +161,9 @@ public class ShotCalculator {
     // Iterative lookahead: converge on where the note will land accounting for robot motion
     double lookaheadDistance = pose.getTranslation().getDistance(targetPosition);
     Translation2d lookaheadTranslation = pose.getTranslation();
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0;
+        i < 5;
+        i++) { // changed from 10 to 5, but if it doesnt work, then change back to 10
       double tof = timeOfFlightMap.get(lookaheadDistance);
       lookaheadTranslation =
           new Translation2d(
@@ -155,14 +173,22 @@ public class ShotCalculator {
     }
 
     double finalDistance = lookaheadDistance;
-    double tof = timeOfFlightMap.get(finalDistance);
+    // double tof = timeOfFlightMap.get(finalDistance);
+    double tof = calculateTOF(finalDistance); // using the equation now instead of presets
 
     // Drive angle: aim robot center at target from the lookahead position
     Rotation2d driveAngle = targetPosition.minus(lookaheadTranslation).getAngle();
 
     boolean isValid = finalDistance >= minDistance && finalDistance <= maxDistance;
-    double hoodAngle = hoodAngleMap.get(finalDistance) + Units.degreesToRadians(hoodAngleOffsetDeg);
-    double flywheelSpeed = flywheelSpeedMap.get(finalDistance);
+    // double hoodAngle = hoodAngleMap.get(finalDistance) +
+    // Units.degreesToRadians(hoodAngleOffsetDeg);
+    // double flywheelSpeed = flywheelSpeedMap.get(finalDistance);
+    double hoodAngle =
+        calculateHoodAngle(finalDistance)
+            + Units.degreesToRadians(
+                hoodAngleOffsetDeg); // using the equation now instead of presets
+    double flywheelSpeed =
+        calculateFlywheelSpeed(finalDistance); // using the equation now instead of presets
 
     latestParameters =
         new ShootingParameters(isValid, hoodAngle, flywheelSpeed, finalDistance, tof, driveAngle);
@@ -207,6 +233,21 @@ public class ShotCalculator {
   /** Returns the target field position. */
   public Translation2d getTargetPosition() {
     return targetPosition;
+  }
+
+  // The equationss for flywheel speed, hood angle, and time of flight are based on empirical data
+  // and tuning. They can be adjusted as needed to better fit the actual performance of the robot.
+  private double calculateFlywheelSpeed(double distance) {
+    return (FLYWHEEL_SLOPE * distance) + FLYWHEEL_INTERCEPT;
+  }
+
+  private double calculateHoodAngle(double distance) {
+    // a*d^2 + b*d + c
+    return (HOOD_A * Math.pow(distance, 2)) + (HOOD_B * distance) + HOOD_C;
+  }
+
+  private double calculateTOF(double distance) {
+    return (TOF_A * Math.pow(distance, 2)) + (TOF_B * distance) + TOF_C;
   }
 
   /**

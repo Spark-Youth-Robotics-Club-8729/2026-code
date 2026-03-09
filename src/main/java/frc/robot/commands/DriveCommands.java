@@ -68,6 +68,12 @@ public class DriveCommands {
       DoubleSupplier xSupplier,
       DoubleSupplier ySupplier,
       DoubleSupplier omegaSupplier) {
+
+    // 1. Create Slew Rate Limiters (units are units-per-second, e.g., 3.0 = 0 to 1 in 0.33s)
+    SlewRateLimiter xLimiter = new SlewRateLimiter(3.0);
+    SlewRateLimiter yLimiter = new SlewRateLimiter(3.0);
+    SlewRateLimiter omegaLimiter = new SlewRateLimiter(3.0);
+
     return Commands.run(
         () -> {
           // Apply deadband
@@ -84,12 +90,17 @@ public class DriveCommands {
           // double y = Math.copySign(yRaw * yRaw * yRaw, yRaw);
           // double omega = Math.copySign(omegaRaw * omegaRaw * omegaRaw, omegaRaw);
 
+          // Apply slew rate limiting
+          double limitedX = xLimiter.calculate(x);
+          double limitedY = yLimiter.calculate(y);
+          double limitedOmega = omegaLimiter.calculate(omega);
+
           // Convert to field-relative speeds
           ChassisSpeeds speeds =
               new ChassisSpeeds(
-                  x * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE,
-                  y * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE,
-                  omega * drive.getMaxAngularSpeedRadPerSec() * TURN_SPEED_SCALE);
+                  limitedX * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE,
+                  limitedY * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE,
+                  limitedOmega * drive.getMaxAngularSpeedRadPerSec() * TURN_SPEED_SCALE);
           boolean isFlipped =
               DriverStation.getAlliance().isPresent()
                   && DriverStation.getAlliance().get() == DriverStation.Alliance.Red;

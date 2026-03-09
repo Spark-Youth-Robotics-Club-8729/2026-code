@@ -11,6 +11,7 @@ import static frc.robot.subsystems.intake.IntakeConstants.*;
 
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -19,8 +20,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.intake.IntakeIO.IntakeIOOutputMode;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
-
-import edu.wpi.first.math.util.Units;
 
 public class Intake extends SubsystemBase {
 
@@ -71,7 +70,8 @@ public class Intake extends SubsystemBase {
   // preventing false positives from encoder noise mid-movement.
   private final Debouncer slapdownSettleDebouncer = new Debouncer(0.15, DebounceType.kRising);
 
-  private final edu.wpi.first.wpilibj.Timer jitterTimer = new edu.wpi.first.wpilibj.Timer();   //jitter timer
+  private final edu.wpi.first.wpilibj.Timer jitterTimer =
+      new edu.wpi.first.wpilibj.Timer(); // jitter timer
 
   @AutoLogOutput private SlapdownGoal slapdownGoal = SlapdownGoal.UP;
   @AutoLogOutput private RollerGoal rollerGoal = RollerGoal.STOP;
@@ -117,15 +117,18 @@ public class Intake extends SubsystemBase {
     outputs.kP = slapdownKp;
     outputs.kD = slapdownKd;
     outputs.slapdownMode = IntakeIOOutputMode.CLOSED_LOOP;
-    
+
     switch (slapdownGoal) {
       case UP -> outputs.slapdownPositionRad = slapdownUpAngleRad;
       case DOWN -> outputs.slapdownPositionRad = slapdownDownAngleRad;
       case JITTER -> {
-        double offset = Units.degreesToRadians(5.0) * Math.sin(jitterTimer.get() * 20.0); // 5 degree offset at 20 Hz
+        double offset =
+            Units.degreesToRadians(5.0)
+                * Math.sin(jitterTimer.get() * 20.0); // 5 degree offset at 20 Hz
         outputs.slapdownPositionRad = slapdownDownAngleRad - offset;
       }
-    };
+    }
+    ;
     outputs.slapdownVelocityRadPerSec = 0.0;
 
     // ---- Slapdown state ----
@@ -174,9 +177,9 @@ public class Intake extends SubsystemBase {
 
   public void toggleSlapdown() {
     if (slapdownGoal == SlapdownGoal.UP) {
-        setSlapdownGoal(SlapdownGoal.DOWN);
+      setSlapdownGoal(SlapdownGoal.DOWN);
     } else {
-        setSlapdownGoal(SlapdownGoal.UP);
+      setSlapdownGoal(SlapdownGoal.UP);
     }
   }
 
@@ -227,21 +230,20 @@ public class Intake extends SubsystemBase {
   }
 
   /**
-   * Shakes the slapdown arm up and down slightly to agitate game pieces.
-   * Alternates between the DOWN position and a 5-degree offset.
+   * Shakes the slapdown arm up and down slightly to agitate game pieces. Alternates between the
+   * DOWN position and a 5-degree offset.
    */
   public Command jitterCommand() {
     return Commands.startEnd(
-        () -> {
-          jitterTimer.restart();
-          setSlapdownGoal(SlapdownGoal.JITTER);
-        },
-        () -> {
-          setSlapdownGoal(SlapdownGoal.DOWN);
-          jitterTimer.stop();
-        },
-        this
-    )
-    .withName("JitterCommand");
+            () -> {
+              jitterTimer.restart();
+              setSlapdownGoal(SlapdownGoal.JITTER);
+            },
+            () -> {
+              setSlapdownGoal(SlapdownGoal.DOWN);
+              jitterTimer.stop();
+            },
+            this)
+        .withName("JitterCommand");
   }
 }
