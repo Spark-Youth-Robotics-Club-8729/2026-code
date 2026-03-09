@@ -7,6 +7,7 @@
 
 package frc.robot;
 
+import static frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -325,8 +326,7 @@ public class RobotContainer {
     // OPERATOR (port 1)
     //
     // Right Trigger — EVERYTHING: ShotCalculator flywheels + hood + feeder + indexer (when ready)
-    // Left Trigger  — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the
-    // fuel to our side)
+    // Left Trigger  — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the fuel to our side)
     // Y             — FEEDER WHEELS only in
     // X             — FEEDER WHEELS and flywheel out
     // Right Bumper  — INTAKE IN
@@ -549,8 +549,7 @@ public class RobotContainer {
                       indexer.stop();
                     }))); */
 
-    // Left Trigger — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the fuel
-    // to our side)
+    // Left Trigger — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the fuel to our side)
     operator
         .leftTrigger(0.5)
         .whileTrue(
@@ -559,7 +558,7 @@ public class RobotContainer {
                       // Use max hood angle for high arc and high velocity for distance
                       double highArcHoodAngle =
                           ShooterConstants.hoodMaxAngleRad
-                              - Units.degreesToRadians(5.0); // Adjust this!!!!
+                              - Units.degreesToRadians(10.0); // Adjust this!!!!
                       double highVelocityRPM =
                           ShooterConstants.maxFlywheelSpeedRPM - 500; // Adjust this!!!!
 
@@ -587,8 +586,20 @@ public class RobotContainer {
     // Y — FEEDER WHEELS only in (no subsystem requirement)
     operator.y().whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder));
 
-    // X — FEEDER WHEELS and flywheel out (no subsystem requirement)
-    operator.x().whileTrue(Commands.startEnd(shooter::ejectNote, shooter::stopFeeder));
+    // X — FEEDER WHEELS and FLYWHEELS out
+    operator.x().whileTrue(
+        Commands.startEnd(
+            () -> {
+              shooter.ejectNote();
+              shooter.setFlywheelVelocity(-defaultFlywheelSpeedRPM);     // Adjust RPM if needed
+            },
+            () -> {
+              shooter.stopFeeder();
+              shooter.stop();
+            },
+            shooter
+        )
+    );
 
     // Right Bumper — INTAKE IN
     operator.rightBumper().whileTrue(intake.intakeCommand());
@@ -600,20 +611,9 @@ public class RobotContainer {
     operator.b().whileTrue(indexer.feedCommand());
 
     // POV Down — TOGGLE Slapdown (Down if Up, Up if Down)
-    operator
-        .povDown()
-        .onTrue(
-            Commands.runOnce(
-                () -> {
-                  if (intake.isSlapdownUp()) {
-                    intake.setSlapdownGoal(frc.robot.subsystems.intake.Intake.SlapdownGoal.DOWN);
-                  } else {
-                    intake.setSlapdownGoal(frc.robot.subsystems.intake.Intake.SlapdownGoal.UP);
-                  }
-                },
-                intake));
+    operator.povDown().onTrue(Commands.runOnce(intake::toggleSlapdown, intake));
 
-    // POV Up — JITTER while held (Agitate balls)
+    // POV Up — JITTER while held (Agitate balls) 
     operator.povUp().whileTrue(intake.jitterCommand());
 
     // POV Left — manually nudge hood DOWN by 1 degree
@@ -622,10 +622,16 @@ public class RobotContainer {
         .onTrue(
             Commands.runOnce(
                 () -> {
-                  double newAngle = shooter.getHoodPosition() - Units.degreesToRadians(2.0);
+                  double newAngle = shooter.getHoodPosition() - Units.degreesToRadians(1.0);
                   shooter.setHoodPosition(newAngle);
+                  
+                  // debug prints
                   System.out.println(
-                      "Hood manual angle: " + Units.radiansToDegrees(newAngle) + " deg");
+                      "Hood calculated angle: " + Units.radiansToDegrees(newAngle) + " deg");
+                  System.out.println(
+                      "Hood actual angle: "
+                          + Units.radiansToDegrees(shooter.getHoodPosition())
+                          + " deg");
                 },
                 shooter));
 
@@ -635,10 +641,12 @@ public class RobotContainer {
         .onTrue(
             Commands.runOnce(
                 () -> {
-                  double newAngle = shooter.getHoodPosition() + Units.degreesToRadians(4.0);
+                  double newAngle = shooter.getHoodPosition() + Units.degreesToRadians(1.0);
                   shooter.setHoodPosition(newAngle);
+
+                  // debug prints
                   System.out.println(
-                      "Hood manual angle: " + Units.radiansToDegrees(newAngle) + " deg");
+                      "Hood calculated angle: " + Units.radiansToDegrees(newAngle) + " deg");
                   System.out.println(
                       "Hood actual angle: "
                           + Units.radiansToDegrees(shooter.getHoodPosition())

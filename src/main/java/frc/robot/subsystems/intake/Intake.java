@@ -11,7 +11,6 @@ import static frc.robot.subsystems.intake.IntakeConstants.*;
 
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -21,6 +20,8 @@ import frc.robot.subsystems.intake.IntakeIO.IntakeIOOutputMode;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
+import edu.wpi.first.math.util.Units;
+
 public class Intake extends SubsystemBase {
 
   // ---------------------------------------------------------------------------
@@ -29,7 +30,8 @@ public class Intake extends SubsystemBase {
 
   public enum SlapdownGoal {
     UP,
-    DOWN
+    DOWN,
+    JITTER
   }
 
   public enum RollerGoal {
@@ -68,6 +70,8 @@ public class Intake extends SubsystemBase {
   // Arm must stay within tolerance for 150ms before we declare it settled,
   // preventing false positives from encoder noise mid-movement.
   private final Debouncer slapdownSettleDebouncer = new Debouncer(0.15, DebounceType.kRising);
+
+  private final edu.wpi.first.wpilibj.Timer jitterTimer = new edu.wpi.first.wpilibj.Timer();   //jitter timer
 
   @AutoLogOutput private SlapdownGoal slapdownGoal = SlapdownGoal.UP;
   @AutoLogOutput private RollerGoal rollerGoal = RollerGoal.STOP;
@@ -113,11 +117,15 @@ public class Intake extends SubsystemBase {
     outputs.kP = slapdownKp;
     outputs.kD = slapdownKd;
     outputs.slapdownMode = IntakeIOOutputMode.CLOSED_LOOP;
-    outputs.slapdownPositionRad =
-        switch (slapdownGoal) {
-          case UP -> slapdownUpAngleRad;
-          case DOWN -> slapdownDownAngleRad;
-        };
+    
+    switch (slapdownGoal) {
+      case UP -> outputs.slapdownPositionRad = slapdownUpAngleRad;
+      case DOWN -> outputs.slapdownPositionRad = slapdownDownAngleRad;
+      case JITTER -> {
+        double offset = Units.degreesToRadians(5.0) * Math.sin(jitterTimer.get() * 20.0); // 5 degree offset at 20 Hz
+        outputs.slapdownPositionRad = slapdownDownAngleRad - offset;
+      }
+    };
     outputs.slapdownVelocityRadPerSec = 0.0;
 
     // ---- Slapdown state ----
@@ -162,6 +170,14 @@ public class Intake extends SubsystemBase {
 
   public void setRollerGoal(RollerGoal goal) {
     this.rollerGoal = goal;
+  }
+
+  public void toggleSlapdown() {
+    if (slapdownGoal == SlapdownGoal.UP) {
+        setSlapdownGoal(SlapdownGoal.DOWN);
+    } else {
+        setSlapdownGoal(SlapdownGoal.UP);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -211,27 +227,21 @@ public class Intake extends SubsystemBase {
   }
 
   /**
-   * Shakes the slapdown arm up and down slightly to agitate game pieces. Alternates between the
-   * DOWN position and a 5-degree offset.
+   * Shakes the slapdown arm up and down slightly to agitate game pieces.
+   * Alternates between the DOWN position and a 5-degree offset.
    */
   public Command jitterCommand() {
-    return Commands.repeatingSequence(
-            // Move slightly up from the down position
-            Commands.runOnce(
-                () -> {
-                  this.slapdownGoal = SlapdownGoal.DOWN;
-                  outputs.slapdownPositionRad = slapdownDownAngleRad - Units.degreesToRadians(5.0);
-                },
-                this),
-            Commands.waitSeconds(0.08),
-            // Move back to the full down position
-            Commands.runOnce(
-                () -> {
-                  this.slapdownGoal = SlapdownGoal.DOWN;
-                  outputs.slapdownPositionRad = slapdownDownAngleRad;
-                },
-                this),
-            Commands.waitSeconds(0.08))
-        .finallyDo(() -> setSlapdownGoal(SlapdownGoal.DOWN));
+    return Commands.startEnd(
+        () -> {
+          jitterTimer.restart();
+          setSlapdownGoal(SlapdownGoal.JITTER);
+        },
+        () -> {
+          setSlapdownGoal(SlapdownGoal.DOWN);
+          jitterTimer.stop();
+        },
+        this
+    )
+    .withName("JitterCommand");
   }
 }
