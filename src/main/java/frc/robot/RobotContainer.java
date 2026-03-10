@@ -629,15 +629,10 @@ public class RobotContainer {
     // B — INDEXER IN
     operator.b().whileTrue(indexer.feedCommand());
 
-    // POV Down — TOGGLE Slapdown (Down if Up, Up if Down) and rollers run
-    operator.povDown().onTrue(
-        Commands.sequence(
-            Commands.runOnce(intake::toggleSlapdown, intake),          // requires intake
-            Commands.runOnce(() -> intake.setRollerGoal(Intake.RollerGoal.INTAKE)) // NO requirement
-        )
-    );
+    // POV Down — TOGGLE Slapdown (Down if Up, Up if Down) and rollers run (done inside toggleSlapdown command)
+    operator.povDown().onTrue(Commands.runOnce(intake::toggleSlapdown, intake));
 
-    // POV Up — JITTER while held (Agitate balls) and run the intake rollers (done inside jitter command)
+    // POV Up — JITTER while held (Agitate balls) and run the intake rollers (done inside jitterCommand)
     operator.povUp().whileTrue(intake.jitterCommand());
 
     // POV Left — manually nudge hood DOWN by 1 degree

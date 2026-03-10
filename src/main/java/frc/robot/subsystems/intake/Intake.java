@@ -122,7 +122,7 @@ public class Intake extends SubsystemBase {
       case UP -> outputs.slapdownPositionRad = slapdownUpAngleRad;
       case DOWN -> outputs.slapdownPositionRad = slapdownDownAngleRad;
       case JITTER -> {
-        double offset = Math.abs(Units.degreesToRadians(15.0) * Math.sin(jitterTimer.get() * 10.0));
+        double offset = Math.abs(Units.degreesToRadians(jitterAmplitudeDeg) * Math.sin(jitterTimer.get() * jitterFrequencyHz));
         outputs.slapdownPositionRad = slapdownDownAngleRad - offset;
       }
     }
@@ -176,8 +176,10 @@ public class Intake extends SubsystemBase {
   public void toggleSlapdown() {
     if (isSlapdownUp()) {
       setSlapdownGoal(SlapdownGoal.DOWN);
+      setRollerGoal(RollerGoal.STOP);
     } else {
       setSlapdownGoal(SlapdownGoal.UP);
+      setRollerGoal(RollerGoal.INTAKE);
     }
   }
 
