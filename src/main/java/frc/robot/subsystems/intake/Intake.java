@@ -236,9 +236,11 @@ public class Intake extends SubsystemBase {
             () -> {
               jitterTimer.restart();
               setSlapdownGoal(SlapdownGoal.JITTER);
+              setRollerGoal(RollerGoal.INTAKE);
             },
             () -> {
               setSlapdownGoal(SlapdownGoal.DOWN);
+              setRollerGoal(RollerGoal.STOP);
               jitterTimer.stop();
             },
             this)

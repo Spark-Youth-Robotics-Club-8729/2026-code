@@ -156,7 +156,17 @@ public class VisionIOLimelight implements VisionIO {
 
     // MegaTag1
     var mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
-    if (mt1 != null && mt1.tagCount >= megatag1MinTags && mt1.pose != null) {
+    boolean mt1HasValidTag = false;
+      if (mt1 != null && mt1.rawFiducials != null) {
+          for (var f : mt1.rawFiducials) {
+              if (!BLOCKED_TAG_IDS.contains(f.id)) {
+                  mt1HasValidTag = true;
+                  break;
+              }
+          }
+      }
+
+    if (mt1 != null && mt1HasValidTag && mt1.tagCount >= megatag1MinTags && mt1.pose != null) {
       double ambiguity =
           (mt1.rawFiducials != null && mt1.rawFiducials.length > 0)
               ? mt1.rawFiducials[0].ambiguity
@@ -176,7 +186,17 @@ public class VisionIOLimelight implements VisionIO {
 
     // MegaTag2
     var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(name);
-    if (mt2 != null && mt2.tagCount >= megatag2MinTags && mt2.pose != null) {
+    boolean mt2HasValidTag = false;
+      if (mt2 != null && mt2.rawFiducials != null) {
+          for (var f : mt2.rawFiducials) {
+              if (!BLOCKED_TAG_IDS.contains(f.id)) {
+                  mt2HasValidTag = true;
+                  break;
+              }
+          }
+      } 
+
+    if (mt2 != null && mt2HasValidTag && mt2.tagCount >= megatag2MinTags && mt2.pose != null) {
       observations.add(
           new PoseObservation(
               mt2.timestampSeconds,

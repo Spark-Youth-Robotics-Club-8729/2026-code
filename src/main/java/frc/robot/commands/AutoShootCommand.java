@@ -110,7 +110,7 @@ public class AutoShootCommand extends Command {
 
     // ---- Limelight TX-based visual servoing ----
     double omega;
-    boolean hasTarget = vision.hasTarget(cameraIndex);
+    boolean hasTarget = vision.hasHubTarget(cameraIndex);
 
     if (hasTarget) {
       double txDeg = vision.getTargetX(cameraIndex).getDegrees();
