@@ -328,6 +328,8 @@ public class RobotContainer {
     // Right Trigger — EVERYTHING: ShotCalculator flywheels + hood + feeder + indexer (when ready)
     // Left Trigger  — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the
     // fuel to our side)
+    // Left Trigger  — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the
+    // fuel to our side)
     // Y             — FEEDER WHEELS only in
     // X             — FEEDER WHEELS and flywheel out
     // Right Bumper  — INTAKE IN
@@ -552,6 +554,8 @@ public class RobotContainer {
 
     // Left Trigger — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the fuel
     // to our side)
+    // Left Trigger — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the fuel
+    // to our side)
     operator
         .leftTrigger(0.5)
         .whileTrue(
@@ -602,6 +606,19 @@ public class RobotContainer {
                   shooter.stop();
                 },
                 shooter));
+    operator
+        .x()
+        .whileTrue(
+            Commands.startEnd(
+                () -> {
+                  shooter.ejectNote();
+                  shooter.setFlywheelVelocity(-defaultFlywheelSpeedRPM); // Adjust RPM if needed
+                },
+                () -> {
+                  shooter.stopFeeder();
+                  shooter.stop();
+                },
+                shooter));
 
     // Right Bumper — INTAKE IN
     operator.rightBumper().whileTrue(intake.intakeCommand());
@@ -626,6 +643,7 @@ public class RobotContainer {
                 () -> {
                   double newAngle = shooter.getHoodPosition() - Units.degreesToRadians(1.0);
                   shooter.setHoodPosition(newAngle);
+
 
                   // debug prints
                   System.out.println(

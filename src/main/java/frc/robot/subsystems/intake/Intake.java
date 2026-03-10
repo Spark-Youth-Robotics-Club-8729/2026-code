@@ -176,7 +176,7 @@ public class Intake extends SubsystemBase {
   }
 
   public void toggleSlapdown() {
-    if (slapdownGoal == SlapdownGoal.UP) {
+    if (isSlapdownUp()) {
       setSlapdownGoal(SlapdownGoal.DOWN);
     } else {
       setSlapdownGoal(SlapdownGoal.UP);
