@@ -122,9 +122,7 @@ public class Intake extends SubsystemBase {
       case UP -> outputs.slapdownPositionRad = slapdownUpAngleRad;
       case DOWN -> outputs.slapdownPositionRad = slapdownDownAngleRad;
       case JITTER -> {
-        double offset =
-            Units.degreesToRadians(5.0)
-                * Math.sin(jitterTimer.get() * 20.0); // 5 degree offset at 20 Hz
+        double offset = Math.abs(Units.degreesToRadians(15.0) * Math.sin(jitterTimer.get() * 10.0));
         outputs.slapdownPositionRad = slapdownDownAngleRad - offset;
       }
     }

@@ -74,14 +74,6 @@ public class VisionIOLimelight implements VisionIO {
     inputs.connected = (nowMs - lastHeartbeatChangeMs) < heartbeatTimeoutMs;
 
     // -----------------------------------------------------------------------
-    // Basic targeting data (tx/ty from crosshair — for servoing/auto-aim)
-    // -----------------------------------------------------------------------
-    inputs.latestTargetObservation =
-        new TargetObservation(
-            Rotation2d.fromDegrees(LimelightHelpers.getTX(name)),
-            Rotation2d.fromDegrees(LimelightHelpers.getTY(name)));
-
-    // -----------------------------------------------------------------------
     // Push robot orientation to LL4 for MegaTag2 + IMU assist
     // Must be called before getBotPoseEstimate_wpiBlue_MegaTag2
     // -----------------------------------------------------------------------
@@ -110,8 +102,29 @@ public class VisionIOLimelight implements VisionIO {
 
     inputs.tagIds = visibleTagIds;
     inputs.rawFiducialDistances = rawDistances.stream().mapToDouble(Double::doubleValue).toArray();
-    inputs.tagCount = rawFiducials.length;
-    inputs.avgTagDistance = rawFiducials.length > 0 ? totalDist / rawFiducials.length : 0.0;
+    inputs.tagCount = visibleTagIds.length;
+    inputs.avgTagDistance = visibleTagIds.length > 0 ? totalDist / visibleTagIds.length : 0.0;
+
+
+    // -----------------------------------------------------------------------
+    // Basic targeting data (tx/ty from crosshair — for servoing/auto-aim) -- this time, it ignore the blocked tags
+    // -----------------------------------------------------------------------
+    RawFiducial bestTarget = null;
+    for (RawFiducial f : rawFiducials) {
+        if (!BLOCKED_TAG_IDS.contains(f.id)) {
+            bestTarget = f;
+            break;
+        }
+    }
+
+    if (bestTarget != null) {
+        inputs.latestTargetObservation = new TargetObservation(
+            Rotation2d.fromDegrees(bestTarget.txnc),
+            Rotation2d.fromDegrees(bestTarget.tync));
+    } else {
+        inputs.latestTargetObservation = new TargetObservation(
+            Rotation2d.kZero, Rotation2d.kZero);
+    }
 
     // -----------------------------------------------------------------------
     // Read LL-provided standard deviations
