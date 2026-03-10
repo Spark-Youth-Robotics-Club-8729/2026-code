@@ -70,6 +70,8 @@ public class Intake extends SubsystemBase {
   // preventing false positives from encoder noise mid-movement.
   private final Debouncer slapdownSettleDebouncer = new Debouncer(0.15, DebounceType.kRising);
 
+  private final Debouncer slapdownStallDebouncer = new Debouncer(slapdownStallDebounceSeconds, DebounceType.kRising);
+
   private final edu.wpi.first.wpilibj.Timer jitterTimer =
       new edu.wpi.first.wpilibj.Timer(); // jitter timer
 
@@ -122,10 +124,8 @@ public class Intake extends SubsystemBase {
       case UP -> outputs.slapdownPositionRad = slapdownUpAngleRad;
       case DOWN -> outputs.slapdownPositionRad = slapdownDownAngleRad;
       case JITTER -> {
-        double offset =
-            Units.degreesToRadians(5.0)
-                * Math.sin(jitterTimer.get() * 20.0); // 5 degree offset at 20 Hz
-        outputs.slapdownPositionRad = slapdownDownAngleRad - offset;
+        boolean high = ((int)(jitterTimer.get() * jitterFrequencyHz)) % 2 == 0;  // Will rapidly alternates between two positions
+        outputs.slapdownPositionRad = slapdownDownAngleRad + (high ? jitterAmplitudeRad : -jitterAmplitudeRad);
       }
     }
     ;
@@ -141,10 +141,18 @@ public class Intake extends SubsystemBase {
             ? (slapdownGoal == SlapdownGoal.UP ? SlapdownState.UP : SlapdownState.DOWN)
             : SlapdownState.MOVING;
 
+    // ---- Stall detection ----
+    boolean stalled = slapdownStallDebouncer.calculate(inputs.slapdownStalled);
+    if (stalled && slapdownGoal != SlapdownGoal.UP) {
+        // If stalled while trying to move down/jitter, cut power by switching to brake
+        outputs.slapdownMode = IntakeIOOutputMode.BRAKE;
+    }
+
     io.applyOutputs(outputs);
 
     Logger.recordOutput("Intake/SlapdownAtGoal", atGoal);
     Logger.recordOutput("Intake/SlapdownSettled", settled);
+    Logger.recordOutput("Intake/SlapdownStalled", stalled); 
   }
 
   // ---------------------------------------------------------------------------

@@ -76,6 +76,9 @@ public class IntakeIOSim implements IntakeIO {
     inputs.slapdownAppliedVolts = slapdownAppliedVolts;
     inputs.slapdownCurrentAmps = slapdownSim.getCurrentDrawAmps();
     inputs.slapdownTempCelsius = 25.0;
+
+    inputs.slapdownAbsolutePositionRad = slapdownSim.getAngleRads(); // mirrors position in sim
+    inputs.slapdownStalled = false; // sim never stalls
   }
 
   @Override

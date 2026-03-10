@@ -18,7 +18,6 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.revrobotics.PersistMode;
-import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
@@ -26,6 +25,7 @@ import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkAbsoluteEncoder;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -52,8 +52,9 @@ public class IntakeIOHardware implements IntakeIO {
   // Slapdown — SparkMax (NEO brushless) via REVLib
   // ---------------------------------------------------------------------------
   private final SparkMax slapdownMotor;
-  private final RelativeEncoder slapdownEncoder;
+  //private final RelativeEncoder slapdownEncoder;
   private final SparkClosedLoopController slapdownController;
+  private final SparkAbsoluteEncoder slapdownAbsoluteEncoder;
 
   // Track last PID gains so we only reconfigure when they change
   private double lastKp = -1.0;
@@ -82,22 +83,23 @@ public class IntakeIOHardware implements IntakeIO {
 
     // ---- Slapdown (SparkMax + NEO) ----
     slapdownMotor = new SparkMax(slapdownMotorID, MotorType.kBrushless);
-    slapdownEncoder = slapdownMotor.getEncoder();
+    //slapdownEncoder = slapdownMotor.getEncoder();
     slapdownController = slapdownMotor.getClosedLoopController();
+    slapdownAbsoluteEncoder = slapdownMotor.getAbsoluteEncoder();
 
     SparkMaxConfig slapdownConfig = new SparkMaxConfig();
     slapdownConfig
         .idleMode(IdleMode.kBrake)
         .smartCurrentLimit(30)
-        .inverted(false); // TODO: flip to true if arm moves the wrong direction
+        .inverted(false); 
     slapdownConfig
-        .encoder
-        // Conversion factors so all encoder reads return radians / rad/s directly
-        .positionConversionFactor((2.0 * Math.PI) / slapdownGearRatio)
-        .velocityConversionFactor((2.0 * Math.PI) / (slapdownGearRatio * 60.0));
+        .absoluteEncoder
+        .positionConversionFactor(2.0 * Math.PI)   // rotations → radians. Aboslute enocders gives 0-1 range
+        .velocityConversionFactor(2.0 * Math.PI / 60.0)  // RPM → rad/s. Aboslute enocders gives 0-1 range
+        .zeroOffset(slapdownAbsoluteEncoderOffsetRad / (2.0 * Math.PI)); // SparkMax expects 0-1 range
     slapdownConfig
         .closedLoop
-        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+        .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)  // <-- changed from kPrimaryEncoder
         .p(slapdownKp)
         .d(slapdownKd)
         .outputRange(-1.0, 1.0);
@@ -114,10 +116,15 @@ public class IntakeIOHardware implements IntakeIO {
         slapdownConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
     // Seed encoder at the retracted (up) position on startup
-    slapdownEncoder.setPosition(slapdownUpAngleRad);
+    //slapdownEncoder.setPosition(slapdownUpAngleRad);   // removed because we are using absolute sencoders now
 
     lastKp = slapdownKp;
     lastKd = slapdownKd;
+
+    // use this debug print (move the slapdown to up and down position before enabling DS) to get the absolute encoder offset and angles
+    System.out.println("[Intake] Absolute encoder position on boot: "
+      + slapdownAbsoluteEncoder.getPosition() + " rad ("
+      + Math.toDegrees(slapdownAbsoluteEncoder.getPosition()) + " deg)");  
   }
 
   @Override
@@ -133,12 +140,17 @@ public class IntakeIOHardware implements IntakeIO {
 
     // Slapdown — hasActiveFault() is the current non-deprecated connection check
     inputs.slapdownConnected = !slapdownMotor.hasActiveFault();
-    inputs.slapdownPositionRad = slapdownEncoder.getPosition(); // radians (via conversion factor)
+    //inputs.slapdownPositionRad = slapdownEncoder.getPosition(); // radians (via conversion factor)
+    inputs.slapdownPositionRad = slapdownAbsoluteEncoder.getPosition();   // switvhed to absolute encoder
     inputs.slapdownVelocityRadPerSec =
-        slapdownEncoder.getVelocity(); // rad/s (via conversion factor)
+        slapdownAbsoluteEncoder.getVelocity(); // rad/s (via conversion factor)
     inputs.slapdownAppliedVolts = slapdownMotor.getAppliedOutput() * slapdownMotor.getBusVoltage();
     inputs.slapdownCurrentAmps = slapdownMotor.getOutputCurrent();
     inputs.slapdownTempCelsius = slapdownMotor.getMotorTemperature();
+
+    // Absolute encoder and stall detection
+    inputs.slapdownAbsolutePositionRad = slapdownAbsoluteEncoder.getPosition();
+    inputs.slapdownStalled = inputs.slapdownCurrentAmps >= slapdownStallCurrentAmps;
   }
 
   @Override

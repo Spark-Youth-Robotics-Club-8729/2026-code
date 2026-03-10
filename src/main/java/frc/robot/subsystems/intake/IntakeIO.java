@@ -21,6 +21,8 @@ public interface IntakeIO {
 
     // Slapdown (SparkMax + built-in NEO encoder)
     public boolean slapdownConnected = false;
+    public double slapdownAbsolutePositionRad = 0.0;
+    public boolean slapdownStalled = false; 
     public double slapdownPositionRad = 0.0;
     public double slapdownVelocityRadPerSec = 0.0;
     public double slapdownAppliedVolts = 0.0;
