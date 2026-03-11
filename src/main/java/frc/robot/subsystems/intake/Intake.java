@@ -122,7 +122,16 @@ public class Intake extends SubsystemBase {
       case UP -> outputs.slapdownPositionRad = slapdownUpAngleRad;
       case DOWN -> outputs.slapdownPositionRad = slapdownDownAngleRad;
       case JITTER -> {
-        double offset = Math.abs(Units.degreesToRadians(jitterAmplitudeDeg) * Math.sin(jitterTimer.get() * jitterFrequencyHz));
+        double radPerSec = jitterFrequencyHz * (2.0 * Math.PI);
+        double offset = Math.abs(Units.degreesToRadians(jitterAmplitudeDeg) * Math.sin(jitterTimer.get() * radPerSec));
+        /*     // If sine wave thingy does not work, then comment the two lines above, and uncomment this one
+        double cycleTime = 1.0 / jitterFrequencyHz;
+        if ((jitterTimer.get() % cycleTime) < (cycleTime / 2.0)) {
+          offset = Units.degreesToRadians(jitterAmplitudeDeg);
+        } else {
+          offset = 0.0;
+        }
+        */
         outputs.slapdownPositionRad = slapdownDownAngleRad - offset;
       }
     }
