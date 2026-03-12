@@ -81,7 +81,7 @@ public class ShooterConstants {
   // ---------------------------------------------------------------------------
   // Hood angle limits (radians, at the mechanism — after gear reduction)
   // ---------------------------------------------------------------------------
-  public static final double hoodMinAngleRad = Units.degreesToRadians(10.0); // TODO: Set actual
+  public static final double hoodMinAngleRad = Units.degreesToRadians(5.0); // TODO: Set actual
   public static final double hoodMaxAngleRad = Units.degreesToRadians(45.0); // TODO: Set actual
 
   // ---------------------------------------------------------------------------

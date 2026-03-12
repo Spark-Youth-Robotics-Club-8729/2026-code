@@ -278,11 +278,20 @@ public class RobotContainer {
   private void configureButtonBindings() {
     // -------------------------------------------------------------------------
     // DRIVER (port 0)
+    //
+    // Left Stick    — FIELD-RELATIVE translation (X and Y)
+    // Right Stick   — Rotation (Omega)
+    // A             — HOLD to snap/drive at 0 degrees (facing forward)    -- test pls
+    // B             — RESET GYRO to current heading (sets rotation to 0)   -- test pls
+    // X             — X-BRAKE (lock wheels in X-pattern to resist pushing)      -- test pls
+    // Y             — HOLD to Limelight aim (Auto-rotate to target) while driving  -- test pls
+    // Left Bumper   — HOLD for Proportional Limelight Aiming + Manual Translation  -- test pls
+    // Right Bumper  — HOLD for Limelight Aiming + Automatic Range/Distance logic  -- test pls
+    // POV Down      — PRESS to set hood down to its minimum resting angle  -- test pls
     // -------------------------------------------------------------------------
 
     drive.setDefaultCommand(
-        DriveCommands.joystickDrive( // changed to fied relative instead of
-            // joystickDriveRobotRelative
+        DriveCommands.joystickDrive( // for robot relative, do this: joystickDriveRobotRelative
             drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
 
     driver
@@ -322,26 +331,26 @@ public class RobotContainer {
     // Driver RIGHT BUMPER — Limelight aim + auto range (no translation)
     driver.rightBumper().whileTrue(new LimelightAimAndRangeCommand(drive, vision, 0));
 
+    // Driver POV Down — Manually push the hood down to its minimum resting angle
+    driver.povDown().onTrue(Commands.runOnce(() -> {shooter.setHoodPosition(frc.robot.subsystems.shooter.ShooterConstants.hoodMinAngleRad);}, shooter));
+
     // -------------------------------------------------------------------------
     // OPERATOR (port 1)
     //
-    // Right Trigger — EVERYTHING: ShotCalculator flywheels + hood + feeder + indexer (when ready)
-    // Left Trigger  — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the
-    // fuel to our side)
-    // Left Trigger  — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the
-    // fuel to our side)
-    // Y             — FEEDER WHEELS only in
-    // X             — FEEDER WHEELS and flywheel out
-    // Right Bumper  — INTAKE IN
-    // Left Bumper   — INTAKE OUT
-    // B             — INDEXER IN
-    // Right Stick   — (unused)
-    // POV Down      — TOGGLE SLAPDOWN (Down if Up, Up if Down)
-    // POV Up        — JITTER while held (Agitate balls) *not working
-    // POV Left      — nudge hood angle offset DOWN (-1 deg)
-    // POV Right     — nudge hood angle offset UP (+1 deg)
-    // Left Stick    — TEST flywheels at default speed
-    // A             — Full auto-shoot (AutoShootCommand)
+    // Right Trigger  — HOLD to spin up flywheels + hood and AUTO-FEED once ready
+    // Left Trigger   — HOLD for high-arcing "Clearance" shot to pass fuel
+    // Y              — HOLD to run FEEDER wheels in (manual intake to shooter)
+    // X              — HOLD to EJECT (runs feeder and flywheels in reverse)   --- doesnt work...
+    // Right Bumper   — HOLD to run INTAKE wheels in
+    // Left Bumper    — HOLD to run INTAKE wheels out
+    // B              — HOLD to run INDEXER wheels in
+    // A              — HOLD for FULL AUTO-SHOOT (Vision aim + Spin + Feed)   -- test again to see if it gets full routine done
+    // POV Down       — PRESS to toggle intake SLAPDOWN (up/down)
+    // POV Up         — HOLD to JITTER/agitate balls in intake   -- havent tested current version
+    // POV Left       — PRESS to nudge hood angle DOWN (-1 degree)
+    // POV Right      — PRESS to nudge hood angle UP (+1 degree)
+    // Left Stick     — HOLD to test flywheels at default 3000 RPM
+    // Right Stick    — HOLD for HARDCODED TRENCH SHOT (Preset angle/RPM)   -- havent tested yet, adjust values pls
     // -------------------------------------------------------------------------
 
     // Right Trigger — shoot: spin up flywheels + hood, then feed once both are at target.
@@ -554,8 +563,6 @@ public class RobotContainer {
 
     // Left Trigger — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the fuel
     // to our side)
-    // Left Trigger — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the fuel
-    // to our side)
     operator
         .leftTrigger(0.5)
         .whileTrue(
@@ -629,6 +636,9 @@ public class RobotContainer {
     // B — INDEXER IN
     operator.b().whileTrue(indexer.feedCommand());
 
+    // Operator A — full auto-shoot (visual TX aim + spin up + feed)
+    operator.a().whileTrue(new AutoShootCommand(drive, shooter, indexer, vision, 0));
+
     // POV Down — TOGGLE Slapdown (Down if Up, Up if Down) and rollers run (done inside toggleSlapdown command)
     operator.povDown().onTrue(Commands.runOnce(intake::toggleSlapdown, intake));
 
@@ -685,8 +695,36 @@ public class RobotContainer {
                 shooter::stop,
                 shooter));
 
-    // Operator A — full auto-shoot (visual TX aim + spin up + feed)
-    operator.a().whileTrue(new AutoShootCommand(drive, shooter, indexer, vision, 0));
+    // Right Stick Press — Hardcoded Trench Shot Preset
+    operator
+        .rightStick()
+        .whileTrue(
+            Commands.run(
+                    () -> {
+                      // ADJUST THESE BASED ON TESTING PLS
+                      double trenchHoodAngleRad = Units.degreesToRadians(25.0); 
+                      double trenchFlywheelRPM = 4500.0;
+
+                      shooter.setHoodPosition(trenchHoodAngleRad);
+                      shooter.setFlywheelVelocity(trenchFlywheelRPM);
+
+                      // Only feed once flywheels and hood are ready
+                      if (shooter.areFlywheelsAtSpeed() && shooter.isHoodAtPosition()) {
+                        indexer.feed();
+                        shooter.feedNote();
+                      } else {
+                        shooter.stopFeeder();
+                        indexer.stop();
+                      }
+                    },
+                    shooter,
+                    indexer)
+                .finallyDo(
+                    () -> {
+                      shooter.stop();
+                      shooter.stopFeeder();
+                      indexer.stop();
+                    }));
   }
 
   public Command getAutonomousCommand() {
