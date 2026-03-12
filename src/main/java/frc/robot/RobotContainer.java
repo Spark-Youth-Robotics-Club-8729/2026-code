@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.commands.AutoRoutines;
 import frc.robot.commands.AutoShootCommand;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.LimelightAimAndRangeCommand;
@@ -150,6 +151,31 @@ public class RobotContainer {
         "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
+
+    // --- Composed fuel-cycle auto routines ---
+    autoChooser.addOption(
+        "Shoot Only", AutoRoutines.shootOnlyAuto(drive, shooter, indexer, vision));
+    autoChooser.addOption(
+        "1-Cycle Fuel Auto S1",
+        AutoRoutines.oneCycleFuelAutoS1(drive, shooter, indexer, intake, vision));
+    autoChooser.addOption(
+        "1-Cycle Fuel Auto S2",
+        AutoRoutines.oneCycleFuelAutoS2(drive, shooter, indexer, intake, vision));
+    autoChooser.addOption(
+        "2-Cycle Fuel Auto S2 (Top)",
+        AutoRoutines.twoCycleFuelAutoS2Top(drive, shooter, indexer, intake, vision));
+    autoChooser.addOption(
+        "2-Cycle Fuel Auto S2 (Bottom)",
+        AutoRoutines.twoCycleFuelAutoS2Bottom(drive, shooter, indexer, intake, vision));
+    autoChooser.addOption(
+        "1-Cycle Fuel Auto S3",
+        AutoRoutines.oneCycleFuelAutoS3(drive, shooter, indexer, intake, vision));
+    autoChooser.addOption(
+        "2-Cycle Fuel Auto S3",
+        AutoRoutines.twoCycleFuelAutoS3(drive, shooter, indexer, intake, vision));
+    autoChooser.addOption(
+        "1-Cycle Fuel Auto S4",
+        AutoRoutines.oneCycleFuelAutoS4(drive, shooter, indexer, intake, vision));
 
     // Add every .path file as a standalone auto option
     String[] pathNames = {
