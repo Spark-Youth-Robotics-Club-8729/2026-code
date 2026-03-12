@@ -284,7 +284,7 @@ public class RobotContainer {
     // Y             — HOLD to Limelight aim (Auto-rotate to target) while driving  -- doesnt work
     // Left Bumper   — HOLD for Proportional Limelight Aiming + Manual Translation  -- test pls
     // Right Bumper  — HOLD for Limelight Aiming + Automatic Range/Distance logic  -- test pls
-    // POV Down      — PRESS to set hood down to its minimum resting angle  -- works
+    // POV Down      — PRESS to set hood down to its minimum resting angle 
     // -------------------------------------------------------------------------
 
     drive.setDefaultCommand(
@@ -345,14 +345,14 @@ public class RobotContainer {
     // Right Trigger  — HOLD to spin up flywheels + hood and AUTO-FEED once ready
     // Left Trigger   — HOLD for high-arcing "Clearance" shot to pass fuel
     // Y              — HOLD to run FEEDER wheels in (manual intake to shooter)
-    // X              — HOLD to EJECT (runs feeder and flywheels in reverse)   --- doesnt work...
+    // X              — HOLD to EJECT (runs feeder and flywheels in reverse)   
     // Right Bumper   — HOLD to run INTAKE wheels in
     // Left Bumper    — HOLD to run INTAKE wheels out
     // B              — HOLD to run INDEXER wheels in
-    // A              — HOLD for FULL AUTO-SHOOT (Vision aim + Spin + Feed)   -- test again to see
+    // A              — HOLD for FULL AUTO-SHOOT (Vision aim + Spin + Feed)   
     // if it gets full routine done
     // POV Down       — PRESS to toggle intake SLAPDOWN (up/down)
-    // POV Up         — HOLD to JITTER/agitate balls in intake   -- havent tested current version
+    // POV Up         — HOLD to JITTER/agitate balls in intake   
     // POV Left       — PRESS to nudge hood angle DOWN (-1 degree)
     // POV Right      — PRESS to nudge hood angle UP (+1 degree)
     // Left Stick     — HOLD to test flywheels at default 3000 RPM

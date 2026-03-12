@@ -32,7 +32,7 @@ public class AutoShootCommand extends Command {
   // Minimum angular command to overcome static friction (rad/s)
   private static final double MIN_AIM_COMMAND_RAD_S = 0.3;
   // Dead-zone: don't correct if within ±1 degree
-  private static final double AIM_DEAD_BAND_DEG = 1.0;
+  private static final double AIM_DEAD_BAND_DEG = 5.0;
   // Seek speed when no target is visible (rad/s)
   private static final double SEEK_SPEED_RAD_S = 1.2;
   // Gyro rate threshold above which we suppress feeding (deg/s)
