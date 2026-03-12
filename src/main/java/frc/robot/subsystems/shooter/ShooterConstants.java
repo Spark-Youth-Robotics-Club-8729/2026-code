@@ -11,9 +11,9 @@ import edu.wpi.first.math.util.Units;
 
 public class ShooterConstants {
   // CAN IDs
-  public static final int leftFlywheelID = 10; // TODO: Set actual CAN ID
-  public static final int rightFlywheelID = 11; // TODO: Set actual CAN ID
-  public static final int hoodMotorID = 12; // TODO: Set actual CAN ID
+  public static final int leftFlywheelID = 10;
+  public static final int rightFlywheelID = 11;
+  public static final int hoodMotorID = 12;
   public static final int feederMotorID = 13; // renamed from indexerMotorID — green feeder wheels
   public static final String canBus = "rio"; // Change to "canivore" if using CANivore
 
@@ -51,8 +51,6 @@ public class ShooterConstants {
 
   // Fraction of flywheel surface speed transferred to the note exit speed.
   // Accounts for wheel compression / slip (typical range: 0.80 – 0.95).
-  // TODO: Characterise on the real robot (shoot at known distance, measure exit speed vs RPM).
-  public static final double noteExitEfficiency = 0.85;
 
   // ---------------------------------------------------------------------------
   // Flywheel PID / feedforward constants

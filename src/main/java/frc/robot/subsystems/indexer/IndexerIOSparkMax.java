@@ -29,7 +29,7 @@ public class IndexerIOSparkMax implements IndexerIO {
     config
         .idleMode(IdleMode.kBrake)
         .smartCurrentLimit(40)
-        .inverted(false); // TODO: flip to true if direction is wrong
+        .inverted(false); // flip to true if direction is wrong
     config.encoder
         // Convert so velocity reads in output shaft RPM (after 4:1 gearbox)
         .velocityConversionFactor(1.0 / gearRatio);

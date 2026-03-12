@@ -27,7 +27,7 @@ public class DriveConstants {
   public static final double driveBaseRadius = Math.hypot(trackWidth / 2.0, wheelBase / 2.0);
   // Full robot width including bumpers (track width + 2 × ~3.25" bumper depth = ~33")
   // TODO: Verify actual bumper depth for this robot
-  public static final double fullWidthX = trackWidth + Units.inchesToMeters(6.5);
+  public static final double fullWidthX = trackWidth + Units.inchesToMeters(4);
   public static final Translation2d[] moduleTranslations =
       new Translation2d[] {
         new Translation2d(trackWidth / 2.0, wheelBase / 2.0),

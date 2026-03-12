@@ -11,8 +11,8 @@ import edu.wpi.first.math.util.Units;
 
 public class IntakeConstants {
   // CAN IDs
-  public static final int rollerMotorID = 20; // TODO: Set actual CAN ID
-  public static final int slapdownMotorID = 21; // TODO: Set actual CAN ID
+  public static final int rollerMotorID = 20;
+  public static final int slapdownMotorID = 21;
   public static final String canBus = "rio"; // Change to "canivore" if needed
 
   // Slapdown gear ratio (motor rotations per mechanism rotation)
@@ -35,8 +35,8 @@ public class IntakeConstants {
   public static final double rollerOuttakeVolts = -4.0; // Reduced from -6.0 — TODO: Tune
 
   // Jitter constans
-  public static final double jitterFrequencyHz = 0.25; // TODO: Tune
-  public static final double jitterAmplitudeDeg = 45.0; // TODO: Tune
+  public static final double jitterFrequencyHz = 0.25; // Tune
+  public static final double jitterAmplitudeDeg = 45.0; // Tune
 
   private IntakeConstants() {}
 }

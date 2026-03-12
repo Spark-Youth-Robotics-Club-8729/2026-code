@@ -89,7 +89,7 @@ public class IntakeIOHardware implements IntakeIO {
     slapdownConfig
         .idleMode(IdleMode.kBrake)
         .smartCurrentLimit(30)
-        .inverted(false); // TODO: flip to true if arm moves the wrong direction
+        .inverted(false); // flip to true if arm moves the wrong direction
     slapdownConfig
         .encoder
         // Conversion factors so all encoder reads return radians / rad/s directly

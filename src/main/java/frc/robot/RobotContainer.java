@@ -68,10 +68,6 @@ public class RobotContainer {
   // Distance estimator — TODO: fill in real measurements before competition
   private final LimelightDistanceEstimator distanceEstimator;
 
-  // shooter adjustments
-  private static final double SHOOTER_ADJUST =
-      1.9; // overshoot prediction so it is more accurate for hood
-
   // (SHOOT_PRESETS and shootPresetIndex removed — now using ShotCalculator)
 
   public RobotContainer() {
