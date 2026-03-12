@@ -16,6 +16,11 @@ import edu.wpi.first.math.util.Units;
 
 public class DriveConstants {
   public static final double maxSpeedMetersPerSec = 4.8;
+
+  // Slew rate limiting constants
+  public static final double kMagnitudeSlewRate = 1.8; // units/sec (0→1 in ~0.56s)
+  public static final double kRotationalSlewRate = 2.0; // rad/sec
+  public static final double kDirectionSlewRate = 1.2; // rad/sec
   public static final double odometryFrequency = 100.0; // Hz
   public static final double trackWidth = Units.inchesToMeters(26.5);
   public static final double wheelBase = Units.inchesToMeters(26.5);

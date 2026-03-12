@@ -281,13 +281,14 @@ public class RobotContainer {
     //
     // Left Stick    — FIELD-RELATIVE translation (X and Y)
     // Right Stick   — Rotation (Omega)
-    // A             — HOLD to snap/drive at 0 degrees (facing forward)    -- test pls
+    // A             — HOLD to snap/drive at 0 degrees (facing forward)    -- kinda works
     // B             — RESET GYRO to current heading (sets rotation to 0)   -- test pls
-    // X             — X-BRAKE (lock wheels in X-pattern to resist pushing)      -- test pls
-    // Y             — HOLD to Limelight aim (Auto-rotate to target) while driving  -- test pls
+    // X             — X-BRAKE (lock wheels in X-pattern to resist pushing)      -- works pretty
+    // sure
+    // Y             — HOLD to Limelight aim (Auto-rotate to target) while driving  -- doesnt work
     // Left Bumper   — HOLD for Proportional Limelight Aiming + Manual Translation  -- test pls
     // Right Bumper  — HOLD for Limelight Aiming + Automatic Range/Distance logic  -- test pls
-    // POV Down      — PRESS to set hood down to its minimum resting angle  -- test pls
+    // POV Down      — PRESS to set hood down to its minimum resting angle  -- works
     // -------------------------------------------------------------------------
 
     drive.setDefaultCommand(
@@ -332,7 +333,15 @@ public class RobotContainer {
     driver.rightBumper().whileTrue(new LimelightAimAndRangeCommand(drive, vision, 0));
 
     // Driver POV Down — Manually push the hood down to its minimum resting angle
-    driver.povDown().onTrue(Commands.runOnce(() -> {shooter.setHoodPosition(frc.robot.subsystems.shooter.ShooterConstants.hoodMinAngleRad);}, shooter));
+    driver
+        .povDown()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  shooter.setHoodPosition(
+                      frc.robot.subsystems.shooter.ShooterConstants.hoodMinAngleRad);
+                },
+                shooter));
 
     // -------------------------------------------------------------------------
     // OPERATOR (port 1)
@@ -344,13 +353,15 @@ public class RobotContainer {
     // Right Bumper   — HOLD to run INTAKE wheels in
     // Left Bumper    — HOLD to run INTAKE wheels out
     // B              — HOLD to run INDEXER wheels in
-    // A              — HOLD for FULL AUTO-SHOOT (Vision aim + Spin + Feed)   -- test again to see if it gets full routine done
+    // A              — HOLD for FULL AUTO-SHOOT (Vision aim + Spin + Feed)   -- test again to see
+    // if it gets full routine done
     // POV Down       — PRESS to toggle intake SLAPDOWN (up/down)
     // POV Up         — HOLD to JITTER/agitate balls in intake   -- havent tested current version
     // POV Left       — PRESS to nudge hood angle DOWN (-1 degree)
     // POV Right      — PRESS to nudge hood angle UP (+1 degree)
     // Left Stick     — HOLD to test flywheels at default 3000 RPM
-    // Right Stick    — HOLD for HARDCODED TRENCH SHOT (Preset angle/RPM)   -- havent tested yet, adjust values pls
+    // Right Stick    — HOLD for HARDCODED TRENCH SHOT (Preset angle/RPM)   -- havent tested yet,
+    // adjust values pls
     // -------------------------------------------------------------------------
 
     // Right Trigger — shoot: spin up flywheels + hood, then feed once both are at target.
@@ -378,9 +389,9 @@ public class RobotContainer {
                             ShotCalculator.getInstance()
                                 .calculateFromDistance(dist, drive.getPose().getRotation());
                         hoodAngle = params.hoodAngleRad();
-                        flywheelRPM =
-                            params.flywheelSpeedRPM()
-                                + 500; // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
+                        flywheelRPM = 872.9;
+                        // params.flywheelSpeedRPM()
+                        //     + 500; // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
                       } else {
                         // No tag — safe default (close range)
                         hoodAngle = ShooterConstants.hoodMinAngleRad;
@@ -639,21 +650,22 @@ public class RobotContainer {
     // Operator A — full auto-shoot (visual TX aim + spin up + feed)
     operator.a().whileTrue(new AutoShootCommand(drive, shooter, indexer, vision, 0));
 
-    // POV Down — TOGGLE Slapdown (Down if Up, Up if Down) and rollers run (done inside toggleSlapdown command)
+    // POV Down — TOGGLE Slapdown (Down if Up, Up if Down) and rollers run (done inside
+    // toggleSlapdown command)
     operator.povDown().onTrue(Commands.runOnce(intake::toggleSlapdown, intake));
 
-    // POV Up — JITTER while held (Agitate balls) and run the intake rollers (done inside jitterCommand)
+    // POV Up — JITTER while held (Agitate balls) and run the intake rollers (done inside
+    // jitterCommand)
     operator.povUp().whileTrue(intake.jitterCommand());
 
     // POV Left — manually nudge hood DOWN by 1 degree
-    operator  
+    operator
         .povLeft()
         .onTrue(
             Commands.runOnce(
                 () -> {
                   double newAngle = shooter.getHoodPosition() - Units.degreesToRadians(1.0);
                   shooter.setHoodPosition(newAngle);
-
 
                   // debug prints
                   System.out.println(
@@ -702,7 +714,7 @@ public class RobotContainer {
             Commands.run(
                     () -> {
                       // ADJUST THESE BASED ON TESTING PLS
-                      double trenchHoodAngleRad = Units.degreesToRadians(25.0); 
+                      double trenchHoodAngleRad = Units.degreesToRadians(25.0);
                       double trenchFlywheelRPM = 4500.0;
 
                       shooter.setHoodPosition(trenchHoodAngleRad);

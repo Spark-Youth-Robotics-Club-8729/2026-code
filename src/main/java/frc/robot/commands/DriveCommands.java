@@ -17,6 +17,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.util.WPIUtilJNI;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
@@ -33,8 +34,8 @@ import java.util.function.Supplier;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.6; // changed from 0.1 for making it less sensitive
-  private static final double DRIVE_SPEED_SCALE = 0.2;
-  private static final double TURN_SPEED_SCALE = 0.2;
+  private static final double DRIVE_SPEED_SCALE = 0.15;
+  private static final double TURN_SPEED_SCALE = 0.15;
   private static final double ANGLE_KP = 5.0;
   private static final double ANGLE_KD = 0.4;
   private static final double ANGLE_MAX_VELOCITY = 5.0; // (changed from 8)
@@ -69,10 +70,15 @@ public class DriveCommands {
       DoubleSupplier ySupplier,
       DoubleSupplier omegaSupplier) {
 
-    // 1. Create Slew Rate Limiters (units are units-per-second, e.g., 3.0 = 0 to 1 in 0.33s)
-    SlewRateLimiter xLimiter = new SlewRateLimiter(3.0);
-    SlewRateLimiter yLimiter = new SlewRateLimiter(3.0);
-    SlewRateLimiter omegaLimiter = new SlewRateLimiter(3.0);
+    // Polar slew rate state (mutable references for use inside lambda)
+    SlewRateLimiter magLimiter = new SlewRateLimiter(DriveConstants.kMagnitudeSlewRate);
+    SlewRateLimiter rotLimiter = new SlewRateLimiter(DriveConstants.kRotationalSlewRate);
+    double[] slewState = {
+      0.0, // [0] currentTranslationDir
+      0.0, // [1] currentTranslationMag
+      0.0, // [2] currentRotation
+      WPIUtilJNI.now() * 1e-6 // [3] prevTime
+    };
 
     return Commands.run(
         () -> {
@@ -81,26 +87,58 @@ public class DriveCommands {
           double yRaw = MathUtil.applyDeadband(ySupplier.getAsDouble(), DEADBAND);
           double omegaRaw = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
 
-          // Square inputs for finer low-speed control while preserving sign (softer cubic function)
+          // Square inputs for finer low-speed control while preserving sign
           double x = Math.copySign(Math.pow(xRaw, 4), xRaw);
           double y = Math.copySign(Math.pow(yRaw, 4), yRaw);
           double omega = Math.copySign(Math.pow(omegaRaw, 4), omegaRaw);
-          // old inputs
-          // double x = Math.copySign(xRaw * xRaw * xRaw, xRaw);
-          // double y = Math.copySign(yRaw * yRaw * yRaw, yRaw);
-          // double omega = Math.copySign(omegaRaw * omegaRaw * omegaRaw, omegaRaw);
 
-          // Apply slew rate limiting
-          double limitedX = xLimiter.calculate(x);
-          double limitedY = yLimiter.calculate(y);
-          double limitedOmega = omegaLimiter.calculate(omega);
+          // --- Polar slew rate limiting ---
+          double inputTranslationDir = Math.atan2(y, x);
+          double inputTranslationMag = Math.hypot(x, y);
+
+          // Direction slew rate scales with current magnitude
+          double directionSlewRate;
+          if (slewState[1] != 0.0) {
+            directionSlewRate = Math.abs(DriveConstants.kDirectionSlewRate / slewState[1]);
+          } else {
+            directionSlewRate = 500.0; // effectively instantaneous when stopped
+          }
+
+          double currentTime = WPIUtilJNI.now() * 1e-6;
+          double elapsedTime = currentTime - slewState[3];
+          double angleDif = slewAngleDifference(inputTranslationDir, slewState[0]);
+
+          if (angleDif < 0.45 * Math.PI) {
+            slewState[0] =
+                slewStepTowardsCircular(
+                    slewState[0], inputTranslationDir, directionSlewRate * elapsedTime);
+            slewState[1] = magLimiter.calculate(inputTranslationMag);
+          } else if (angleDif > 0.85 * Math.PI) {
+            if (slewState[1] > 1e-4) {
+              // Decelerate to zero before reversing direction
+              slewState[1] = magLimiter.calculate(0.0);
+            } else {
+              slewState[0] = slewWrapAngle(slewState[0] + Math.PI);
+              slewState[1] = magLimiter.calculate(inputTranslationMag);
+            }
+          } else {
+            slewState[0] =
+                slewStepTowardsCircular(
+                    slewState[0], inputTranslationDir, directionSlewRate * elapsedTime);
+            slewState[1] = magLimiter.calculate(0.0);
+          }
+          slewState[3] = currentTime;
+
+          double limitedX = slewState[1] * Math.cos(slewState[0]);
+          double limitedY = slewState[1] * Math.sin(slewState[0]);
+          slewState[2] = rotLimiter.calculate(omega);
 
           // Convert to field-relative speeds
           ChassisSpeeds speeds =
               new ChassisSpeeds(
                   limitedX * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE,
                   limitedY * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE,
-                  limitedOmega * drive.getMaxAngularSpeedRadPerSec() * TURN_SPEED_SCALE);
+                  slewState[2] * drive.getMaxAngularSpeedRadPerSec() * TURN_SPEED_SCALE);
           boolean isFlipped =
               DriverStation.getAlliance().isPresent()
                   && DriverStation.getAlliance().get() == DriverStation.Alliance.Red;
@@ -328,6 +366,33 @@ public class DriveCommands {
           drive.runVelocity(new ChassisSpeeds(vx, vy, vomega));
         },
         drive);
+  }
+
+  // --- Polar slew rate helpers (replaces SwerveUtils) ---
+
+  /** Wraps an angle to the range (-π, π]. */
+  private static double slewWrapAngle(double angle) {
+    double twoPi = 2 * Math.PI;
+    if (angle == -Math.PI) return Math.PI;
+    double wrapped = ((angle % twoPi) + twoPi) % twoPi;
+    return wrapped > Math.PI ? wrapped - twoPi : wrapped;
+  }
+
+  /** Absolute angular difference between two angles, in [0, π]. */
+  private static double slewAngleDifference(double angleA, double angleB) {
+    double diff = Math.abs(angleA - angleB);
+    return diff > Math.PI ? (2 * Math.PI) - diff : diff;
+  }
+
+  /** Steps {@code current} toward {@code target} (circular) by at most {@code stepSize}. */
+  private static double slewStepTowardsCircular(double current, double target, double stepSize) {
+    current = slewWrapAngle(current);
+    target = slewWrapAngle(target);
+    double diff = target - current;
+    // Choose shortest arc
+    if (Math.abs(diff) > Math.PI) diff -= Math.signum(diff) * 2 * Math.PI;
+    if (Math.abs(diff) <= stepSize) return target;
+    return current + Math.signum(diff) * stepSize;
   }
 
   private static class WheelRadiusCharacterizationState {

@@ -105,25 +105,24 @@ public class VisionIOLimelight implements VisionIO {
     inputs.tagCount = visibleTagIds.length;
     inputs.avgTagDistance = visibleTagIds.length > 0 ? totalDist / visibleTagIds.length : 0.0;
 
-
     // -----------------------------------------------------------------------
-    // Basic targeting data (tx/ty from crosshair — for servoing/auto-aim) -- this time, it ignore the blocked tags
+    // Basic targeting data (tx/ty from crosshair — for servoing/auto-aim) -- this time, it ignore
+    // the blocked tags
     // -----------------------------------------------------------------------
     RawFiducial bestTarget = null;
     for (RawFiducial f : rawFiducials) {
-        if (!BLOCKED_TAG_IDS.contains(f.id)) {
-            bestTarget = f;
-            break;
-        }
+      if (!BLOCKED_TAG_IDS.contains(f.id)) {
+        bestTarget = f;
+        break;
+      }
     }
 
     if (bestTarget != null) {
-        inputs.latestTargetObservation = new TargetObservation(
-            Rotation2d.fromDegrees(bestTarget.txnc),
-            Rotation2d.fromDegrees(bestTarget.tync));
+      inputs.latestTargetObservation =
+          new TargetObservation(
+              Rotation2d.fromDegrees(bestTarget.txnc), Rotation2d.fromDegrees(bestTarget.tync));
     } else {
-        inputs.latestTargetObservation = new TargetObservation(
-            Rotation2d.kZero, Rotation2d.kZero);
+      inputs.latestTargetObservation = new TargetObservation(Rotation2d.kZero, Rotation2d.kZero);
     }
 
     // -----------------------------------------------------------------------
@@ -157,14 +156,14 @@ public class VisionIOLimelight implements VisionIO {
     // MegaTag1
     var mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
     boolean mt1HasValidTag = false;
-      if (mt1 != null && mt1.rawFiducials != null) {
-          for (var f : mt1.rawFiducials) {
-              if (!BLOCKED_TAG_IDS.contains(f.id)) {
-                  mt1HasValidTag = true;
-                  break;
-              }
-          }
+    if (mt1 != null && mt1.rawFiducials != null) {
+      for (var f : mt1.rawFiducials) {
+        if (!BLOCKED_TAG_IDS.contains(f.id)) {
+          mt1HasValidTag = true;
+          break;
+        }
       }
+    }
 
     if (mt1 != null && mt1HasValidTag && mt1.tagCount >= megatag1MinTags && mt1.pose != null) {
       double ambiguity =
@@ -187,14 +186,14 @@ public class VisionIOLimelight implements VisionIO {
     // MegaTag2
     var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(name);
     boolean mt2HasValidTag = false;
-      if (mt2 != null && mt2.rawFiducials != null) {
-          for (var f : mt2.rawFiducials) {
-              if (!BLOCKED_TAG_IDS.contains(f.id)) {
-                  mt2HasValidTag = true;
-                  break;
-              }
-          }
-      } 
+    if (mt2 != null && mt2.rawFiducials != null) {
+      for (var f : mt2.rawFiducials) {
+        if (!BLOCKED_TAG_IDS.contains(f.id)) {
+          mt2HasValidTag = true;
+          break;
+        }
+      }
+    }
 
     if (mt2 != null && mt2HasValidTag && mt2.tagCount >= megatag2MinTags && mt2.pose != null) {
       observations.add(
