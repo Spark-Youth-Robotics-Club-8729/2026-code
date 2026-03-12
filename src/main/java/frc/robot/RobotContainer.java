@@ -278,6 +278,12 @@ public class RobotContainer {
   private void configureButtonBindings() {
     // -------------------------------------------------------------------------
     // DRIVER (port 0)
+    // JOYSTICKS - Driving field orientated
+    // A         - sets driving angle to 0 degrees
+    // B         - reset x and y position to 0 degrees
+    // X         - stops and locks wheels in X formation
+    // LEFT BUMPER - limelight auto-aim while driving
+    // RIGHT BUMPER - limelight auto-aim while stationary
     // -------------------------------------------------------------------------
 
     drive.setDefaultCommand(
@@ -326,8 +332,6 @@ public class RobotContainer {
     // OPERATOR (port 1)
     //
     // Right Trigger — EVERYTHING: ShotCalculator flywheels + hood + feeder + indexer (when ready)
-    // Left Trigger  — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the
-    // fuel to our side)
     // Left Trigger  — High Arcing "Neutral Zone to Alliance Zone" Shot (essentially to pass the
     // fuel to our side)
     // Y             — FEEDER WHEELS only in
