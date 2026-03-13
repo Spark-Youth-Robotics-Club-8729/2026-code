@@ -31,8 +31,9 @@ public class IntakeIOSim implements IntakeIO {
       new SingleJointedArmSim(
           DCMotor.getNEO(1),
           slapdownGearRatio,
-          0.05, // MOI estimate (kg·m²) — TODO: update with real value
-          0.4, // Arm length estimate (m) — TODO: update with real value
+          0.05, // MOI estimate (kg·m²) — TODO: update with real value (difficult to measure)
+          0.4, // Arm length estimate (m) — TODO: this should be measured (should be easy to measure
+          // if we find the CoM)
           slapdownUpAngleRad,
           slapdownDownAngleRad,
           true, // Simulate gravity

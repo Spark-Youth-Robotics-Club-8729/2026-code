@@ -18,8 +18,8 @@ public class IndexerConstants {
   public static final double gearRatio = 4.0;
 
   // Voltages (positive = feed toward shooter, negative = reverse)
-  public static final double feedVolts = 6.0; // Tune
-  public static final double reverseVolts = -4.0; // Tune
+  public static final double feedVolts = 6.0; 
+  public static final double reverseVolts = -4.0; 
 
   private IndexerConstants() {}
 }

@@ -8,6 +8,7 @@
 package frc.robot.subsystems.drive;
 
 import com.pathplanner.lib.config.ModuleConfig;
+import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -25,8 +26,6 @@ public class DriveConstants {
   public static final double trackWidth = Units.inchesToMeters(26.5);
   public static final double wheelBase = Units.inchesToMeters(26.5);
   public static final double driveBaseRadius = Math.hypot(trackWidth / 2.0, wheelBase / 2.0);
-  // Full robot width including bumpers (track width + 2 × ~3.25" bumper depth = ~33")
-  // TODO: Verify actual bumper depth for this robot
   public static final double fullWidthX = trackWidth + Units.inchesToMeters(4);
   public static final Translation2d[] moduleTranslations =
       new Translation2d[] {
@@ -70,9 +69,9 @@ public class DriveConstants {
 
   // Drive PID/FF configuration (velocity control in m/s)
   // kV = nominalVoltage / freeSpeedMps — tells SparkMax how many volts per m/s
-  public static final double driveKp = 0.04;
-  public static final double driveKd = 0.0;
-  public static final double driveKs = 0.0;
+  public static final double driveKp = 0.04;   // TODO: Tune
+  public static final double driveKd = 0.0;    // TODO: Tune
+  public static final double driveKs = 0.0;    // TODO: Tune
   public static final double kDrivingMotorFreeSpeedRps = 5676.0 / 60.0; // NEO free speed
   public static final double kDriveWheelFreeSpeedMps =
       (kDrivingMotorFreeSpeedRps * wheelRadiusMeters * 2 * Math.PI) / driveMotorReduction;
@@ -94,8 +93,8 @@ public class DriveConstants {
   public static final double turnEncoderVelocityFactor = (2 * Math.PI) / 60.0; // RPM -> Rad/Sec
 
   // Turn PID configuration
-  public static final double turnKp = 1.0;
-  public static final double turnKd = 0.0;
+  public static final double turnKp = 1.0;    // TODO: Tune
+  public static final double turnKd = 0.0;   // TODO: Tune
   public static final double turnSimP = 8.0;
   public static final double turnSimD = 0.0;
   public static final double turnPIDMinInput = 0; // Radians
@@ -117,4 +116,7 @@ public class DriveConstants {
               driveMotorCurrentLimit,
               1),
           moduleTranslations);
+  // PathPlanner Robot-Relative PID Constants
+  public static final PIDConstants pathPlannerTranslationConstants = new PIDConstants(5.0, 0.0, 0.0);
+  public static final PIDConstants pathPlannerRotationConstants = new PIDConstants(5.0, 0.0, 0.0);
 }

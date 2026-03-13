@@ -13,15 +13,14 @@ public class IntakeConstants {
   // CAN IDs
   public static final int rollerMotorID = 20;
   public static final int slapdownMotorID = 21;
-  public static final String canBus = "rio"; // Change to "canivore" if needed
+  public static final String canBus = "rio"; 
 
   // Slapdown gear ratio (motor rotations per mechanism rotation)
-  public static final double slapdownGearRatio = 45 * 32 / 22; //
+  public static final double slapdownGearRatio = 45 * 32 / 22; 
 
   // Slapdown angle limits (radians, at the mechanism after gear reduction)
-  public static final double slapdownUpAngleRad = Units.degreesToRadians(0.0); // TODO: Set actual
-  public static final double slapdownDownAngleRad =
-      Units.degreesToRadians(90.0); // TODO: Set actual
+  public static final double slapdownUpAngleRad = Units.degreesToRadians(0.0);
+  public static final double slapdownDownAngleRad = Units.degreesToRadians(90.0);
 
   // Slapdown PID gains
   public static final double slapdownKp = 0.5; // TODO: Tune
@@ -31,12 +30,12 @@ public class IntakeConstants {
   public static final double slapdownToleranceRad = Units.degreesToRadians(2.0);
 
   // Roller voltages (positive = intake in, negative = outtake)
-  public static final double rollerIntakeVolts = 6.0; // Reduced from 10.0 — TODO: Tune
-  public static final double rollerOuttakeVolts = -4.0; // Reduced from -6.0 — TODO: Tune
+  public static final double rollerIntakeVolts = 6.0; 
+  public static final double rollerOuttakeVolts = -4.0; 
 
   // Jitter constans
-  public static final double jitterFrequencyHz = 0.25; // Tune
-  public static final double jitterAmplitudeDeg = 45.0; // Tune
+  public static final double jitterFrequencyHz = 0.25; 
+  public static final double jitterAmplitudeDeg = 45.0;
 
   private IntakeConstants() {}
 }

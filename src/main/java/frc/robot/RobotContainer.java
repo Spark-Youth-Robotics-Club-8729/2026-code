@@ -65,7 +65,7 @@ public class RobotContainer {
   // Dashboard
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  // Distance estimator — TODO: fill in real measurements before competition
+  // Distance estimator
   private final LimelightDistanceEstimator distanceEstimator;
 
   // (SHOOT_PRESETS and shootPresetIndex removed — now using ShotCalculator)
@@ -264,9 +264,10 @@ public class RobotContainer {
     // Distance estimator (only meaningful on real hardware; values are placeholders)
     distanceEstimator =
         new LimelightDistanceEstimator(
-            vision, 0, 20.0, // TODO: camera height above floor (inches)
-            60.0, // TODO: target height above floor (inches)
-            25.0); // TODO: camera mount angle above horizontal (degrees)
+            vision, 0, 
+            20.836, // CHANGED FROM 20.0 TO 20.836 (actual).  This might mess up shooter
+            44.25,   // CHANGED FROM 60.0 TO 44.25 (actual). This might mess up shooter
+            20.0);   // CHANGED FROM 25.0 TO 20.0 (actual). This might mess up shooter
 
     configureButtonBindings();
   }
@@ -277,14 +278,14 @@ public class RobotContainer {
     //
     // Left Stick    — FIELD-RELATIVE translation (X and Y)
     // Right Stick   — Rotation (Omega)
-    // A             — HOLD to snap/drive at 0 degrees (facing forward)    -- kinda works
+    // A             — HOLD to snap/drive at 0 degrees (facing forward)
     // B             — RESET GYRO to current heading (sets rotation to 0)   -- test pls
-    // X             — X-BRAKE (lock wheels in X-pattern to resist pushing)      -- works pretty
+    // X             — X-BRAKE (lock wheels in X-pattern to resist pushing)
     // sure
     // Y             — HOLD to Limelight aim (Auto-rotate to target) while driving  -- doesnt work
-    // Left Bumper   — HOLD for Proportional Limelight Aiming + Manual Translation  -- test pls
-    // Right Bumper  — HOLD for Limelight Aiming + Automatic Range/Distance logic  -- test pls
-    // POV Down      — PRESS to set hood down to its minimum resting angle 
+    // Left Bumper   — HOLD for Proportional Limelight Aiming + Manual Translation  -- doesnt work
+    // Right Bumper  — HOLD for Limelight Aiming + Automatic Range/Distance logic  -- doesnt work
+    // POV Down      — PRESS to set hood down to its minimum resting angle
     // -------------------------------------------------------------------------
 
     drive.setDefaultCommand(
@@ -345,19 +346,17 @@ public class RobotContainer {
     // Right Trigger  — HOLD to spin up flywheels + hood and AUTO-FEED once ready
     // Left Trigger   — HOLD for high-arcing "Clearance" shot to pass fuel
     // Y              — HOLD to run FEEDER wheels in (manual intake to shooter)
-    // X              — HOLD to EJECT (runs feeder and flywheels in reverse)   
+    // X              — HOLD to EJECT (runs feeder and flywheels in reverse)
     // Right Bumper   — HOLD to run INTAKE wheels in
     // Left Bumper    — HOLD to run INTAKE wheels out
     // B              — HOLD to run INDEXER wheels in
-    // A              — HOLD for FULL AUTO-SHOOT (Vision aim + Spin + Feed)   
-    // if it gets full routine done
+    // A              — HOLD for FULL AUTO-SHOOT (Vision aim + Spin + Feed)
     // POV Down       — PRESS to toggle intake SLAPDOWN (up/down)
-    // POV Up         — HOLD to JITTER/agitate balls in intake   
-    // POV Left       — PRESS to nudge hood angle DOWN (-1 degree)
-    // POV Right      — PRESS to nudge hood angle UP (+1 degree)
+    // POV Up         — HOLD to JITTER/agitate balls in intake
+    // POV Left       — PRESS to nudge hood angle DOWN (-3 degree)
+    // POV Right      — PRESS to nudge hood angle UP (+3 degree)
     // Left Stick     — HOLD to test flywheels at default 3000 RPM
-    // Right Stick    — HOLD for HARDCODED TRENCH SHOT (Preset angle/RPM)   -- havent tested yet,
-    // adjust values pls
+    // Right Stick    — HOLD for TRENCH SHOT (Preset angle/RPM)   -- havent tested yet
     // -------------------------------------------------------------------------
 
     // Right Trigger — shoot: spin up flywheels + hood, then feed once both are at target.
@@ -578,9 +577,9 @@ public class RobotContainer {
                       // Use max hood angle for high arc and high velocity for distance
                       double highArcHoodAngle =
                           ShooterConstants.hoodMaxAngleRad
-                              - Units.degreesToRadians(10.0); // Adjust this!!!!
+                              - Units.degreesToRadians(20.0); // TODO: Adjust this!!!!
                       double highVelocityRPM =
-                          ShooterConstants.maxFlywheelSpeedRPM - 500; // Adjust this!!!!
+                          ShooterConstants.maxFlywheelSpeedRPM - 1500; // TODO: Adjust this!!!!
 
                       shooter.setHoodPosition(highArcHoodAngle);
                       shooter.setFlywheelVelocity(highVelocityRPM);
@@ -613,7 +612,7 @@ public class RobotContainer {
             Commands.startEnd(
                 () -> {
                   shooter.ejectNote();
-                  shooter.setFlywheelVelocity(-defaultFlywheelSpeedRPM); // Adjust RPM if needed
+                  shooter.setFlywheelVelocity(-defaultFlywheelSpeedRPM);
                 },
                 () -> {
                   shooter.stopFeeder();
@@ -626,7 +625,7 @@ public class RobotContainer {
             Commands.startEnd(
                 () -> {
                   shooter.ejectNote();
-                  shooter.setFlywheelVelocity(-defaultFlywheelSpeedRPM); // Adjust RPM if needed
+                  shooter.setFlywheelVelocity(-defaultFlywheelSpeedRPM);
                 },
                 () -> {
                   shooter.stopFeeder();
@@ -654,13 +653,13 @@ public class RobotContainer {
     // jitterCommand)
     operator.povUp().whileTrue(intake.jitterCommand());
 
-    // POV Left — manually nudge hood DOWN by 1 degree
+    // POV Left — manually nudge hood DOWN by 3 degree
     operator
         .povLeft()
         .onTrue(
             Commands.runOnce(
                 () -> {
-                  double newAngle = shooter.getHoodPosition() - Units.degreesToRadians(1.0);
+                  double newAngle = shooter.getHoodPosition() - Units.degreesToRadians(3.0);
                   shooter.setHoodPosition(newAngle);
 
                   // debug prints
@@ -673,13 +672,13 @@ public class RobotContainer {
                 },
                 shooter));
 
-    // POV Right — manually nudge hood UP by 1 degree (edited to 3 degrees)
+    // POV Right — manually nudge hood UP by 3 degree
     operator
         .povRight()
         .onTrue(
             Commands.runOnce(
                 () -> {
-                  double newAngle = shooter.getHoodPosition() + Units.degreesToRadians(1.0);
+                  double newAngle = shooter.getHoodPosition() + Units.degreesToRadians(3.0);
                   shooter.setHoodPosition(newAngle);
 
                   // debug prints
@@ -703,15 +702,15 @@ public class RobotContainer {
                 shooter::stop,
                 shooter));
 
-    // Right Stick Press — Hardcoded Trench Shot Preset
+    // Right Stick Press — Trench Shot Preset
     operator
         .rightStick()
         .whileTrue(
             Commands.run(
                     () -> {
-                      // ADJUST THESE BASED ON TESTING PLS
-                      double trenchHoodAngleRad = Units.degreesToRadians(25.0);
-                      double trenchFlywheelRPM = 4500.0;
+                      double trenchHoodAngleRad =
+                          Units.degreesToRadians(25.0); // TODO: Adjust this value!!!!
+                      double trenchFlywheelRPM = 4500.0; // TODO: Adjust this value!!!!
 
                       shooter.setHoodPosition(trenchHoodAngleRad);
                       shooter.setFlywheelVelocity(trenchFlywheelRPM);

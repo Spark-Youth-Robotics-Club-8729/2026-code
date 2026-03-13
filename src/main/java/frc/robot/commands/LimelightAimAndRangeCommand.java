@@ -15,11 +15,11 @@ import org.littletonrobotics.junction.Logger;
  */
 public class LimelightAimAndRangeCommand extends Command {
 
-  private static final double KP_AIM = 0.035;
-  private static final double KP_DISTANCE = 0.1;
+  private static final double KP_AIM = 0.035;    // TODO: Tune
+  private static final double KP_DISTANCE = 0.1;   // TODO: Tune
   private static final double MIN_AIM_COMMAND_RAD_S = 0.3;
-  private static final double AIM_DEAD_BAND_DEG = 1.0;
-  private static final double RANGE_DEAD_BAND_DEG = 1.0;
+  private static final double AIM_DEAD_BAND_DEG = 3.0;  // Increased from 1 degree
+  private static final double RANGE_DEAD_BAND_DEG = 3.0;   // Increased from 1 degree
 
   private final Drive drive;
   private final Vision vision;

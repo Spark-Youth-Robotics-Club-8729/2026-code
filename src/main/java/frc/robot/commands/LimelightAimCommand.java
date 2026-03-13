@@ -21,15 +21,15 @@ import org.littletonrobotics.junction.Logger;
 public class LimelightAimCommand extends Command {
 
   // Proportional gain — tune if robot oscillates (lower) or undershoots (higher)
-  private static final double KP_AIM = 0.035;
+  private static final double KP_AIM = 0.035;   // TODO: Tune
   // Minimum angular command to overcome static friction (rad/s)
   private static final double MIN_COMMAND_RAD_S = 0.3;
   // Dead-zone — don't correct if within ±1 degree
-  private static final double AIM_DEAD_BAND_DEG = 1.0;
+  private static final double AIM_DEAD_BAND_DEG = 3.0;  // Increased from 1 degree
   // Slow spin rate used when seeking (no target visible), rad/s
   private static final double SEEK_SPEED_RAD_S = 1.2;
 
-  private static final double DEADBAND = 0.1;
+  private static final double DEADBAND = 0.1;   // TODO: Tune
 
   private final Drive drive;
   private final Vision vision;

@@ -21,16 +21,13 @@ public class LimelightDistanceEstimator {
   private final Vision vision;
   private final int cameraIndex;
 
-  /** Height of the Limelight lens above the floor (inches). TODO: measure on real robot */
+  /** Height of the Limelight lens above the floor (inches). */
   private final double cameraHeightInches;
 
-  /** Height of the vision target above the floor (inches). TODO: set to actual target height */
+  /** Height of the vision target above the floor (inches). */
   private final double targetHeightInches;
 
-  /**
-   * Angle of the camera above perfectly horizontal (degrees, positive = tilted up). TODO: measure
-   * on real robot
-   */
+  /** Angle of the camera above perfectly horizontal (degrees, positive = tilted up). */
   private final double mountAngleDegrees;
 
   public LimelightDistanceEstimator(

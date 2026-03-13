@@ -16,7 +16,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.FieldConstants;
-import frc.robot.subsystems.shooter.ShotCalculator.ShootingParameters;
+//import frc.robot.subsystems.shooter.ShotCalculator.ShootingParameters;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -30,23 +30,22 @@ public class ShotCalculator {
   private static final InterpolatingDoubleTreeMap timeOfFlightMap =
       new InterpolatingDoubleTreeMap();
 
-  private static final double minDistance = 0.9; // meters
-  private static final double maxDistance = 4.9; // meters
+  private static final double minDistance = 0.2; // meters (actual would be like 0.4, but giving some buffer)
+  private static final double maxDistance = 5.3; // meters  (actual would be like 5.1, but giving some buffer)
 
-  // --- TUNING CONSTANTS ---
   // Flywheel: RPM = (Slope * distance) + Intercept
-  private static final double FLYWHEEL_SLOPE = 285.0;
-  private static final double FLYWHEEL_INTERCEPT = 1750.0;
+  private static final double FLYWHEEL_SLOPE = 285.0;    // TODO: Tune (calculated based on presets, may need adjustment)
+  private static final double FLYWHEEL_INTERCEPT = 1750.0;   // TODO: Tune (calculated based on presets, may need adjustment)
 
-  // Hood Angle (Quadratic): Radians = (A * d^2) + (B * d) + C
-  private static final double HOOD_A = 0.021;
-  private static final double HOOD_B = 0.015;
-  private static final double HOOD_C = 0.145; // Base angle at close range
+  // Hood Angle (Quadratic): Radians = (A * d^2) + (B * d) + C 
+  private static final double HOOD_A = 0.021;   // TODO: Tune (calculated based on presets, may need adjustment)
+  private static final double HOOD_B = 0.015;   // TODO: Tune (calculated based on presets, may need adjustment)
+  private static final double HOOD_C = 0.145;    // TODO: Tune (calculated based on presets, may need adjustment)
 
   // Time of Flight (Quadratic): Seconds = (A * d^2) + (B * d) + C
-  private static final double TOF_A = -0.012;
-  private static final double TOF_B = 0.142;
-  private static final double TOF_C = 0.725;
+  private static final double TOF_A = -0.012;   // TODO: Tune (calculated based on presets, may need adjustment)
+  private static final double TOF_B = 0.142;   // TODO: Tune (calculated based on presets, may need adjustment)
+  private static final double TOF_C = 0.725;   // TODO: Tune (calculated based on presets, may need adjustment)
 
   static {
     // Hood angle map — distance (meters) -> hood angle (radians)
@@ -163,7 +162,7 @@ public class ShotCalculator {
     Translation2d lookaheadTranslation = pose.getTranslation();
     for (int i = 0;
         i < 5;
-        i++) { // changed from 10 to 5, but if it doesnt work, then change back to 10
+        i++) {
       double tof = timeOfFlightMap.get(lookaheadDistance);
       lookaheadTranslation =
           new Translation2d(
