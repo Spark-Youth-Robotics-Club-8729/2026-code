@@ -10,13 +10,13 @@ package frc.robot;
 import static frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
-import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.util.Units;
+import edu.wpi.first.math.util.Units; 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ProxyCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.AutoShootCommand;
@@ -49,6 +49,9 @@ import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
 import frc.robot.util.LimelightDistanceEstimator;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 
 public class RobotContainer {
   // Subsystems
@@ -134,6 +137,8 @@ public class RobotContainer {
         drive::getChassisSpeeds,
         VisionConstants
             .BLUE_HUB_POSITION); // default; getAllianceHubPosition() overrides at runtime
+
+    registerNamedCommands();
 
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
     autoChooser.addOption(
@@ -269,6 +274,79 @@ public class RobotContainer {
             25.0); // TODO: camera mount angle above horizontal (degrees)
 
     configureButtonBindings();
+  }
+
+  private void registerNamedCommands() {
+    // Vision-assisted shooting/aiming
+    NamedCommands.registerCommand(
+        "AutoShootCommand", new AutoShootCommand(drive, shooter, indexer, vision, 0));
+    NamedCommands.registerCommand("AutoShootSpinUpWindow", autoShootWindow(2.0, false));  // TODO: Fix time
+    NamedCommands.registerCommand("AutoShootFireWindow", autoShootWindow(4.0, true));    // TODO: Fix time
+    NamedCommands.registerCommand(
+        "LimelightAim",
+        new LimelightAimCommand(drive, vision, 0, () -> 0.0, () -> 0.0));
+    NamedCommands.registerCommand(
+        "LimelightAimAndRange", new LimelightAimAndRangeCommand(drive, vision, 0));
+
+    // Shooter orchestration
+    NamedCommands.registerCommand(
+        "ShooterSpinUpDefault",
+        Commands.startEnd(
+            () -> {
+              shooter.setHoodPosition(ShooterConstants.hoodMinAngleRad);
+              shooter.setFlywheelVelocity(defaultFlywheelSpeedRPM);
+            },
+            () -> shooter.stop(),
+            shooter));
+    NamedCommands.registerCommand(
+        "ShooterFeed",
+        Commands.startEnd(
+            () -> {
+              shooter.feedNote();
+              indexer.feed();
+            },
+            () -> {
+              shooter.stopFeeder();
+              indexer.stop();
+            },
+            shooter,
+            indexer));
+    NamedCommands.registerCommand(
+        "ShooterStop",
+        Commands.runOnce(
+            () -> {
+              shooter.stop();
+              shooter.stopFeeder();
+              indexer.stop();
+            },
+            shooter,
+            indexer));
+
+    // Intake routines
+    NamedCommands.registerCommand("SlapdownAndIntakeCommand", intake.slapdownAndIntakeCommand());
+    NamedCommands.registerCommand("IntakeIN", intake.intakeCommand());
+    NamedCommands.registerCommand("IntakeOUT", intake.outtakeCommand());
+    NamedCommands.registerCommand("IntakeRetract", intake.retractCommand());
+    NamedCommands.registerCommand("IntakeSlapdownDownOnly", intake.slapdownDownCommand());
+    NamedCommands.registerCommand("IntakeJitter", intake.jitterCommand());
+    NamedCommands.registerCommand(
+        "IntakeToggleSlapdown", Commands.runOnce(intake::toggleSlapdown, intake));
+
+    // Indexer helpers
+    NamedCommands.registerCommand("IndexerFeed", indexer.feedCommand());
+    NamedCommands.registerCommand("IndexerReverse", indexer.reverseCommand());
+    NamedCommands.registerCommand("IndexerStop", indexer.stopCommand());
+  }
+
+  private Command autoShootWindow(double durationSeconds, boolean withJitter) {
+    return new ProxyCommand(
+        () -> {
+          Command autoShoot = new AutoShootCommand(drive, shooter, indexer, vision, 0);
+          if (withJitter) {
+            autoShoot = autoShoot.alongWith(intake.jitterCommand());
+          }
+          return Commands.waitSeconds(durationSeconds).deadlineWith(autoShoot);
+        });
   }
 
   private void configureButtonBindings() {
