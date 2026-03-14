@@ -10,10 +10,12 @@ package frc.robot;
 import static frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.util.Units; 
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ProxyCommand;
@@ -49,9 +51,6 @@ import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
 import frc.robot.util.LimelightDistanceEstimator;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.auto.NamedCommands;
 
 public class RobotContainer {
   // Subsystems
@@ -280,11 +279,12 @@ public class RobotContainer {
     // Vision-assisted shooting/aiming
     NamedCommands.registerCommand(
         "AutoShootCommand", new AutoShootCommand(drive, shooter, indexer, vision, 0));
-    NamedCommands.registerCommand("AutoShootSpinUpWindow", autoShootWindow(2.0, false));  // TODO: Fix time
-    NamedCommands.registerCommand("AutoShootFireWindow", autoShootWindow(4.0, true));    // TODO: Fix time
     NamedCommands.registerCommand(
-        "LimelightAim",
-        new LimelightAimCommand(drive, vision, 0, () -> 0.0, () -> 0.0));
+        "AutoShootSpinUpWindow", autoShootWindow(2.0, false)); // TODO: Fix time
+    NamedCommands.registerCommand(
+        "AutoShootFireWindow", autoShootWindow(4.0, true)); // TODO: Fix time
+    NamedCommands.registerCommand(
+        "LimelightAim", new LimelightAimCommand(drive, vision, 0, () -> 0.0, () -> 0.0));
     NamedCommands.registerCommand(
         "LimelightAimAndRange", new LimelightAimAndRangeCommand(drive, vision, 0));
 
@@ -322,11 +322,15 @@ public class RobotContainer {
             shooter,
             indexer));
 
-    // Intake routines
+    // Intake routines (multiple aliases for flexibility)
     NamedCommands.registerCommand("SlapdownAndIntakeCommand", intake.slapdownAndIntakeCommand());
+    NamedCommands.registerCommand("StartIntakeSlapdown", intake.slapdownAndIntakeCommand());
     NamedCommands.registerCommand("IntakeIN", intake.intakeCommand());
+    NamedCommands.registerCommand("IntakeIn", intake.intakeCommand());
     NamedCommands.registerCommand("IntakeOUT", intake.outtakeCommand());
+    NamedCommands.registerCommand("IntakeOut", intake.outtakeCommand());
     NamedCommands.registerCommand("IntakeRetract", intake.retractCommand());
+    NamedCommands.registerCommand("RetractIntake", intake.retractCommand());
     NamedCommands.registerCommand("IntakeSlapdownDownOnly", intake.slapdownDownCommand());
     NamedCommands.registerCommand("IntakeJitter", intake.jitterCommand());
     NamedCommands.registerCommand(
@@ -336,6 +340,30 @@ public class RobotContainer {
     NamedCommands.registerCommand("IndexerFeed", indexer.feedCommand());
     NamedCommands.registerCommand("IndexerReverse", indexer.reverseCommand());
     NamedCommands.registerCommand("IndexerStop", indexer.stopCommand());
+
+    // Aim-only action (no translation) with a timeout to avoid running forever
+    NamedCommands.registerCommand(
+        "AutoAimHub",
+        new LimelightAimCommand(drive, vision, 0, () -> 0.0, () -> 0.0).withTimeout(2.0));
+
+    // Jitter + shoot / no-jitter shoot routines
+    NamedCommands.registerCommand("JitterShoot10s", buildJitterShootCommand());
+    NamedCommands.registerCommand("ShootNoJitter10s", buildShootNoJitterCommand());
+
+    // Stop everything and retract intake
+    NamedCommands.registerCommand(
+        "StopIntakeAndShooter",
+        Commands.runOnce(
+                () -> {
+                  intake.retractCommand().schedule();
+                  indexer.stop();
+                  shooter.stopFeeder();
+                  shooter.stop();
+                },
+                intake,
+                indexer,
+                shooter)
+            .ignoringDisable(true));
   }
 
   private Command autoShootWindow(double durationSeconds, boolean withJitter) {
@@ -347,6 +375,70 @@ public class RobotContainer {
           }
           return Commands.waitSeconds(durationSeconds).deadlineWith(autoShoot);
         });
+  }
+
+  private Command buildJitterShootCommand() {
+    Command jitter = intake.jitterCommand();
+
+    Command shootWhileReady =
+        Commands.run(
+                () -> {
+                  shooter.setFlywheelVelocity(defaultFlywheelSpeedRPM);
+
+                  if (shooter.isReadyToShoot()) {
+                    indexer.feed();
+                    shooter.feedNote();
+                  } else {
+                    shooter.stopFeeder();
+                    indexer.stop();
+                  }
+                },
+                shooter,
+                indexer)
+            .finallyDo(
+                () -> {
+                  indexer.stop();
+                  shooter.stopFeeder();
+                  shooter.stop();
+                });
+
+    return Commands.parallel(jitter, shootWhileReady).withTimeout(10.0);
+  }
+
+  private Command buildShootNoJitterCommand() {
+    // Make sure intake is up and roller stopped before shooting
+    Command prep =
+        Commands.runOnce(
+                () -> {
+                  intake.retractCommand().schedule();
+                  intake.setRollerGoal(frc.robot.subsystems.intake.Intake.RollerGoal.STOP);
+                },
+                intake)
+            .ignoringDisable(true);
+
+    Command shootWhileReady =
+        Commands.run(
+                () -> {
+                  shooter.setFlywheelVelocity(defaultFlywheelSpeedRPM);
+
+                  if (shooter.isReadyToShoot()) {
+                    indexer.feed();
+                    shooter.feedNote();
+                  } else {
+                    shooter.stopFeeder();
+                    indexer.stop();
+                  }
+                },
+                shooter,
+                indexer)
+            .finallyDo(
+                () -> {
+                  indexer.stop();
+                  shooter.stopFeeder();
+                  shooter.stop();
+                });
+
+    return prep.andThen(shootWhileReady.withTimeout(10.0));
   }
 
   private void configureButtonBindings() {
@@ -362,7 +454,7 @@ public class RobotContainer {
     // Y             — HOLD to Limelight aim (Auto-rotate to target) while driving  -- doesnt work
     // Left Bumper   — HOLD for Proportional Limelight Aiming + Manual Translation  -- test pls
     // Right Bumper  — HOLD for Limelight Aiming + Automatic Range/Distance logic  -- test pls
-    // POV Down      — PRESS to set hood down to its minimum resting angle 
+    // POV Down      — PRESS to set hood down to its minimum resting angle
     // -------------------------------------------------------------------------
 
     drive.setDefaultCommand(
@@ -423,14 +515,14 @@ public class RobotContainer {
     // Right Trigger  — HOLD to spin up flywheels + hood and AUTO-FEED once ready
     // Left Trigger   — HOLD for high-arcing "Clearance" shot to pass fuel
     // Y              — HOLD to run FEEDER wheels in (manual intake to shooter)
-    // X              — HOLD to EJECT (runs feeder and flywheels in reverse)   
+    // X              — HOLD to EJECT (runs feeder and flywheels in reverse)
     // Right Bumper   — HOLD to run INTAKE wheels in
     // Left Bumper    — HOLD to run INTAKE wheels out
     // B              — HOLD to run INDEXER wheels in
-    // A              — HOLD for FULL AUTO-SHOOT (Vision aim + Spin + Feed)   
+    // A              — HOLD for FULL AUTO-SHOOT (Vision aim + Spin + Feed)
     // if it gets full routine done
     // POV Down       — PRESS to toggle intake SLAPDOWN (up/down)
-    // POV Up         — HOLD to JITTER/agitate balls in intake   
+    // POV Up         — HOLD to JITTER/agitate balls in intake
     // POV Left       — PRESS to nudge hood angle DOWN (-1 degree)
     // POV Right      — PRESS to nudge hood angle UP (+1 degree)
     // Left Stick     — HOLD to test flywheels at default 3000 RPM
