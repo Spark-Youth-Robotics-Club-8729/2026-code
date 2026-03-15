@@ -25,6 +25,7 @@ import frc.robot.commands.AutoShootCommand;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.LimelightAimAndRangeCommand;
 import frc.robot.commands.LimelightAimCommand;
+import frc.robot.commands.ManualAuto;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIONavX;
@@ -250,11 +251,11 @@ public class RobotContainer {
       "BlueDtoT",
       "BlueDtoH",
       "BlueDtoS1",
-      "BlueDtoS2",
       "BlueDtoS3",
       "BlueDtoS4",
       // NBlue special path
-      "NBlueN4toTthorughB2"
+      "NBlueN4toTthorughB2",
+      "Elims1path"
     };
     for (String pathName : pathNames) {
       try {
@@ -264,6 +265,8 @@ public class RobotContainer {
         System.err.println("Failed to load path: " + pathName);
       }
     }
+
+    autoChooser.addOption("Manual Auto", ManualAuto.simpleAuto(drive));
 
     // Distance estimator (only meaningful on real hardware; values are placeholders)
     distanceEstimator =
@@ -384,8 +387,9 @@ public class RobotContainer {
         Commands.run(
                 () -> {
                   shooter.setFlywheelVelocity(defaultFlywheelSpeedRPM);
-
+                  shooter.setHoodPosition(Units.degreesToRadians(10.0));
                   if (shooter.isReadyToShoot()) {
+                    Commands.waitSeconds(2.0);
                     indexer.feed();
                     shooter.feedNote();
                   } else {
@@ -555,9 +559,9 @@ public class RobotContainer {
                             ShotCalculator.getInstance()
                                 .calculateFromDistance(dist, drive.getPose().getRotation());
                         hoodAngle = params.hoodAngleRad();
-                        flywheelRPM = 872.9;
-                        // params.flywheelSpeedRPM()
-                        //     + 500; // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
+                        flywheelRPM =
+                            params.flywheelSpeedRPM()
+                                + 200; // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
                       } else {
                         // No tag — safe default (close range)
                         hoodAngle = ShooterConstants.hoodMinAngleRad;
@@ -748,9 +752,9 @@ public class RobotContainer {
                       // Use max hood angle for high arc and high velocity for distance
                       double highArcHoodAngle =
                           ShooterConstants.hoodMaxAngleRad
-                              - Units.degreesToRadians(10.0); // Adjust this!!!!
+                              - Units.degreesToRadians(45.0); // Adjust this!!!!
                       double highVelocityRPM =
-                          ShooterConstants.maxFlywheelSpeedRPM - 500; // Adjust this!!!!
+                          ShooterConstants.maxFlywheelSpeedRPM - 5000; // Adjust this!!!!
 
                       shooter.setHoodPosition(highArcHoodAngle);
                       shooter.setFlywheelVelocity(highVelocityRPM);
@@ -824,13 +828,13 @@ public class RobotContainer {
     // jitterCommand)
     operator.povUp().whileTrue(intake.jitterCommand());
 
-    // POV Left — manually nudge hood DOWN by 1 degree
+    // POV Left — manually nudge hood DOWN by 5 degree
     operator
         .povLeft()
         .onTrue(
             Commands.runOnce(
                 () -> {
-                  double newAngle = shooter.getHoodPosition() - Units.degreesToRadians(1.0);
+                  double newAngle = shooter.getHoodPosition() - Units.degreesToRadians(5.0);
                   shooter.setHoodPosition(newAngle);
 
                   // debug prints
@@ -849,7 +853,7 @@ public class RobotContainer {
         .onTrue(
             Commands.runOnce(
                 () -> {
-                  double newAngle = shooter.getHoodPosition() + Units.degreesToRadians(1.0);
+                  double newAngle = shooter.getHoodPosition() + Units.degreesToRadians(5.0);
                   shooter.setHoodPosition(newAngle);
 
                   // debug prints

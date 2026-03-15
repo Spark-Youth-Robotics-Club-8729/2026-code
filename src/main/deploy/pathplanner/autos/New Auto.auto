@@ -11,27 +11,15 @@
           }
         },
         {
-          "type": "named",
+          "type": "path",
           "data": {
-            "name": "StartIntakeSlapdown"
+            "pathName": "BlueHtoN3ThroughT1"
           }
         },
         {
-          "type": "named",
+          "type": "path",
           "data": {
-            "name": "JitterShoot10s"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "RetractIntake"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ShootNoJitter10s"
+            "pathName": null
           }
         }
       ]

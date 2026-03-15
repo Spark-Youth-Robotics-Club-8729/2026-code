@@ -34,8 +34,8 @@ import java.util.function.Supplier;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.6; // changed from 0.1 for making it less sensitive
-  private static final double DRIVE_SPEED_SCALE = 0.15;
-  private static final double TURN_SPEED_SCALE = 0.15;
+  private static final double DRIVE_SPEED_SCALE = 0.08;
+  private static final double TURN_SPEED_SCALE = 0.02;
   private static final double ANGLE_KP = 5.0;
   private static final double ANGLE_KD = 0.4;
   private static final double ANGLE_MAX_VELOCITY = 5.0; // (changed from 8)
