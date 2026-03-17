@@ -16,7 +16,7 @@ public class IntakeConstants {
   public static final String canBus = "rio"; // Change to "canivore" if needed
 
   // Slapdown gear ratio (motor rotations per mechanism rotation)
-  public static final double slapdownGearRatio = 45 * 32 / 22; //
+  public static final double slapdownGearRatio = 45; // changed gear ratio to 45:1
 
   // Slapdown angle limits (radians, at the mechanism after gear reduction)
   public static final double slapdownUpAngleRad = Units.degreesToRadians(0.0); // TODO: Set actual

@@ -1,0 +1,10 @@
+Different robot actions:
+- Driving (done)
+- Shooting (done)
+- Alignment (done)
+- Indexer (done)
+- Intake (done)
+- Jitter (done)
+- Stopping shooter (done)
+- Stopping indexer 
+- Stopping intake 

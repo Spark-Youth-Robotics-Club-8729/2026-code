@@ -11,18 +11,20 @@ import static frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeed
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.path.PathPlannerPath;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ProxyCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.AutoShootCommand;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.LimelightAimAndRangeCommand;
 import frc.robot.commands.LimelightAimCommand;
+import frc.robot.commands.ManualAuto;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIONavX;
@@ -135,6 +137,8 @@ public class RobotContainer {
         VisionConstants
             .BLUE_HUB_POSITION); // default; getAllianceHubPosition() overrides at runtime
 
+    registerNamedCommands();
+
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
     autoChooser.addOption(
         "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
@@ -246,11 +250,11 @@ public class RobotContainer {
       "BlueDtoT",
       "BlueDtoH",
       "BlueDtoS1",
-      "BlueDtoS2",
       "BlueDtoS3",
       "BlueDtoS4",
       // NBlue special path
-      "NBlueN4toTthorughB2"
+      "NBlueN4toTthorughB2",
+      "Elims1path"
     };
     for (String pathName : pathNames) {
       try {
@@ -261,6 +265,8 @@ public class RobotContainer {
       }
     }
 
+    autoChooser.addOption("Manual Auto", ManualAuto.simpleAuto(drive));
+
     // Distance estimator (only meaningful on real hardware; values are placeholders)
     distanceEstimator =
         new LimelightDistanceEstimator(
@@ -269,6 +275,173 @@ public class RobotContainer {
             25.0); // TODO: camera mount angle above horizontal (degrees)
 
     configureButtonBindings();
+  }
+
+  private void registerNamedCommands() {
+    // Vision-assisted shooting/aiming
+    NamedCommands.registerCommand(
+        "AutoShootCommand", new AutoShootCommand(drive, shooter, indexer, vision, 0));
+    NamedCommands.registerCommand(
+        "AutoShootSpinUpWindow", autoShootWindow(2.0, false)); // TODO: Fix time
+    NamedCommands.registerCommand(
+        "AutoShootFireWindow", autoShootWindow(4.0, true)); // TODO: Fix time
+    NamedCommands.registerCommand(
+        "LimelightAim", new LimelightAimCommand(drive, vision, 0, () -> 0.0, () -> 0.0));
+    NamedCommands.registerCommand(
+        "LimelightAimAndRange", new LimelightAimAndRangeCommand(drive, vision, 0));
+
+    // Shooter orchestration
+    NamedCommands.registerCommand(
+        "ShooterSpinUpDefault",
+        Commands.startEnd(
+            () -> {
+              shooter.setHoodPosition(ShooterConstants.hoodMinAngleRad);
+              shooter.setFlywheelVelocity(defaultFlywheelSpeedRPM);
+            },
+            () -> shooter.stop(),
+            shooter));
+    NamedCommands.registerCommand(
+        "ShooterFeed",
+        Commands.startEnd(
+            () -> {
+              shooter.feedNote();
+              indexer.feed();
+            },
+            () -> {
+              shooter.stopFeeder();
+              indexer.stop();
+            },
+            shooter,
+            indexer));
+    NamedCommands.registerCommand(
+        "ShooterStop",
+        Commands.runOnce(
+            () -> {
+              shooter.stop();
+              shooter.stopFeeder();
+              indexer.stop();
+            },
+            shooter,
+            indexer));
+
+    // Intake routines (multiple aliases for flexibility)
+    NamedCommands.registerCommand("SlapdownAndIntakeCommand", intake.slapdownAndIntakeCommand());
+    NamedCommands.registerCommand("StartIntakeSlapdown", intake.slapdownAndIntakeCommand());
+    NamedCommands.registerCommand("IntakeIN", intake.intakeCommand());
+    NamedCommands.registerCommand("IntakeIn", intake.intakeCommand());
+    NamedCommands.registerCommand("IntakeOUT", intake.outtakeCommand());
+    NamedCommands.registerCommand("IntakeOut", intake.outtakeCommand());
+    NamedCommands.registerCommand("IntakeRetract", intake.retractCommand());
+    NamedCommands.registerCommand("RetractIntake", intake.retractCommand());
+    NamedCommands.registerCommand("IntakeSlapdownDownOnly", intake.slapdownDownCommand());
+    NamedCommands.registerCommand("IntakeJitter", intake.jitterCommand());
+    NamedCommands.registerCommand(
+        "IntakeToggleSlapdown", Commands.runOnce(intake::toggleSlapdown, intake));
+
+    // Indexer helpers
+    NamedCommands.registerCommand("IndexerFeed", indexer.feedCommand());
+    NamedCommands.registerCommand("IndexerReverse", indexer.reverseCommand());
+    NamedCommands.registerCommand("IndexerStop", indexer.stopCommand());
+
+    // Aim-only action (no translation) with a timeout to avoid running forever
+    NamedCommands.registerCommand(
+        "AutoAimHub",
+        new LimelightAimCommand(drive, vision, 0, () -> 0.0, () -> 0.0).withTimeout(2.0));
+
+    // Jitter + shoot / no-jitter shoot routines
+    NamedCommands.registerCommand("JitterShoot10s", buildJitterShootCommand());
+    NamedCommands.registerCommand("ShootNoJitter10s", buildShootNoJitterCommand());
+
+    // Stop everything and retract intake
+    NamedCommands.registerCommand(
+        "StopIntakeAndShooter",
+        Commands.runOnce(
+                () -> {
+                  intake.retractCommand().schedule();
+                  indexer.stop();
+                  shooter.stopFeeder();
+                  shooter.stop();
+                },
+                intake,
+                indexer,
+                shooter)
+            .ignoringDisable(true));
+  }
+
+  private Command autoShootWindow(double durationSeconds, boolean withJitter) {
+    return new ProxyCommand(
+        () -> {
+          Command autoShoot = new AutoShootCommand(drive, shooter, indexer, vision, 0);
+          if (withJitter) {
+            autoShoot = autoShoot.alongWith(intake.jitterCommand());
+          }
+          return Commands.waitSeconds(durationSeconds).deadlineWith(autoShoot);
+        });
+  }
+
+  private Command buildJitterShootCommand() {
+    Command jitter = intake.jitterCommand();
+
+    Command shootWhileReady =
+        Commands.run(
+                () -> {
+                  shooter.setFlywheelVelocity(defaultFlywheelSpeedRPM);
+                  shooter.setHoodPosition(Units.degreesToRadians(10.0));
+                  if (shooter.isReadyToShoot()) {
+                    Commands.waitSeconds(2.0);
+                    indexer.feed();
+                    shooter.feedNote();
+                  } else {
+                    shooter.stopFeeder();
+                    indexer.stop();
+                  }
+                },
+                shooter,
+                indexer)
+            .finallyDo(
+                () -> {
+                  indexer.stop();
+                  shooter.stopFeeder();
+                  shooter.stop();
+                });
+
+    return Commands.parallel(jitter, shootWhileReady).withTimeout(10.0);
+  }
+
+  private Command buildShootNoJitterCommand() {
+    // Make sure intake is up and roller stopped before shooting
+    Command prep =
+        Commands.runOnce(
+                () -> {
+                  intake.retractCommand().schedule();
+                  intake.setRollerGoal(frc.robot.subsystems.intake.Intake.RollerGoal.STOP);
+                },
+                intake)
+            .ignoringDisable(true);
+
+    Command shootWhileReady =
+        Commands.run(
+                () -> {
+                  shooter.setFlywheelVelocity(defaultFlywheelSpeedRPM);
+
+                  if (shooter.isReadyToShoot()) {
+                    indexer.feed();
+                    shooter.feedNote();
+                  } else {
+                    shooter.stopFeeder();
+                    indexer.stop();
+                  }
+                },
+                shooter,
+                indexer)
+            .finallyDo(
+                () -> {
+                  indexer.stop();
+                  shooter.stopFeeder();
+                  shooter.stop();
+                });
+
+    return prep.andThen(shootWhileReady.withTimeout(10.0));
   }
 
   private void configureButtonBindings() {
@@ -284,9 +457,10 @@ public class RobotContainer {
     // Y             — HOLD to Limelight aim (Auto-rotate to target) while driving  -- doesnt work
     // Left Bumper   — HOLD for Proportional Limelight Aiming + Manual Translation  -- test pls
     // Right Bumper  — HOLD for Limelight Aiming + Automatic Range/Distance logic  -- test pls
-    // POV Down      — PRESS to set hood down to its minimum resting angle 
+    // POV Down      — PRESS to set hood down to its minimum resting angle
     // -------------------------------------------------------------------------
 
+    // WORKS NOW (intake is frontside): 
     drive.setDefaultCommand(
         DriveCommands.joystickDrive( // for robot relative, do this: joystickDriveRobotRelative
             drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
@@ -297,15 +471,23 @@ public class RobotContainer {
             DriveCommands.joystickDriveAtAngle(
                 drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> Rotation2d.kZero));
 
+    // driver
+    //     .b()
+    //     .onTrue(
+    //         Commands.runOnce(
+    //                 () ->
+    //                     drive.setPose(
+    //                         new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
+    //                 drive)
+    //             .ignoringDisable(true));
+
     driver
         .b()
-        .onTrue(
-            Commands.runOnce(
-                    () ->
-                        drive.setPose(
-                            new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
-                    drive)
-                .ignoringDisable(true));
+        .whileTrue(
+            Commands.run(
+                () -> {
+                  drive.zeroGyro(); // not working
+                }));
 
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
@@ -345,14 +527,14 @@ public class RobotContainer {
     // Right Trigger  — HOLD to spin up flywheels + hood and AUTO-FEED once ready
     // Left Trigger   — HOLD for high-arcing "Clearance" shot to pass fuel
     // Y              — HOLD to run FEEDER wheels in (manual intake to shooter)
-    // X              — HOLD to EJECT (runs feeder and flywheels in reverse)   
+    // X              — HOLD to EJECT (runs feeder and flywheels in reverse)
     // Right Bumper   — HOLD to run INTAKE wheels in
     // Left Bumper    — HOLD to run INTAKE wheels out
     // B              — HOLD to run INDEXER wheels in
-    // A              — HOLD for FULL AUTO-SHOOT (Vision aim + Spin + Feed)   
+    // A              — HOLD for FULL AUTO-SHOOT (Vision aim + Spin + Feed)
     // if it gets full routine done
     // POV Down       — PRESS to toggle intake SLAPDOWN (up/down)
-    // POV Up         — HOLD to JITTER/agitate balls in intake   
+    // POV Up         — HOLD to JITTER/agitate balls in intake
     // POV Left       — PRESS to nudge hood angle DOWN (-1 degree)
     // POV Right      — PRESS to nudge hood angle UP (+1 degree)
     // Left Stick     — HOLD to test flywheels at default 3000 RPM
@@ -385,9 +567,9 @@ public class RobotContainer {
                             ShotCalculator.getInstance()
                                 .calculateFromDistance(dist, drive.getPose().getRotation());
                         hoodAngle = params.hoodAngleRad();
-                        flywheelRPM = 872.9;
-                        // params.flywheelSpeedRPM()
-                        //     + 500; // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
+                        flywheelRPM =
+                            params.flywheelSpeedRPM()
+                                + 200; // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
                       } else {
                         // No tag — safe default (close range)
                         hoodAngle = ShooterConstants.hoodMinAngleRad;
@@ -578,9 +760,9 @@ public class RobotContainer {
                       // Use max hood angle for high arc and high velocity for distance
                       double highArcHoodAngle =
                           ShooterConstants.hoodMaxAngleRad
-                              - Units.degreesToRadians(10.0); // Adjust this!!!!
+                              - Units.degreesToRadians(45.0); // Adjust this!!!!
                       double highVelocityRPM =
-                          ShooterConstants.maxFlywheelSpeedRPM - 500; // Adjust this!!!!
+                          ShooterConstants.maxFlywheelSpeedRPM - 5000; // Adjust this!!!!
 
                       shooter.setHoodPosition(highArcHoodAngle);
                       shooter.setFlywheelVelocity(highVelocityRPM);
@@ -654,13 +836,13 @@ public class RobotContainer {
     // jitterCommand)
     operator.povUp().whileTrue(intake.jitterCommand());
 
-    // POV Left — manually nudge hood DOWN by 1 degree
+    // POV Left — manually nudge hood DOWN by 5 degree
     operator
         .povLeft()
         .onTrue(
             Commands.runOnce(
                 () -> {
-                  double newAngle = shooter.getHoodPosition() - Units.degreesToRadians(1.0);
+                  double newAngle = shooter.getHoodPosition() - Units.degreesToRadians(5.0);
                   shooter.setHoodPosition(newAngle);
 
                   // debug prints
@@ -679,7 +861,7 @@ public class RobotContainer {
         .onTrue(
             Commands.runOnce(
                 () -> {
-                  double newAngle = shooter.getHoodPosition() + Units.degreesToRadians(1.0);
+                  double newAngle = shooter.getHoodPosition() + Units.degreesToRadians(5.0);
                   shooter.setHoodPosition(newAngle);
 
                   // debug prints

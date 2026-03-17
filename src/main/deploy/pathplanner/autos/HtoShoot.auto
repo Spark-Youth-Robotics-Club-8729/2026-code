@@ -1,0 +1,61 @@
+{
+  "version": "2026.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "BlueHtoShoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "SlapdownAndIntakeCommand"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AutoShootSpinUpWindow"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AutoShootFireWindow"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "IntakeRetract"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AutoShootFireWindowNoJitterLONG"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShooterStop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "BlueHtoD"
+          }
+        },
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "HStartAuto",
+  "choreoAuto": false
+}

@@ -289,6 +289,11 @@ public class Drive extends SubsystemBase {
     poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
   }
 
+  /** Zeroes the gyro yaw. Call this at the start of teleop or on a button press. */
+  public void zeroGyro() {
+    gyroIO.zeroYaw();
+  }
+
   /** Adds a new timestamped vision measurement. */
   public void addVisionMeasurement(
       Pose2d visionRobotPoseMeters,

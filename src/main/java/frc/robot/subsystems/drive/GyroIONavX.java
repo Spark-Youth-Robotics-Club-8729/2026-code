@@ -13,6 +13,7 @@ import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Timer;
 import java.util.Queue;
 
 /** IO implementation for NavX. */
@@ -23,6 +24,11 @@ public class GyroIONavX implements GyroIO {
 
   public GyroIONavX() {
     yawTimestampQueue = SparkOdometryThread.getInstance().makeTimestampQueue();
+
+    // Wait for NavX to finish calibrating before zeroing
+    Timer.delay(1.0); // NavX typically takes ~1s to calibrate
+    navX.zeroYaw(); // Zero after calibration so field-relative starts correct
+
     yawPositionQueue = SparkOdometryThread.getInstance().registerSignal(navX::getAngle);
   }
 
@@ -40,5 +46,10 @@ public class GyroIONavX implements GyroIO {
             .toArray(Rotation2d[]::new);
     yawTimestampQueue.clear();
     yawPositionQueue.clear();
+  }
+
+  @Override
+  public void zeroYaw() {
+    navX.zeroYaw();
   }
 }

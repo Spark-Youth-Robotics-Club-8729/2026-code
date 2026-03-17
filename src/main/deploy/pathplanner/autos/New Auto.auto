@@ -7,13 +7,19 @@
         {
           "type": "path",
           "data": {
-            "pathName": "BlueS4toO"
+            "pathName": "BlueHtoShoot"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "BlueOtoH"
+            "pathName": "BlueHtoN3ThroughT1"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": null
           }
         }
       ]

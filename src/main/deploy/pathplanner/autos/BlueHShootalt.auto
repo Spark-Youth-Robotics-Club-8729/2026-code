@@ -1,0 +1,43 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "BlueHtoShoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StartIntakeSlapdown"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "JitterShoot10s"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "RetractIntake"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootNoJitter10s"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}
