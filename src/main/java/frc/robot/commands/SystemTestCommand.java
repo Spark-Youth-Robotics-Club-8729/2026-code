@@ -7,7 +7,8 @@
 
 package frc.robot.commands;
 
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -31,7 +32,7 @@ import org.littletonrobotics.junction.Logger;
  * positions, feeder - Vision: Check for hub tag targets
  */
 public class SystemTestCommand extends SequentialCommandGroup {
-  private static final double DURATION_SECONDS = 1.0; // Duration between movements
+  private static final double DURATION_SECONDS = 1.0; // Duration each module direction runs
 
   // Shooter test speeds and positions
   private static final double[] FLYWHEEL_TEST_SPEEDS_RPM = {2000.0, 2500.0, 3100.0};
@@ -57,44 +58,28 @@ public class SystemTestCommand extends SequentialCommandGroup {
         // DRIVE SUBSYSTEM TEST
         // ========================================================================
         Commands.print("--- DRIVE TEST: Swerve Module 0 (Front Left) ---"),
-        testSwerveModule(drive, "Forward", 1.0, 0.0),
-        Commands.waitSeconds(DURATION_SECONDS),
-        testSwerveModule(drive, "Backward", -1.0, 0.0),
-        Commands.waitSeconds(DURATION_SECONDS),
-        testSwerveModule(drive, "Left", 0.0, 1.0),
-        Commands.waitSeconds(DURATION_SECONDS),
-        testSwerveModule(drive, "Right", 0.0, -1.0),
-        Commands.waitSeconds(DURATION_SECONDS),
+        testSingleModule(drive, 0, "Forward"),
+        testSingleModule(drive, 0, "Backward"),
+        testSingleModule(drive, 0, "Left"),
+        testSingleModule(drive, 0, "Right"),
         Commands.runOnce(drive::stop),
         Commands.print("--- DRIVE TEST: Swerve Module 1 (Front Right) ---"),
-        testSwerveModule(drive, "Forward", 1.0, 0.0),
-        Commands.waitSeconds(DURATION_SECONDS),
-        testSwerveModule(drive, "Backward", -1.0, 0.0),
-        Commands.waitSeconds(DURATION_SECONDS),
-        testSwerveModule(drive, "Left", 0.0, 1.0),
-        Commands.waitSeconds(DURATION_SECONDS),
-        testSwerveModule(drive, "Right", 0.0, -1.0),
-        Commands.waitSeconds(DURATION_SECONDS),
+        testSingleModule(drive, 1, "Forward"),
+        testSingleModule(drive, 1, "Backward"),
+        testSingleModule(drive, 1, "Left"),
+        testSingleModule(drive, 1, "Right"),
         Commands.runOnce(drive::stop),
         Commands.print("--- DRIVE TEST: Swerve Module 2 (Back Left) ---"),
-        testSwerveModule(drive, "Forward", 1.0, 0.0),
-        Commands.waitSeconds(DURATION_SECONDS),
-        testSwerveModule(drive, "Backward", -1.0, 0.0),
-        Commands.waitSeconds(DURATION_SECONDS),
-        testSwerveModule(drive, "Left", 0.0, 1.0),
-        Commands.waitSeconds(DURATION_SECONDS),
-        testSwerveModule(drive, "Right", 0.0, -1.0),
-        Commands.waitSeconds(DURATION_SECONDS),
+        testSingleModule(drive, 2, "Forward"),
+        testSingleModule(drive, 2, "Backward"),
+        testSingleModule(drive, 2, "Left"),
+        testSingleModule(drive, 2, "Right"),
         Commands.runOnce(drive::stop),
         Commands.print("--- DRIVE TEST: Swerve Module 3 (Back Right) ---"),
-        testSwerveModule(drive, "Forward", 1.0, 0.0),
-        Commands.waitSeconds(DURATION_SECONDS),
-        testSwerveModule(drive, "Backward", -1.0, 0.0),
-        Commands.waitSeconds(DURATION_SECONDS),
-        testSwerveModule(drive, "Left", 0.0, 1.0),
-        Commands.waitSeconds(DURATION_SECONDS),
-        testSwerveModule(drive, "Right", 0.0, -1.0),
-        Commands.waitSeconds(DURATION_SECONDS),
+        testSingleModule(drive, 3, "Forward"),
+        testSingleModule(drive, 3, "Backward"),
+        testSingleModule(drive, 3, "Left"),
+        testSingleModule(drive, 3, "Right"),
         Commands.runOnce(drive::stop),
 
         // ========================================================================
@@ -203,21 +188,44 @@ public class SystemTestCommand extends SequentialCommandGroup {
   // ============================================================================
 
   /**
-   * Test a swerve module by applying a small velocity in the specified direction. Tests the drive
-   * system at low speed to verify module rotation and drive.
+   * Test a single swerve module by driving it in the specified direction while all others stop.
+   *
+   * @param moduleIndex 0=FL, 1=FR, 2=BL, 3=BR
+   * @param direction "Forward", "Backward", "Left", or "Right"
    */
-  private static Command testSwerveModule(Drive drive, String direction, double vx, double vy) {
+  private static Command testSingleModule(Drive drive, int moduleIndex, String direction) {
     return Commands.run(
-        () -> {
-          double speed = 0.5; // 50% max speed for safety
-          drive.runVelocity(
-              new ChassisSpeeds(
-                  vx * speed * drive.getMaxLinearSpeedMetersPerSec(),
-                  vy * speed * drive.getMaxLinearSpeedMetersPerSec(),
-                  0.0));
-          Logger.recordOutput("SystemTest/DriveDirection", direction);
-        },
-        drive);
+            () -> {
+              double speed = 0.5 * drive.getMaxLinearSpeedMetersPerSec();
+              Rotation2d angle;
+              double driveSpeed;
+              switch (direction) {
+                case "Forward":
+                  angle = Rotation2d.fromDegrees(0);
+                  driveSpeed = speed;
+                  break;
+                case "Backward":
+                  angle = Rotation2d.fromDegrees(180);
+                  driveSpeed = speed;
+                  break;
+                case "Left":
+                  angle = Rotation2d.fromDegrees(90);
+                  driveSpeed = speed;
+                  break;
+                case "Right":
+                  angle = Rotation2d.fromDegrees(-90);
+                  driveSpeed = speed;
+                  break;
+                default:
+                  angle = Rotation2d.kZero;
+                  driveSpeed = 0;
+              }
+              drive.runSingleModule(moduleIndex, new SwerveModuleState(driveSpeed, angle));
+              Logger.recordOutput("SystemTest/ModuleIndex", moduleIndex);
+              Logger.recordOutput("SystemTest/DriveDirection", direction);
+            },
+            drive)
+        .withTimeout(DURATION_SECONDS);
   }
 
   /** Test flywheel speeds by spinning up to each speed and waiting for stabilization. */

@@ -35,7 +35,7 @@ public class IntakeConstants {
   public static final double rollerOuttakeVolts = -4.0; // Reduced from -6.0 — TODO: Tune
 
   // Jitter constans
-  public static final double jitterFrequencyHz = 0.25; // Tune
+  public static final double jitterFrequencyHz = 0.5; // Tune
   public static final double jitterAmplitudeDeg = 70.0; // Tune
 
   private IntakeConstants() {}
