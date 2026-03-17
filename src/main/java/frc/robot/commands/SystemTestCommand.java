@@ -8,33 +8,27 @@
 package frc.robot.commands;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import edu.wpi.first.wpilibj.util.Color;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.indexer.Indexer.IndexerGoal;
 import frc.robot.subsystems.intake.Intake;
-import frc.robot.subsystems.intake.Intake.SlapdownGoal;
 import frc.robot.subsystems.intake.Intake.RollerGoal;
+import frc.robot.subsystems.intake.Intake.SlapdownGoal;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.vision.Vision;
-import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * Comprehensive system test command that validates all subsystems sequentially.
- * Bind via .onTrue(new SystemTestCommand(...)) on a button press (e.g., driver.povUp().onTrue(...))
+ * Comprehensive system test command that validates all subsystems sequentially. Bind via
+ * .onTrue(new SystemTestCommand(...)) on a button press (e.g., driver.povUp().onTrue(...))
  *
- * Tests:
- * - Drive: Each swerve module forward/backward/left/right
- * - Intake: Slapdown up/down/jitter, roller intake
- * - Indexer: Feed forward
- * - Shooter: Multiple flywheel speeds, hood positions, feeder
- * - Vision: Check for hub tag targets
+ * <p>Tests: - Drive: Each swerve module forward/backward/left/right - Intake: Slapdown
+ * up/down/jitter, roller intake - Indexer: Feed forward - Shooter: Multiple flywheel speeds, hood
+ * positions, feeder - Vision: Check for hub tag targets
  */
 public class SystemTestCommand extends SequentialCommandGroup {
   private static final double DURATION_SECONDS = 1.0; // Duration between movements
@@ -72,7 +66,6 @@ public class SystemTestCommand extends SequentialCommandGroup {
         testSwerveModule(drive, "Right", 0.0, -1.0),
         Commands.waitSeconds(DURATION_SECONDS),
         Commands.runOnce(drive::stop),
-
         Commands.print("--- DRIVE TEST: Swerve Module 1 (Front Right) ---"),
         testSwerveModule(drive, "Forward", 1.0, 0.0),
         Commands.waitSeconds(DURATION_SECONDS),
@@ -83,7 +76,6 @@ public class SystemTestCommand extends SequentialCommandGroup {
         testSwerveModule(drive, "Right", 0.0, -1.0),
         Commands.waitSeconds(DURATION_SECONDS),
         Commands.runOnce(drive::stop),
-
         Commands.print("--- DRIVE TEST: Swerve Module 2 (Back Left) ---"),
         testSwerveModule(drive, "Forward", 1.0, 0.0),
         Commands.waitSeconds(DURATION_SECONDS),
@@ -94,7 +86,6 @@ public class SystemTestCommand extends SequentialCommandGroup {
         testSwerveModule(drive, "Right", 0.0, -1.0),
         Commands.waitSeconds(DURATION_SECONDS),
         Commands.runOnce(drive::stop),
-
         Commands.print("--- DRIVE TEST: Swerve Module 3 (Back Right) ---"),
         testSwerveModule(drive, "Forward", 1.0, 0.0),
         Commands.waitSeconds(DURATION_SECONDS),
@@ -114,23 +105,19 @@ public class SystemTestCommand extends SequentialCommandGroup {
         Commands.runOnce(() -> intake.setSlapdownGoal(SlapdownGoal.DOWN), intake),
         Commands.waitUntil(intake::isSlapdownDown),
         Commands.waitSeconds(0.5),
-
         Commands.print("Slapdown: Moving UP"),
         Commands.runOnce(() -> intake.setSlapdownGoal(SlapdownGoal.UP), intake),
         Commands.waitUntil(intake::isSlapdownUp),
         Commands.waitSeconds(0.5),
-
         Commands.print("Slapdown: Moving DOWN again"),
         Commands.runOnce(() -> intake.setSlapdownGoal(SlapdownGoal.DOWN), intake),
         Commands.waitUntil(intake::isSlapdownDown),
         Commands.waitSeconds(0.5),
-
         Commands.print("Slapdown: JITTER test"),
         Commands.runOnce(() -> intake.setSlapdownGoal(SlapdownGoal.JITTER), intake),
         Commands.waitSeconds(2.0),
         Commands.runOnce(() -> intake.setSlapdownGoal(SlapdownGoal.UP), intake),
         Commands.waitUntil(intake::isSlapdownUp),
-
         Commands.print("--- INTAKE TEST: Roller ---"),
         Commands.print("Roller: INTAKE IN"),
         Commands.runOnce(() -> intake.setRollerGoal(RollerGoal.INTAKE), intake),
@@ -138,7 +125,6 @@ public class SystemTestCommand extends SequentialCommandGroup {
         Commands.print("Roller: STOP"),
         Commands.runOnce(() -> intake.setRollerGoal(RollerGoal.STOP), intake),
         Commands.waitSeconds(0.5),
-
         Commands.print("Roller: OUTTAKE OUT"),
         Commands.runOnce(() -> intake.setRollerGoal(RollerGoal.OUTTAKE), intake),
         Commands.waitSeconds(1.5),
@@ -156,7 +142,6 @@ public class SystemTestCommand extends SequentialCommandGroup {
         Commands.print("Indexer: STOP"),
         Commands.runOnce(() -> indexer.setGoal(IndexerGoal.STOP), indexer),
         Commands.waitSeconds(0.5),
-
         Commands.print("Indexer: REVERSE"),
         Commands.runOnce(() -> indexer.setGoal(IndexerGoal.REVERSE), indexer),
         Commands.waitSeconds(1.5),
@@ -170,11 +155,9 @@ public class SystemTestCommand extends SequentialCommandGroup {
         Commands.print("--- SHOOTER TEST: Flywheel speeds ---"),
         testFlywheelSpeeds(shooter, FLYWHEEL_TEST_SPEEDS_RPM),
         Commands.waitSeconds(0.5),
-
         Commands.print("--- SHOOTER TEST: Hood positions ---"),
         testHoodPositions(shooter, HOOD_TEST_ANGLES_DEG),
         Commands.waitSeconds(0.5),
-
         Commands.print("--- SHOOTER TEST: Feeder ---"),
         Commands.print("Feeder: FEEDING"),
         Commands.runOnce(shooter::feedNote, shooter),
@@ -182,7 +165,6 @@ public class SystemTestCommand extends SequentialCommandGroup {
         Commands.print("Feeder: STOP"),
         Commands.runOnce(shooter::stopFeeder, shooter),
         Commands.waitSeconds(0.5),
-
         Commands.print("Feeder: EJECTING"),
         Commands.runOnce(shooter::ejectNote, shooter),
         Commands.waitSeconds(1.5),
@@ -221,8 +203,8 @@ public class SystemTestCommand extends SequentialCommandGroup {
   // ============================================================================
 
   /**
-   * Test a swerve module by applying a small velocity in the specified direction.
-   * Tests the drive system at low speed to verify module rotation and drive.
+   * Test a swerve module by applying a small velocity in the specified direction. Tests the drive
+   * system at low speed to verify module rotation and drive.
    */
   private static Command testSwerveModule(Drive drive, String direction, double vx, double vy) {
     return Commands.run(
@@ -238,11 +220,8 @@ public class SystemTestCommand extends SequentialCommandGroup {
         drive);
   }
 
-  /**
-   * Test flywheel speeds by spinning up to each speed and waiting for stabilization.
-   */
-  private static Command testFlywheelSpeeds(
-      Shooter shooter, double[] speedsRPM) {
+  /** Test flywheel speeds by spinning up to each speed and waiting for stabilization. */
+  private static Command testFlywheelSpeeds(Shooter shooter, double[] speedsRPM) {
     Command[] commands = new Command[speedsRPM.length];
     for (int i = 0; i < speedsRPM.length; i++) {
       final double speed = speedsRPM[i];
@@ -263,9 +242,7 @@ public class SystemTestCommand extends SequentialCommandGroup {
     return Commands.sequence(commands);
   }
 
-  /**
-   * Test hood positions by moving to each angle and waiting for stabilization.
-   */
+  /** Test hood positions by moving to each angle and waiting for stabilization. */
   private static Command testHoodPositions(Shooter shooter, double[] anglesDeg) {
     Command[] commands = new Command[anglesDeg.length];
     for (int i = 0; i < anglesDeg.length; i++) {
@@ -287,15 +264,13 @@ public class SystemTestCommand extends SequentialCommandGroup {
     return Commands.sequence(commands);
   }
 
-  /**
-   * Test vision subsystem by checking for hub targets visible on the camera.
-   */
+  /** Test vision subsystem by checking for hub targets visible on the camera. */
   private static Command testVisionHub(Vision vision, int cameraIndex) {
     return Commands.run(
             () -> {
               boolean hasTarget = vision.hasHubTarget(cameraIndex);
               double distance = Double.NaN;
-              
+
               if (hasTarget) {
                 distance = vision.getDistanceToHub(cameraIndex);
                 Logger.recordOutput("SystemTest/VisionHubFound", true);
@@ -303,7 +278,8 @@ public class SystemTestCommand extends SequentialCommandGroup {
                 System.out.println("✓ Hub target FOUND at distance: " + distance + " m");
               } else {
                 Logger.recordOutput("SystemTest/VisionHubFound", false);
-                System.out.println("✗ No hub target visible (may be expected if no target in view)");
+                System.out.println(
+                    "✗ No hub target visible (may be expected if no target in view)");
               }
 
               // Also check generic targets

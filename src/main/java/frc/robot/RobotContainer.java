@@ -25,6 +25,7 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.commands.LimelightAimAndRangeCommand;
 import frc.robot.commands.LimelightAimCommand;
 import frc.robot.commands.ManualAuto;
+import frc.robot.commands.SystemTestCommand;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIONavX;
@@ -51,7 +52,6 @@ import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
 import frc.robot.util.LimelightDistanceEstimator;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-import frc.robot.commands.SystemTestCommand;
 
 public class RobotContainer {
   // Subsystems
@@ -463,7 +463,7 @@ public class RobotContainer {
 
     drive.setDefaultCommand(
         DriveCommands.joystickDrive( // for robot relative, do this: joystickDriveRobotRelative
-            drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
+            drive, () -> driver.getLeftY(), () -> driver.getLeftX(), () -> -driver.getRightX()));
 
     driver
         .a()
@@ -570,9 +570,9 @@ public class RobotContainer {
                             ShotCalculator.getInstance()
                                 .calculateFromDistance(dist, drive.getPose().getRotation());
                         hoodAngle = params.hoodAngleRad();
-                        flywheelRPM =
-                            params.flywheelSpeedRPM()
-                                + 200; // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
+                        flywheelRPM = 872.9;
+                        // params.flywheelSpeedRPM()
+                        //  + 200; // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
                       } else {
                         // No tag — safe default (close range)
                         hoodAngle = ShooterConstants.hoodMinAngleRad;

@@ -33,6 +33,8 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -45,6 +47,17 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase {
+  private ShuffleboardTab tab = Shuffleboard.getTab("Drive");
+
+  {
+    tab.addNumber("Max Speed (m/s)", () -> DriveConstants.maxSpeedMetersPerSec);
+    tab.addNumber("Drive kP", () -> DriveConstants.driveKp);
+    tab.addNumber("Drive kV", () -> DriveConstants.driveKv);
+    tab.addNumber("Turn kP", () -> DriveConstants.turnKp);
+    tab.addNumber("Magnitude Slew Rate", () -> DriveConstants.kMagnitudeSlewRate);
+    tab.addNumber("Rotational Slew Rate", () -> DriveConstants.kRotationalSlewRate);
+  }
+
   static final Lock odometryLock = new ReentrantLock();
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
@@ -181,6 +194,15 @@ public class Drive extends SubsystemBase {
    * @param speeds Speeds in meters/sec
    */
   public void runVelocity(ChassisSpeeds speeds) {
+    // double speedMultiplier = Math.max(0.0, Math.min(1.0, maxSpeed.getDouble(1.0)));
+
+    // Scale the requested speeds
+    // speeds =
+    //  new ChassisSpeeds(
+    //    speeds.vxMetersPerSecond * speedMultiplier,
+    //  speeds.vyMetersPerSecond * speedMultiplier,
+    // speeds.omegaRadiansPerSecond * speedMultiplier);
+
     // Calculate module setpoints
     ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
     SwerveModuleState[] setpointStates = kinematics.toSwerveModuleStates(discreteSpeeds);
