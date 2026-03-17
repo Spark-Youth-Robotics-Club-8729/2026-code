@@ -460,6 +460,7 @@ public class RobotContainer {
     // POV Down      — PRESS to set hood down to its minimum resting angle
     // -------------------------------------------------------------------------
 
+    // WORKS NOW (intake is frontside): 
     drive.setDefaultCommand(
         DriveCommands.joystickDrive( // for robot relative, do this: joystickDriveRobotRelative
             drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
