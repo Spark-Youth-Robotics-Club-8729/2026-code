@@ -47,16 +47,7 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase {
-  private ShuffleboardTab tab = Shuffleboard.getTab("Drive");
 
-  {
-    tab.addNumber("Max Speed (m/s)", () -> DriveConstants.maxSpeedMetersPerSec);
-    tab.addNumber("Drive kP", () -> DriveConstants.driveKp);
-    tab.addNumber("Drive kV", () -> DriveConstants.driveKv);
-    tab.addNumber("Turn kP", () -> DriveConstants.turnKp);
-    tab.addNumber("Magnitude Slew Rate", () -> DriveConstants.kMagnitudeSlewRate);
-    tab.addNumber("Rotational Slew Rate", () -> DriveConstants.kRotationalSlewRate);
-  }
 
   static final Lock odometryLock = new ReentrantLock();
   private final GyroIO gyroIO;
@@ -219,6 +210,23 @@ public class Drive extends SubsystemBase {
 
     // Log optimized setpoints (runSetpoint mutates each state)
     Logger.recordOutput("SwerveStates/SetpointsOptimized", setpointStates);
+  }
+
+  /**
+   * Runs a single swerve module at the specified state and stops all others. Used for per-module
+   * testing.
+   *
+   * @param moduleIndex 0=FL, 1=FR, 2=BL, 3=BR
+   * @param state Desired speed and steering angle for the active module
+   */
+  public void runSingleModule(int moduleIndex, SwerveModuleState state) {
+    for (int i = 0; i < 4; i++) {
+      if (i == moduleIndex) {
+        modules[i].runSetpoint(state);
+      } else {
+        modules[i].stop();
+      }
+    }
   }
 
   /** Runs the drive in a straight line with the specified drive output. */
