@@ -133,11 +133,11 @@ public class DriveCommands {
           double limitedY = slewState[1] * Math.sin(slewState[0]);
           slewState[2] = rotLimiter.calculate(omega);
 
-          // Convert to field-relative speeds 
+          // Convert to field-relative speeds
           boolean isFlipped = false; // assuming the intake is the frontside
           int flipped = -1;
           if (DriverStation.getAlliance().isPresent()
-              && DriverStation.getAlliance().get() == DriverStation.Alliance.Blue) {
+              && DriverStation.getAlliance().get() == DriverStation.Alliance.Red) {
             isFlipped = true;
             flipped = 1;
           }

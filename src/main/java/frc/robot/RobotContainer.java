@@ -25,6 +25,7 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.commands.LimelightAimAndRangeCommand;
 import frc.robot.commands.LimelightAimCommand;
 import frc.robot.commands.ManualAuto;
+import frc.robot.commands.SystemTestCommand;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIONavX;
@@ -453,17 +454,16 @@ public class RobotContainer {
     // A             — HOLD to snap/drive at 0 degrees (facing forward)    -- kinda works
     // B             — RESET GYRO to current heading (sets rotation to 0)   -- test pls
     // X             — X-BRAKE (lock wheels in X-pattern to resist pushing)      -- works pretty
-    // sure
     // Y             — HOLD to Limelight aim (Auto-rotate to target) while driving  -- doesnt work
     // Left Bumper   — HOLD for Proportional Limelight Aiming + Manual Translation  -- test pls
     // Right Bumper  — HOLD for Limelight Aiming + Automatic Range/Distance logic  -- test pls
     // POV Down      — PRESS to set hood down to its minimum resting angle
+    // POV Up        — PRESS to TEST EVERYTHING (all functionalities of the robot)  --- test pls
     // -------------------------------------------------------------------------
 
-    // WORKS NOW (intake is frontside): 
     drive.setDefaultCommand(
         DriveCommands.joystickDrive( // for robot relative, do this: joystickDriveRobotRelative
-            drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
+            drive, () -> driver.getLeftY(), () -> driver.getLeftX(), () -> -driver.getRightX()));
 
     driver
         .a()
@@ -521,6 +521,9 @@ public class RobotContainer {
                 },
                 shooter));
 
+    // Driver POV Up — Test everything (make slapdown start up)
+    driver.povUp().onTrue(new SystemTestCommand(drive, intake, indexer, shooter, vision));
+
     // -------------------------------------------------------------------------
     // OPERATOR (port 1)
     //
@@ -567,9 +570,9 @@ public class RobotContainer {
                             ShotCalculator.getInstance()
                                 .calculateFromDistance(dist, drive.getPose().getRotation());
                         hoodAngle = params.hoodAngleRad();
-                        flywheelRPM =
-                            params.flywheelSpeedRPM()
-                                + 200; // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
+                        flywheelRPM = 872.9;
+                        // params.flywheelSpeedRPM()
+                        //  + 200; // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
                       } else {
                         // No tag — safe default (close range)
                         hoodAngle = ShooterConstants.hoodMinAngleRad;
