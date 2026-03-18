@@ -66,6 +66,8 @@ public class VisionConstants {
   /** High-priority tags for reliable scoring (IDs: 10, 8, 11, 26, 24, 27) */
   public static final Set<Integer> PREFERRED_TAG_IDS = Set.of(10, 8, 11, 26, 24, 27);
 
+  public static final Set<Integer> TRENCH_TAG_IDS = Set.of(6, 7, 1, 12, 17, 28, 22, 23);
+
   // RED scoring hub face tags (Updated to exclude blocked tags)
   public static final Set<Integer> redHubTagIds = Set.of(8, 10, 3, 4, 11);
 
