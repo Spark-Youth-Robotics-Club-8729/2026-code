@@ -321,7 +321,8 @@ public class Drive extends SubsystemBase {
 
   /** Zeroes the gyro yaw. Call this at the start of teleop or on a button press. */
   public void zeroGyro() {
-    gyroIO.zeroYaw();
+      gyroIO.zeroYaw();  //resets the NavX gyro
+      setPose(new Pose2d(getPose().getTranslation(), Rotation2d.kZero));  // resets the pose estimator to match zeroed gyro
   }
 
   /** Adds a new timestamped vision measurement. */
