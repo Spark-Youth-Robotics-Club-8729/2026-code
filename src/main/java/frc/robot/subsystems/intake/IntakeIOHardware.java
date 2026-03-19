@@ -102,7 +102,7 @@ public class IntakeIOHardware implements IntakeIO {
         // applyOutputs when kP/kD change.
         .p(slapdownUpKp)
         .d(slapdownUpKd)
-        .outputRange(-1.0, 1.0);
+        .outputRange(-0.3, 0.3);
     slapdownConfig
         .softLimit
         .forwardSoftLimit((float) slapdownDownAngleRad)

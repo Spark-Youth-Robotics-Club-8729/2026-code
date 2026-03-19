@@ -73,6 +73,9 @@ public class Intake extends SubsystemBase {
   // Arm must stay within tolerance for 150ms before we declare it settled,
   // preventing false positives from encoder noise mid-movement.
   private final Debouncer slapdownSettleDebouncer = new Debouncer(0.15, DebounceType.kRising);
+  // Detect bumper contact (stall) and stop driving the slapdown PID when we hit a hard stop
+  private final Debouncer slapdownStallDebouncer =
+      new Debouncer(slapdownStallDebounceSec, DebounceType.kRising);
 
   private final edu.wpi.first.wpilibj.Timer jitterTimer =
       new edu.wpi.first.wpilibj.Timer(); // jitter timer
@@ -180,10 +183,24 @@ public class Intake extends SubsystemBase {
     ;
     outputs.slapdownVelocityRadPerSec = 0.0;
 
+    // ---- Stall detection ----
+    boolean slapdownStalled =
+        slapdownStallDebouncer.calculate(
+            Math.abs(inputs.slapdownAppliedVolts) >= slapdownStallAppliedVolts
+                && inputs.slapdownCurrentAmps >= slapdownStallCurrentAmps
+                && Math.abs(inputs.slapdownVelocityRadPerSec) <= slapdownStallVelocityRadPerSec);
+
+    if (slapdownStalled) {
+      outputs.slapdownMode = IntakeIOOutputMode.BRAKE; // stop driving the PID at the hard stop
+      outputs.slapdownVolts = 0.0;
+    }
+
     // ---- Slapdown state ----
     boolean atGoal =
-        Math.abs(inputs.slapdownPositionRad - outputs.slapdownPositionRad) <= slapdownToleranceRad;
-    boolean settled = slapdownSettleDebouncer.calculate(atGoal);
+        slapdownStalled
+            || Math.abs(inputs.slapdownPositionRad - outputs.slapdownPositionRad)
+                <= slapdownToleranceRad;
+    boolean settled = slapdownSettleDebouncer.calculate(atGoal) || slapdownStalled;
 
     slapdownState =
         settled
@@ -194,6 +211,7 @@ public class Intake extends SubsystemBase {
 
     Logger.recordOutput("Intake/SlapdownAtGoal", atGoal);
     Logger.recordOutput("Intake/SlapdownSettled", settled);
+    Logger.recordOutput("Intake/SlapdownStalled", slapdownStalled);
   }
 
   private void updateTuningFromShuffleboard() {
@@ -283,10 +301,10 @@ public class Intake extends SubsystemBase {
   public void toggleSlapdown() {
     if (isSlapdownUp()) {
       setSlapdownGoal(SlapdownGoal.DOWN);
-      setRollerGoal(RollerGoal.STOP);
+      setRollerGoal(RollerGoal.INTAKE);
     } else {
       setSlapdownGoal(SlapdownGoal.UP);
-      setRollerGoal(RollerGoal.INTAKE);
+      setRollerGoal(RollerGoal.STOP);
     }
   }
 

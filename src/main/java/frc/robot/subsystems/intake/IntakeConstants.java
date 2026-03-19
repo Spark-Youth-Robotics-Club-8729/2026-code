@@ -24,17 +24,23 @@ public class IntakeConstants {
       Units.degreesToRadians(90.0); // TODO: Set actual
 
   // Slapdown PID gains (separate for each mode so they can be tuned independently)
-  public static final double slapdownUpKp = 0.5; // TODO: Tune
-  public static final double slapdownUpKd = 0.5; // TODO: Tune
+  public static final double slapdownUpKp = 0.3; // TODO: Tune
+  public static final double slapdownUpKd = 0.4; // TODO: Tune
 
-  public static final double slapdownDownKp = 0.5; // TODO: Tune
-  public static final double slapdownDownKd = 0.5; // TODO: Tune
+  public static final double slapdownDownKp = 0.15; // TODO: Tune
+  public static final double slapdownDownKd = 0.8; // TODO: Tune
 
   public static final double slapdownJitterKp = 0.5; // TODO: Tune
   public static final double slapdownJitterKd = 0.5; // TODO: Tune
 
   // Slapdown tolerance
   public static final double slapdownToleranceRad = Units.degreesToRadians(5.0);
+
+  // Slapdown stall detection (stop PID if we likely hit the bumper)
+  public static final double slapdownStallCurrentAmps = 25.0; // above normal running current
+  public static final double slapdownStallAppliedVolts = 8.0; // near full output
+  public static final double slapdownStallVelocityRadPerSec = Units.degreesToRadians(5.0);
+  public static final double slapdownStallDebounceSec = 0.15;
 
   // Roller voltages (positive = intake in, negative = outtake)
   public static final double rollerIntakeVolts = 6.0; // Reduced from 10.0 — TODO: Tune
