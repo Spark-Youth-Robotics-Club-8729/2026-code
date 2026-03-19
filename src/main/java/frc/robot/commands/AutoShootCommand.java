@@ -72,7 +72,7 @@ public class AutoShootCommand extends Command {
     // Prefer direct vision distance from hub tags (most accurate);
     // fall back to pose-based calculation if hub tags not visible.
     ShotCalculator.ShootingParameters params;
-    boolean usingVisionDistance = vision.hasTarget(cameraIndex);
+    boolean usingVisionDistance = vision.hasHubTarget(cameraIndex);
 
     System.out.println("usingVisionDistance: " + usingVisionDistance); // debug print
 
@@ -110,7 +110,7 @@ public class AutoShootCommand extends Command {
 
     // ---- Limelight TX-based visual servoing ----
     double omega;
-    boolean hasTarget = vision.hasTarget(cameraIndex);
+    boolean hasTarget = vision.hasHubTarget(cameraIndex);
 
     if (hasTarget) {
       double txDeg = vision.getTargetX(cameraIndex).getDegrees();
