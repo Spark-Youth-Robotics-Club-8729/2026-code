@@ -38,7 +38,7 @@ public class IntakeIOSim implements IntakeIO {
           true, // Simulate gravity
           slapdownUpAngleRad); // Start retracted
 
-  private final PIDController slapdownPID = new PIDController(slapdownKp, 0.0, slapdownKd);
+  private final PIDController slapdownPID = new PIDController(slapdownDownKp, 0.0, slapdownDownKd);
 
   private double rollerAppliedVolts = 0.0;
   private double slapdownAppliedVolts = 0.0;

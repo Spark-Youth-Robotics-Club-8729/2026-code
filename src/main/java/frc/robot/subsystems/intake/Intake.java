@@ -114,8 +114,8 @@ public class Intake extends SubsystemBase {
         };
 
     // ---- Slapdown ----
-    outputs.kP = slapdownKp;
-    outputs.kD = slapdownKd;
+    outputs.kP = slapdownDownKp;
+    outputs.kD = slapdownDownKd;
     outputs.slapdownMode = IntakeIOOutputMode.CLOSED_LOOP;
 
     switch (slapdownGoal) {
