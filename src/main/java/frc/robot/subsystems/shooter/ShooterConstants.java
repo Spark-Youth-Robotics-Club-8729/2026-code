@@ -92,8 +92,8 @@ public class ShooterConstants {
   // ---------------------------------------------------------------------------
   // Default / feeder speeds
   // ---------------------------------------------------------------------------
-  public static final double defaultFlywheelSpeedRPM = 3000.0; // TODO: changeback to more
-  public static final double maxFlywheelSpeedRPM = 6000.0;
+  public static final double defaultFlywheelSpeedRPM = 872.9; // TODO: changeback to more
+  public static final double maxFlywheelSpeedRPM = 1000.0;
   // Positive = feeds ball up from hopper to shooter
   public static final double feederFeedSpeedRPM = 800.0;
   // Negative = ejects ball back down toward hopper

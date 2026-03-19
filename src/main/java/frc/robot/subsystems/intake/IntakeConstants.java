@@ -24,8 +24,8 @@ public class IntakeConstants {
       Units.degreesToRadians(90.0); // TODO: Set actual
 
   // Slapdown PID gains
-  public static final double slapdownKp = 0.5; // TODO: Tune
-  public static final double slapdownKd = 0.5; // TODO: Tune
+  public static final double slapdownKp = 0.1; // TODO: Tune
+  public static final double slapdownKd = 0.4; // TODO: Tune
 
   // Slapdown tolerance
   public static final double slapdownToleranceRad = Units.degreesToRadians(2.0);
@@ -35,8 +35,8 @@ public class IntakeConstants {
   public static final double rollerOuttakeVolts = -4.0; // Reduced from -6.0 — TODO: Tune
 
   // Jitter constans
-  public static final double jitterFrequencyHz = 0.25; // Tune
-  public static final double jitterAmplitudeDeg = 45.0; // Tune
+  public static final double jitterFrequencyHz = 0.5; // Tune
+  public static final double jitterAmplitudeDeg = 70.0; // Tune
 
   private IntakeConstants() {}
 }

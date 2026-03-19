@@ -33,9 +33,9 @@ import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 public class DriveCommands {
-  private static final double DEADBAND = 0.6; // changed from 0.1 for making it less sensitive
-  private static final double DRIVE_SPEED_SCALE = 0.08;
-  private static final double TURN_SPEED_SCALE = 0.02;
+  private static final double DEADBAND = 0.2; // changed from 0.6 for making it less sensitive
+  private static final double DRIVE_SPEED_SCALE = 0.014;
+  private static final double TURN_SPEED_SCALE = 0.024;
   private static final double ANGLE_KP = 5.0;
   private static final double ANGLE_KD = 0.4;
   private static final double ANGLE_MAX_VELOCITY = 5.0; // (changed from 8)
@@ -134,14 +134,18 @@ public class DriveCommands {
           slewState[2] = rotLimiter.calculate(omega);
 
           // Convert to field-relative speeds
+          boolean isFlipped = false; // assuming the intake is the frontside
+          int flipped = -1;
+          if (DriverStation.getAlliance().isPresent()
+              && DriverStation.getAlliance().get() == DriverStation.Alliance.Red) {
+            isFlipped = true;
+            flipped = 1;
+          }
           ChassisSpeeds speeds =
               new ChassisSpeeds(
-                  limitedX * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE,
-                  limitedY * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE,
+                  limitedX * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE * flipped,
+                  limitedY * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE * flipped,
                   slewState[2] * drive.getMaxAngularSpeedRadPerSec() * TURN_SPEED_SCALE);
-          boolean isFlipped =
-              DriverStation.getAlliance().isPresent()
-                  && DriverStation.getAlliance().get() == DriverStation.Alliance.Red;
           drive.runVelocity(
               ChassisSpeeds.fromFieldRelativeSpeeds(
                   speeds,

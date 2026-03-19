@@ -17,8 +17,8 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.PersistMode;
-import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
@@ -52,7 +52,7 @@ public class IntakeIOHardware implements IntakeIO {
   // Slapdown — SparkMax (NEO brushless) via REVLib
   // ---------------------------------------------------------------------------
   private final SparkMax slapdownMotor;
-  private final RelativeEncoder slapdownEncoder;
+  private final AbsoluteEncoder slapdownEncoder;
   private final SparkClosedLoopController slapdownController;
 
   // Track last PID gains so we only reconfigure when they change
@@ -82,7 +82,7 @@ public class IntakeIOHardware implements IntakeIO {
 
     // ---- Slapdown (SparkMax + NEO) ----
     slapdownMotor = new SparkMax(slapdownMotorID, MotorType.kBrushless);
-    slapdownEncoder = slapdownMotor.getEncoder();
+    slapdownEncoder = slapdownMotor.getAbsoluteEncoder();
     slapdownController = slapdownMotor.getClosedLoopController();
 
     SparkMaxConfig slapdownConfig = new SparkMaxConfig();
@@ -91,13 +91,18 @@ public class IntakeIOHardware implements IntakeIO {
         .smartCurrentLimit(30)
         .inverted(false); // flip to true if arm moves the wrong direction
     slapdownConfig
-        .encoder
-        // Conversion factors so all encoder reads return radians / rad/s directly
-        .positionConversionFactor((2.0 * Math.PI) / slapdownGearRatio)
-        .velocityConversionFactor((2.0 * Math.PI) / (slapdownGearRatio * 60.0));
+        .absoluteEncoder
+        // Absolute encoder outputs 0–1 rotations natively; convert to radians
+        .positionConversionFactor(2.0 * Math.PI / slapdownGearRatio)
+        .velocityConversionFactor(2.0 * Math.PI / 60.0)
+        // zeroOffset (0.0–1.0 rotations) shifts what the encoder reads as 0.
+        // TODO: deploy, read slapdownEncoder.getPosition() with arm physically UP,
+        // divide that reading by (2*PI) to get the offset in rotations, and set it here.
+        // (shouldnt need) .zeroOffset(slapdownAbsoluteEncoderOffset)
+        .inverted(false); // flip to true if position reads backwards
     slapdownConfig
         .closedLoop
-        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+        .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
         .p(slapdownKp)
         .d(slapdownKd)
         .outputRange(-1.0, 1.0);
@@ -108,13 +113,10 @@ public class IntakeIOHardware implements IntakeIO {
         .reverseSoftLimit((float) slapdownUpAngleRad)
         .reverseSoftLimitEnabled(true);
 
-    // Use top-level com.revrobotics.ResetMode / PersistMode (not SparkBase.* — those are
-    // deprecated)
     slapdownMotor.configure(
         slapdownConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    // Seed encoder at the retracted (up) position on startup
-    slapdownEncoder.setPosition(slapdownUpAngleRad);
+    // No setPosition() needed — absolute encoder always knows where it is
 
     lastKp = slapdownKp;
     lastKd = slapdownKd;
