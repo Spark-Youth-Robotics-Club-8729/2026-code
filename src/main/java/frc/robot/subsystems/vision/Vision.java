@@ -140,6 +140,15 @@ public class Vision extends SubsystemBase {
     return !Double.isNaN(getDistanceToHub(cameraIndex));
   }
 
+  /** Returns true if the camera can currently see at least one trench AprilTag. */
+  public boolean hasTrenchTarget(int cameraIndex) {
+    int[] tagIds = inputs[cameraIndex].tagIds;
+    for (int id : tagIds) {
+      if (VisionConstants.TRENCH_TAG_IDS.contains(id)) return true;
+    }
+    return false;
+  }
+
   @Override
   public void periodic() {
     // -----------------------------------------------------------------------

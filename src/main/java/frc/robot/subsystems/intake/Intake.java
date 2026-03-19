@@ -114,33 +114,34 @@ public class Intake extends SubsystemBase {
         };
 
     // ---- Slapdown ----
-    outputs.kP = slapdownDownKp;
-    outputs.kD = slapdownDownKd;
     outputs.slapdownMode = IntakeIOOutputMode.CLOSED_LOOP;
 
-    switch (slapdownGoal) {
-      case UP -> outputs.slapdownPositionRad = slapdownUpAngleRad;
-      case DOWN -> outputs.slapdownPositionRad = slapdownDownAngleRad;
-      case JITTER -> {
-        // double radPerSec = jitterFrequencyHz * (2.0 * Math.PI);
-        // double offset =
-        //     Math.abs(
-        //         Units.degreesToRadians(jitterAmplitudeDeg)
-        //             * Math.sin(jitterTimer.get() * radPerSec));
-        // If sine wave thingy does not work, then comment the two lines above, and uncomment this
-        // one
-        double offset;
-        double cycleTime = 1.0 / jitterFrequencyHz;
-        if ((jitterTimer.get() % cycleTime) < (cycleTime / 2.0)) {
-          offset = Units.degreesToRadians(jitterAmplitudeDeg);
-        } else {
-          offset = 0.0;
-        }
+    if (slapdownGoal == SlapdownGoal.UP) {
+      outputs.kP = slapdownUpKp;
+      outputs.kD = slapdownUpKd;
+      outputs.slapdownPositionRad = slapdownUpAngleRad;
+    } else if (slapdownGoal == SlapdownGoal.DOWN) {
+      outputs.kP = slapdownDownKp;
+      outputs.kD = slapdownDownKd;
+      outputs.slapdownPositionRad = slapdownDownAngleRad;
+    } else { // JITTER
+      outputs.kP = slapdownDownKp;
+      outputs.kD = slapdownDownKd;
 
-        outputs.slapdownPositionRad = slapdownDownAngleRad - offset;
+      // If sine wave thingy does not work, then comment the two lines below, and uncomment the
+      // switch
+      // logic
+      double offset;
+      double cycleTime = 1.0 / jitterFrequencyHz;
+      if ((jitterTimer.get() % cycleTime) < (cycleTime / 2.0)) {
+        offset = Units.degreesToRadians(jitterAmplitudeDeg);
+      } else {
+        offset = 0.0;
       }
+
+      outputs.slapdownPositionRad = slapdownDownAngleRad - offset;
     }
-    ;
+
     outputs.slapdownVelocityRadPerSec = 0.0;
 
     // ---- Slapdown state ----
@@ -154,7 +155,10 @@ public class Intake extends SubsystemBase {
             : SlapdownState.MOVING;
 
     io.applyOutputs(outputs);
-
+    System.out.println(atGoal);
+    System.out.println(settled);
+    System.out.println(inputs.slapdownPositionRad);
+    System.out.println(slapdownState);
     Logger.recordOutput("Intake/SlapdownAtGoal", atGoal);
     Logger.recordOutput("Intake/SlapdownSettled", settled);
   }
@@ -188,12 +192,12 @@ public class Intake extends SubsystemBase {
   }
 
   public void toggleSlapdown() {
-    if (isSlapdownUp()) {
+    // Logic: If our current TARGET is UP, move DOWN.
+    // Otherwise (if we are DOWN or MOVING), move UP.
+    if (slapdownGoal == SlapdownGoal.UP) {
       setSlapdownGoal(SlapdownGoal.DOWN);
-      // setRollerGoal(RollerGoal.STOP);
     } else {
       setSlapdownGoal(SlapdownGoal.UP);
-      // setRollerGoal(RollerGoal.INTAKE);
     }
   }
 

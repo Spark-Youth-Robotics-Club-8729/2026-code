@@ -8,6 +8,7 @@ import frc.robot.subsystems.indexer.Indexer.IndexerGoal;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShotCalculator;
 import frc.robot.subsystems.vision.Vision;
+import java.util.Arrays;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -79,6 +80,11 @@ public class AutoShootCommand extends Command {
             + usingVisionDistance
             + "  visibleTagIds: "
             + java.util.Arrays.toString(vision.getVisibleTagIds(cameraIndex))); // debug print
+
+    // u da real debugger
+    System.out.println("HasTarget: " + vision.hasTarget(cameraIndex));
+    System.out.println("HasHubTarget: " + vision.hasHubTarget(cameraIndex));
+    System.out.println("Tag IDs: " + Arrays.toString(vision.getVisibleTagIds(cameraIndex)));
 
     if (usingVisionDistance) {
       double visionDist = vision.getDistanceToHub(cameraIndex);

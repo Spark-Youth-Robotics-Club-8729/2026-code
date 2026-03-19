@@ -20,7 +20,8 @@ public class IntakeConstants {
 
   // Slapdown angle limits (radians, at the mechanism after gear reduction)
   public static final double slapdownUpAngleRad = Units.degreesToRadians(0.0); // TODO: Set actual
-  public static final double slapdownDownAngleRad = Units.degreesToRadians(90.0); // TODO: Set actual
+  public static final double slapdownDownAngleRad =
+      Units.degreesToRadians(90.0); // TODO: Set actual
 
   // Slapdown PID gains (down)
   public static final double slapdownDownKp = 0.08; // TODO: Tune
@@ -31,14 +32,14 @@ public class IntakeConstants {
   public static final double slapdownUpKd = 0.4; // TODO: Tune
 
   // Slapdown tolerance
-  public static final double slapdownToleranceRad = Units.degreesToRadians(2.0);
+  public static final double slapdownToleranceRad = Units.degreesToRadians(18.729);
 
   // Roller voltages (positive = intake in, negative = outtake)
   public static final double rollerIntakeVolts = 6.0; // Reduced from 10.0 — TODO: Tune
   public static final double rollerOuttakeVolts = -4.0; // Reduced from -6.0 — TODO: Tune
 
   // Jitter constans
-  public static final double jitterFrequencyHz = 0.5; // Tune
+  public static final double jitterFrequencyHz = 0.3; // Tune
   public static final double jitterAmplitudeDeg = 70.0; // Tune
 
   private IntakeConstants() {}

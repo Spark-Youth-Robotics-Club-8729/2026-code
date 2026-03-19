@@ -105,7 +105,7 @@ public class IntakeIOHardware implements IntakeIO {
         .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
         .p(slapdownDownKp)
         .d(slapdownDownKd)
-        .outputRange(-1.0, 1.0);
+        .outputRange(-0.5, 0.5);
     slapdownConfig
         .softLimit
         .forwardSoftLimit((float) slapdownDownAngleRad)

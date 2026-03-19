@@ -110,10 +110,22 @@ public class VisionIOLimelight implements VisionIO {
     // the blocked tags
     // -----------------------------------------------------------------------
     RawFiducial bestTarget = null;
+
+    // prioritize trench tags
     for (RawFiducial f : rawFiducials) {
-      if (!BLOCKED_TAG_IDS.contains(f.id)) {
+      if (VisionConstants.TRENCH_TAG_IDS.contains(f.id)) {
         bestTarget = f;
         break;
+      }
+    }
+
+    // Fallback is basiclaly any non-blocked tag
+    if (bestTarget == null) {
+      for (RawFiducial f : rawFiducials) {
+        if (!BLOCKED_TAG_IDS.contains(f.id)) {
+          bestTarget = f;
+          break;
+        }
       }
     }
 
