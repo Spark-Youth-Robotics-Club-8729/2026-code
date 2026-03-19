@@ -20,12 +20,15 @@ public class IntakeConstants {
 
   // Slapdown angle limits (radians, at the mechanism after gear reduction)
   public static final double slapdownUpAngleRad = Units.degreesToRadians(0.0); // TODO: Set actual
-  public static final double slapdownDownAngleRad =
-      Units.degreesToRadians(90.0); // TODO: Set actual
+  public static final double slapdownDownAngleRad = Units.degreesToRadians(90.0); // TODO: Set actual
 
-  // Slapdown PID gains
-  public static final double slapdownKp = 0.4; // TODO: Tune
-  public static final double slapdownKd = 0.3; // TODO: Tune
+  // Slapdown PID gains (down)
+  public static final double slapdownDownKp = 0.08; // TODO: Tune
+  public static final double slapdownDownKd = 0.4; // TODO: Tune
+
+  // Slapdown PID gains (up)
+  public static final double slapdownUpKp = 0.08; // TODO: Tune
+  public static final double slapdownUpKd = 0.4; // TODO: Tune
 
   // Slapdown tolerance
   public static final double slapdownToleranceRad = Units.degreesToRadians(2.0);

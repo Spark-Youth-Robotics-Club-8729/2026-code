@@ -103,8 +103,8 @@ public class IntakeIOHardware implements IntakeIO {
     slapdownConfig
         .closedLoop
         .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
-        .p(slapdownKp)
-        .d(slapdownKd)
+        .p(slapdownDownKp)
+        .d(slapdownDownKd)
         .outputRange(-1.0, 1.0);
     slapdownConfig
         .softLimit
@@ -118,8 +118,8 @@ public class IntakeIOHardware implements IntakeIO {
 
     // No setPosition() needed — absolute encoder always knows where it is
 
-    lastKp = slapdownKp;
-    lastKd = slapdownKd;
+    lastKp = slapdownDownKp;
+    lastKd = slapdownDownKd;
   }
 
   @Override
