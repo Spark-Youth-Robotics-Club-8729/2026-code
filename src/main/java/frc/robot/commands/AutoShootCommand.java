@@ -108,22 +108,23 @@ public class AutoShootCommand extends Command {
     Logger.recordOutput("AutoShoot/UsingVisionDistance", usingVisionDistance);
 
     // ---- Spin up hood + flywheels regardless of aiming state ----
+    // If out of range, use safe defaults rather than stopping — lets the operator still aim and
+    // shoot manually from any distance.
     if (params.isValid()) {
       shooter.applyShootingParameters(params.hoodAngleRad(), params.flywheelSpeedRPM());
     } else {
-      shooter.stop();
-      indexer.setGoal(IndexerGoal.STOP);
-      drive.stop();
-      Logger.recordOutput("AutoShoot/State", "OutOfRange");
-      return;
+      shooter.applyShootingParameters(
+          frc.robot.subsystems.shooter.ShooterConstants.hoodMinAngleRad,
+          frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM);
+      Logger.recordOutput("AutoShoot/State", "OutOfRange_UsingDefaults");
     }
 
-    // ---- Limelight TX-based visual servoing ----
+    // ---- Limelight TX-based visual servoing — aim at hub tags specifically ----
     double omega;
-    boolean hasTarget = vision.hasHubTarget(cameraIndex);
+    boolean hasTarget = vision.hasHubTx(cameraIndex);
 
     if (hasTarget) {
-      double txDeg = vision.getTargetX(cameraIndex).getDegrees();
+      double txDeg = vision.getHubTargetX(cameraIndex).getDegrees();
       if (Math.abs(txDeg) < AIM_DEAD_BAND_DEG) {
         omega = 0.0;
       } else {
@@ -132,7 +133,7 @@ public class AutoShootCommand extends Command {
         omega += Math.copySign(MIN_AIM_COMMAND_RAD_S, omega);
       }
     } else {
-      // No target visible — seek by spinning slowly
+      // No hub tag visible — seek by spinning slowly
       omega = SEEK_SPEED_RAD_S;
     }
 
@@ -145,7 +146,7 @@ public class AutoShootCommand extends Command {
 
     // ---- Feed only when fully aligned and ready ----
     boolean aimed =
-        hasTarget && Math.abs(vision.getTargetX(cameraIndex).getDegrees()) < AIM_DEAD_BAND_DEG;
+        hasTarget && Math.abs(vision.getHubTargetX(cameraIndex).getDegrees()) < AIM_DEAD_BAND_DEG;
     boolean readyToFeed = aimed && shooter.isReadyToShoot() && !spinningTooFast;
 
     if (readyToFeed) {
@@ -166,7 +167,7 @@ public class AutoShootCommand extends Command {
 
     Logger.recordOutput("AutoShoot/HasTarget", hasTarget);
     Logger.recordOutput(
-        "AutoShoot/TXDeg", hasTarget ? vision.getTargetX(cameraIndex).getDegrees() : 0.0);
+        "AutoShoot/TXDeg", hasTarget ? vision.getHubTargetX(cameraIndex).getDegrees() : 0.0);
     Logger.recordOutput("AutoShoot/OmegaRadS", omega);
     Logger.recordOutput("AutoShoot/GyroRateDegS", gyroRateDegS);
     Logger.recordOutput("AutoShoot/Aimed", aimed);

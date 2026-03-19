@@ -92,26 +92,24 @@ public class IntakeIOHardware implements IntakeIO {
         .inverted(false); // flip to true if arm moves the wrong direction
     slapdownConfig
         .absoluteEncoder
-        // Absolute encoder outputs 0–1 rotations natively; convert to radians
-        .positionConversionFactor(2.0 * Math.PI / slapdownGearRatio)
+        // Through-bore absolute encoder is on the OUTPUT (mechanism) shaft, not the motor shaft.
+        // It reads 0–1 output-shaft rotations natively; multiply by 2π to get radians.
+        // Do NOT divide by gear ratio — the encoder already measures the mechanism angle directly.
+        .positionConversionFactor(2.0 * Math.PI)
         .velocityConversionFactor(2.0 * Math.PI / 60.0)
-        // zeroOffset (0.0–1.0 rotations) shifts what the encoder reads as 0.
-        // TODO: deploy, read slapdownEncoder.getPosition() with arm physically UP,
-        // divide that reading by (2*PI) to get the offset in rotations, and set it here.
-        // (shouldnt need) .zeroOffset(slapdownAbsoluteEncoderOffset)
+        // zeroOffset (0.0–1.0 rotations) shifts what the encoder reads as "zero".
+        // If the arm reads a non-zero value at the physical UP position, set:
+        //   zeroOffset = (raw_reading_at_UP_in_rotations)
+        // to make it read 0 when physically UP.
+        // .zeroOffset(0.0)
         .inverted(false); // flip to true if position reads backwards
     slapdownConfig
         .closedLoop
         .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
         .p(slapdownDownKp)
         .d(slapdownDownKd)
-        .outputRange(-0.5, 0.5);
-    slapdownConfig
-        .softLimit
-        .forwardSoftLimit((float) slapdownDownAngleRad)
-        .forwardSoftLimitEnabled(true)
-        .reverseSoftLimit((float) slapdownUpAngleRad)
-        .reverseSoftLimitEnabled(true);
+        .outputRange(-1.0, 1.0);
+    slapdownConfig.softLimit.forwardSoftLimitEnabled(false).reverseSoftLimitEnabled(false);
 
     slapdownMotor.configure(
         slapdownConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);

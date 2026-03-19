@@ -7,8 +7,6 @@
 
 package frc.robot.subsystems.intake;
 
-import edu.wpi.first.math.util.Units;
-
 public class IntakeConstants {
   // CAN IDs
   public static final int rollerMotorID = 20;
@@ -18,10 +16,11 @@ public class IntakeConstants {
   // Slapdown gear ratio (motor rotations per mechanism rotation)
   public static final double slapdownGearRatio = 45; // changed gear ratio to 45:1
 
-  // Slapdown angle limits (radians, at the mechanism after gear reduction)
-  public static final double slapdownUpAngleRad = Units.degreesToRadians(0.0); // TODO: Set actual
-  public static final double slapdownDownAngleRad =
-      Units.degreesToRadians(90.0); // TODO: Set actual
+  // Slapdown angle limits — values from actual encoder readings on hardware.
+  // NOTE: encoder reads ~0 at UP and ~0.0923 at DOWN (very small range — encoder
+  // may not be fully coupled to output shaft; verify hardware before adjusting).
+  public static final double slapdownUpAngleRad = 0.0;
+  public static final double slapdownDownAngleRad = 0.0923;
 
   // Slapdown PID gains (down)
   public static final double slapdownDownKp = 0.08; // TODO: Tune
@@ -31,8 +30,8 @@ public class IntakeConstants {
   public static final double slapdownUpKp = 0.08; // TODO: Tune
   public static final double slapdownUpKd = 0.4; // TODO: Tune
 
-  // Slapdown tolerance
-  public static final double slapdownToleranceRad = Units.degreesToRadians(18.729);
+  // Slapdown tolerance — must be less than the full encoder range (~0.0923 rad)
+  public static final double slapdownToleranceRad = 0.02;
 
   // Roller voltages (positive = intake in, negative = outtake)
   public static final double rollerIntakeVolts = 6.0; // Reduced from 10.0 — TODO: Tune

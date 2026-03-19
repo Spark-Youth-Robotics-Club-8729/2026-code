@@ -254,7 +254,7 @@ public class RobotContainer {
       "BlueDtoS3",
       "BlueDtoS4",
       // NBlue special path
-      "NBlueN4toTthorughB2",
+      "NBlueN4toTthroughB2",
       "Elims1path"
     };
     for (String pathName : pathNames) {
@@ -556,9 +556,9 @@ public class RobotContainer {
                             ShotCalculator.getInstance()
                                 .calculateFromDistance(dist, drive.getPose().getRotation());
                         hoodAngle = params.hoodAngleRad();
-                        flywheelRPM = 872.9;
-                        // params.flywheelSpeedRPM()
-                        //  + 200; // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
+                        flywheelRPM =
+                            params.flywheelSpeedRPM()
+                                + 200; // TEMPORARY INCREASE ----- PLEASE FIX SHOT CALCULATOR :sob
                       } else {
                         // No tag — safe default (close range)
                         hoodAngle = ShooterConstants.hoodMinAngleRad;

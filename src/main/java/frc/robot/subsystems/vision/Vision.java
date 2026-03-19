@@ -76,6 +76,16 @@ public class Vision extends SubsystemBase {
     return inputs[cameraIndex].tagCount > 0;
   }
 
+  /** Returns TX angle to the best visible hub tag for the current alliance. */
+  public Rotation2d getHubTargetX(int cameraIndex) {
+    return inputs[cameraIndex].hubTargetObservation.tx();
+  }
+
+  /** Returns true if a hub tag for the current alliance is visible. */
+  public boolean hasHubTx(int cameraIndex) {
+    return inputs[cameraIndex].hasHubTx;
+  }
+
   /** Returns the raw visible (non-blocked) tag IDs. Useful for debugging. */
   public int[] getVisibleTagIds(int cameraIndex) {
     return inputs[cameraIndex].tagIds;

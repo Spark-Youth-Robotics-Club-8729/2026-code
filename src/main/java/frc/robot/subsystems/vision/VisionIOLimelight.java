@@ -137,6 +137,35 @@ public class VisionIOLimelight implements VisionIO {
       inputs.latestTargetObservation = new TargetObservation(Rotation2d.kZero, Rotation2d.kZero);
     }
 
+    // Hub-specific TX: pick the best visible hub tag for the current alliance
+    var alliance = edu.wpi.first.wpilibj.DriverStation.getAlliance();
+    Set<Integer> hubIds;
+    if (!alliance.isPresent()) {
+      hubIds = new java.util.HashSet<>(VisionConstants.redHubTagIds);
+      hubIds.addAll(VisionConstants.blueHubTagIds);
+    } else {
+      hubIds =
+          alliance.get() == edu.wpi.first.wpilibj.DriverStation.Alliance.Red
+              ? VisionConstants.redHubTagIds
+              : VisionConstants.blueHubTagIds;
+    }
+    RawFiducial hubTarget = null;
+    for (RawFiducial f : rawFiducials) {
+      if (hubIds.contains(f.id)) {
+        hubTarget = f;
+        break;
+      }
+    }
+    if (hubTarget != null) {
+      inputs.hubTargetObservation =
+          new TargetObservation(
+              Rotation2d.fromDegrees(hubTarget.txnc), Rotation2d.fromDegrees(hubTarget.tync));
+      inputs.hasHubTx = true;
+    } else {
+      inputs.hubTargetObservation = new TargetObservation(Rotation2d.kZero, Rotation2d.kZero);
+      inputs.hasHubTx = false;
+    }
+
     // -----------------------------------------------------------------------
     // Read LL-provided standard deviations
     // stddevs = [MT1x, MT1y, MT1z, MT1roll, MT1pitch, MT1yaw,

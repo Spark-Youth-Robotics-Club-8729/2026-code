@@ -128,7 +128,8 @@ public class Intake extends SubsystemBase {
       outputs.kP = slapdownDownKp;
       outputs.kD = slapdownDownKd;
 
-      // If sine wave thingy does not work, then comment the two lines below, and uncomment the
+      // If sine wave thingy does not work, then comment the two lines below, and
+      // uncomment the
       // switch
       // logic
       double offset;
@@ -154,11 +155,19 @@ public class Intake extends SubsystemBase {
             ? (slapdownGoal == SlapdownGoal.UP ? SlapdownState.UP : SlapdownState.DOWN)
             : SlapdownState.MOVING;
 
+    if (atGoal) {
+      outputs.slapdownMode = IntakeIOOutputMode.BRAKE;
+    } else {
+      outputs.slapdownMode = IntakeIOOutputMode.CLOSED_LOOP;
+    }
+
     io.applyOutputs(outputs);
     System.out.println(atGoal);
     System.out.println(settled);
     System.out.println(inputs.slapdownPositionRad);
     System.out.println(slapdownState);
+    System.out.println(slapdownDownAngleRad);
+    System.out.println(slapdownGoal);
     Logger.recordOutput("Intake/SlapdownAtGoal", atGoal);
     Logger.recordOutput("Intake/SlapdownSettled", settled);
   }

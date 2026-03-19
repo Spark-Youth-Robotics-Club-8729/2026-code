@@ -17,6 +17,9 @@ public interface VisionIO {
     public boolean connected = false;
     public TargetObservation latestTargetObservation =
         new TargetObservation(Rotation2d.kZero, Rotation2d.kZero);
+    public TargetObservation hubTargetObservation =
+        new TargetObservation(Rotation2d.kZero, Rotation2d.kZero);
+    public boolean hasHubTx = false;
     public PoseObservation[] poseObservations = new PoseObservation[0];
     public int[] tagIds = new int[0];
     // LL4-specific: raw fiducial data for advanced use
