@@ -33,6 +33,8 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -45,6 +47,8 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase {
+
+
 
   static final Lock odometryLock = new ReentrantLock();
   private final GyroIO gyroIO;
@@ -318,7 +322,8 @@ public class Drive extends SubsystemBase {
 
   /** Zeroes the gyro yaw. Call this at the start of teleop or on a button press. */
   public void zeroGyro() {
-    gyroIO.zeroYaw();
+      gyroIO.zeroYaw();  //resets the NavX gyro
+      setPose(new Pose2d(getPose().getTranslation(), Rotation2d.kZero));  // resets the pose estimator to match zeroed gyro
   }
 
   /** Adds a new timestamped vision measurement. */
