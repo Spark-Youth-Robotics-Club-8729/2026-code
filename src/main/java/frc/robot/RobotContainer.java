@@ -471,7 +471,7 @@ public class RobotContainer {
             DriveCommands.joystickDriveAtAngle(
                 drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> Rotation2d.kZero));
 
-    driver.b().onTrue(
+    driver.b().whileTrue(
       Commands.runOnce(drive::zeroGyro, drive) 
           .ignoringDisable(true));   // test this pls
 
