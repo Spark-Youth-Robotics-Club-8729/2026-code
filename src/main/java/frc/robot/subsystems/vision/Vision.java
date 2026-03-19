@@ -76,6 +76,11 @@ public class Vision extends SubsystemBase {
     return inputs[cameraIndex].tagCount > 0;
   }
 
+  /** Returns the raw visible (non-blocked) tag IDs. Useful for debugging. */
+  public int[] getVisibleTagIds(int cameraIndex) {
+    return inputs[cameraIndex].tagIds;
+  }
+
   /** Returns the average tag distance for camera 0, useful for range estimation. */
   public double getAvgTagDistance(int cameraIndex) {
     return inputs[cameraIndex].avgTagDistance;
@@ -104,10 +109,17 @@ public class Vision extends SubsystemBase {
    */
   public double getDistanceToHub(int cameraIndex) {
     var alliance = DriverStation.getAlliance();
-    var hubIds =
-        (alliance.isPresent() && alliance.get() == Alliance.Red)
-            ? VisionConstants.redHubTagIds
-            : VisionConstants.blueHubTagIds;
+    final java.util.Set<Integer> hubIds;
+    if (!alliance.isPresent()) {
+      // No FMS — accept hub tags from either alliance
+      hubIds = new java.util.HashSet<>(VisionConstants.redHubTagIds);
+      hubIds.addAll(VisionConstants.blueHubTagIds);
+    } else {
+      hubIds =
+          alliance.get() == Alliance.Red
+              ? VisionConstants.redHubTagIds
+              : VisionConstants.blueHubTagIds;
+    }
 
     int[] tagIds = inputs[cameraIndex].tagIds;
     double[] dists = inputs[cameraIndex].rawFiducialDistances;
@@ -164,7 +176,6 @@ public class Vision extends SubsystemBase {
     List<Pose3d> allRobotPosesRejected = new ArrayList<>();
 
     for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
-      io[cameraIndex].updateInputs(inputs[cameraIndex]);
       disconnectedAlerts[cameraIndex].set(!inputs[cameraIndex].connected);
 
       List<Pose3d> tagPoses = new ArrayList<>();
