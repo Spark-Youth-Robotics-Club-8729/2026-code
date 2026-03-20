@@ -38,7 +38,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.Mode;
-import frc.robot.LimelightHelpers;
 import frc.robot.util.LocalADStarAK;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -321,7 +320,8 @@ public class Drive extends SubsystemBase {
   public void zeroGyro() {
     gyroIO.zeroYaw();
     setPose(new Pose2d(getPose().getTranslation(), Rotation2d.fromDegrees(0)));
-    //LimelightHelpers.SetRobotOrientation("limelight", 0, 0, 0, 0, 0, 0);  // uncomment once LL4 is being used
+    // LimelightHelpers.SetRobotOrientation("limelight", 0, 0, 0, 0, 0, 0);  // uncomment once LL4
+    // is being used
   }
 
   /** Adds a new timestamped vision measurement. */

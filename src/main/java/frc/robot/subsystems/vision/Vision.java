@@ -13,7 +13,6 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.LimelightHelpers;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -36,15 +35,19 @@ public class Vision extends SubsystemBase {
     public int[] visibleIds = new int[0];
     public Pose2d mt2Pose = new Pose2d();
     public double timestamp = 0.0;
-    public boolean enabledVisionUpdatesPose = false; // use this to toggle whether vision data should be fed into the pose estimator or not
+    public boolean enabledVisionUpdatesPose =
+        false; // use this to toggle whether vision data should be fed into the pose estimator or
+    // not
   }
 
-  private final VisionInputsAutoLogged inputs = new VisionInputsAutoLogged();    // DO NOT WORRY ABOUT RED ERRORS from this line and the inputs variable. its created once code is built, so it will work
+  private final VisionInputsAutoLogged inputs =
+      new VisionInputsAutoLogged(); // DO NOT WORRY ABOUT RED ERRORS from this line and the inputs
+  // variable. its created once code is built, so it will work
   private final Supplier<Rotation2d> gyroSupplier;
-  private final BiConsumer<Pose2d, Double>
-      odometryConsumer; // Ri3D used this to give both the Pose and the timestamp
+  private final VisionConsumer
+      odometryConsumer; // Ri3D used something similar to give both the Pose and the timestamp
 
-  public Vision(Supplier<Rotation2d> gyroSupplier, BiConsumer<Pose2d, Double> odometryConsumer) {
+  public Vision(Supplier<Rotation2d> gyroSupplier, VisionConsumer odometryConsumer) {
     this.gyroSupplier = gyroSupplier;
     this.odometryConsumer = odometryConsumer;
 
@@ -74,13 +77,11 @@ public class Vision extends SubsystemBase {
       double thetaStdDev = 0.5; // trust the rboto gyro  mainly
 
       odometryConsumer.accept(
-          inputs.mt2Pose, 
-          inputs.timestamp, 
-          VecBuilder.fill(xStdDev, yStdDev, thetaStdDev)
-      );
+          inputs.mt2Pose, inputs.timestamp, VecBuilder.fill(xStdDev, yStdDev, thetaStdDev));
     }
 
-    // the below stuff is for the IMU of the LL4 itself (older limelights dont have IMUs but LL4 does, which is why this is needed)
+    // the below stuff is for the IMU of the LL4 itself (older limelights dont have IMUs but LL4
+    // does, which is why this is needed)
     if (DriverStation.isDisabled()) {
       LimelightHelpers.SetIMUMode(
           CAMERA_NAME, 1); // Seed (means to set the LL4 IMU to the robot gyro)
@@ -93,8 +94,19 @@ public class Vision extends SubsystemBase {
   private void updateInputs() {
     // Get Gyro from robot and feed it to LL4
     double yaw = gyroSupplier.get().getDegrees(); // get robot's gyro yaw
-    LimelightHelpers.SetRobotOrientation(CAMERA_NAME, yaw,0, 0, 0, 0, 0); // sets the robot orientation with the yaw. the pitch, roll, and rate are 0 because they dont change (unless robot is tipped over)
-    var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(CAMERA_NAME); // since yaw is given, it is easy for LL4 to calcualte the x,y pose of robot
+    LimelightHelpers.SetRobotOrientation(
+        CAMERA_NAME,
+        yaw,
+        0,
+        0,
+        0,
+        0,
+        0); // sets the robot orientation with the yaw. the pitch, roll, and rate are 0 because they
+    // dont change (unless robot is tipped over)
+    var mt2 =
+        LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(
+            CAMERA_NAME); // since yaw is given, it is easy for LL4 to calcualte the x,y pose of
+    // robot
 
     // Get all of the data from limelight and check if its valid, then update inputs
     inputs.connected = LimelightHelpers.getTV(CAMERA_NAME); // true if valid target is found
