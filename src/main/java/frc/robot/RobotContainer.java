@@ -71,6 +71,10 @@ public class RobotContainer {
   // Distance estimator — TODO: fill in real measurements before competition
   private final LimelightDistanceEstimator distanceEstimator;
 
+  // Hardcoded Hub Shot preset — adjust these before each match as needed
+  private static final double HUB_SHOT_HOOD_ANGLE_DEG = 25.0;
+  private static final double HUB_SHOT_FLYWHEEL_RPM = 1500.0;
+
   // (SHOOT_PRESETS and shootPresetIndex removed — now using ShotCalculator)
 
   public RobotContainer() {
@@ -541,7 +545,7 @@ public class RobotContainer {
     // POV Left       — PRESS to nudge hood angle DOWN (-1 degree)
     // POV Right      — PRESS to nudge hood angle UP (+1 degree)
     // Left Stick     — HOLD to test flywheels at default 3000 RPM
-    // Right Stick    — HOLD for HARDCODED TRENCH SHOT (Preset angle/RPM)   -- havent tested yet,
+    // Right Stick    — HOLD for HARDCODED HUB SHOT (Preset angle/RPM)   -- havent tested yet,
     // adjust values pls
     // -------------------------------------------------------------------------
 
@@ -788,8 +792,37 @@ public class RobotContainer {
                       indexer.stop();
                     }));
 
-    // Y — FEEDER WHEELS only in (no subsystem requirement)
-    operator.y().whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder));
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // TEMPORARY — Y WAS REMAPPED FROM FEEDER-ONLY TO HARDCODED HUB SHOT
+    // RESTORE operator.y() TO FEEDER-ONLY ONCE HUB SHOT IS TUNED AND MOVED
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // ORIGINAL Y BINDING (feeder wheels only) — TEMPORARILY DISABLED:
+    // operator.y().whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder));
+    operator
+        .y()
+        .whileTrue(
+            Commands.run(
+                    () -> {
+                      // TEMPORARY HARDCODED HUB SHOT — TUNE HUB_SHOT_HOOD_ANGLE_DEG /
+                      // HUB_SHOT_FLYWHEEL_RPM AT TOP OF CLASS BEFORE USING IN COMPETITION
+                      shooter.setHoodPosition(Units.degreesToRadians(HUB_SHOT_HOOD_ANGLE_DEG));
+                      shooter.setFlywheelVelocity(HUB_SHOT_FLYWHEEL_RPM);
+                      if (shooter.areFlywheelsAtSpeed() && shooter.isHoodAtPosition()) {
+                        indexer.feed();
+                        shooter.feedNote();
+                      } else {
+                        shooter.stopFeeder();
+                        indexer.stop();
+                      }
+                    },
+                    shooter,
+                    indexer)
+                .finallyDo(
+                    () -> {
+                      shooter.stop();
+                      shooter.stopFeeder();
+                      indexer.stop();
+                    }));
 
     // X — FEEDER WHEELS and FLYWHEELS out
     operator
@@ -888,36 +921,7 @@ public class RobotContainer {
                 shooter::stop,
                 shooter));
 
-    // Right Stick Press — Hardcoded Trench Shot Preset
-    operator
-        .rightStick()
-        .whileTrue(
-            Commands.run(
-                    () -> {
-                      // ADJUST THESE BASED ON TESTING PLS
-                      double trenchHoodAngleRad = Units.degreesToRadians(25.0);
-                      double trenchFlywheelRPM = 4500.0;
-
-                      shooter.setHoodPosition(trenchHoodAngleRad);
-                      shooter.setFlywheelVelocity(trenchFlywheelRPM);
-
-                      // Only feed once flywheels and hood are ready
-                      if (shooter.areFlywheelsAtSpeed() && shooter.isHoodAtPosition()) {
-                        indexer.feed();
-                        shooter.feedNote();
-                      } else {
-                        shooter.stopFeeder();
-                        indexer.stop();
-                      }
-                    },
-                    shooter,
-                    indexer)
-                .finallyDo(
-                    () -> {
-                      shooter.stop();
-                      shooter.stopFeeder();
-                      indexer.stop();
-                    }));
+    // Right Stick — UNBOUND (hub shot moved to Y button — see above)
   }
 
   public Command getAutonomousCommand() {

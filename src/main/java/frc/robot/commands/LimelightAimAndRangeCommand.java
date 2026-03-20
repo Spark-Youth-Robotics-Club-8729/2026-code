@@ -17,12 +17,12 @@ import org.littletonrobotics.junction.Logger;
 public class LimelightAimAndRangeCommand extends Command {
 
   // PID: kP — how aggressively to correct; kI/kD start at 0, tune if needed
-  private static final double KP = 0.04;
+  private static final double KP = 0.4;
   private static final double KI = 0.0;
-  private static final double KD = 0.005;
+  private static final double KD = 0.05;
 
   // Maximum rotation speed the PID output is clamped to (rad/s)
-  private static final double MAX_OMEGA_RAD_S = 0.2;
+  private static final double MAX_OMEGA_RAD_S = 0.4;
 
   // Tolerance: consider aligned when TX is within ±1 degree
   private static final double TOLERANCE_DEG = 1.0;
@@ -58,8 +58,8 @@ public class LimelightAimAndRangeCommand extends Command {
 
     double txDeg = vision.getTargetX(cameraIndex).getDegrees();
 
-    // PID calculates correction: positive TX → rotate CCW (positive omega)
-    double omega = MathUtil.clamp(-pid.calculate(txDeg), -MAX_OMEGA_RAD_S, MAX_OMEGA_RAD_S);
+    // PID calculates correction: positive TX (tag right) → rotate CW (negative omega)
+    double omega = MathUtil.clamp(pid.calculate(txDeg), -MAX_OMEGA_RAD_S, MAX_OMEGA_RAD_S);
 
     Logger.recordOutput("LimelightAimRange/HasTarget", true);
     Logger.recordOutput("LimelightAimRange/TX", txDeg);
