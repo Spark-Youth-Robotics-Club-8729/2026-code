@@ -526,7 +526,7 @@ public class RobotContainer {
                 shooter));
 
     // Driver POV Up — Test everything (make slapdown start up)
-    driver.povUp().onTrue(new SystemTestCommand(drive, intake, indexer, shooter, vision));
+    driver.povUp().onTrue(new SystemTestCommand(drive, intake, indexer, shooter));
 
     // -------------------------------------------------------------------------
     // OPERATOR (port 1)
