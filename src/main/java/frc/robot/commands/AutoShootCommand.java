@@ -11,7 +11,8 @@
 // import org.littletonrobotics.junction.Logger;
 
 // /**
-//  * Automatically aims the robot at the shoot target using Limelight TX for visual servoing, spins up
+//  * Automatically aims the robot at the shoot target using Limelight TX for visual servoing, spins
+// up
 //  * the shooter to the correct speed/hood angle via ShotCalculator, and feeds when ready.
 //  *
 //  * <p>Aiming strategy:
@@ -130,7 +131,8 @@
 //     drive.runVelocity(new ChassisSpeeds(0.0, 0.0, omega));
 
 //     // ---- Gyro rate guard (from Limelight localization example) ----
-//     double gyroRateDegS = Math.toDegrees(Math.abs(drive.getChassisSpeeds().omegaRadiansPerSecond));
+//     double gyroRateDegS =
+// Math.toDegrees(Math.abs(drive.getChassisSpeeds().omegaRadiansPerSecond));
 //     boolean spinningTooFast = gyroRateDegS > MAX_FEED_GYRO_RATE_DEG_S;
 
 //     // ---- Feed only when fully aligned and ready ----

@@ -9,7 +9,8 @@
 // import org.littletonrobotics.junction.Logger;
 
 // /**
-//  * Rotates the robot to center the best Limelight target (TX → 0). No translation at all. Uses a PID
+//  * Rotates the robot to center the best Limelight target (TX → 0). No translation at all. Uses a
+// PID
 //  * controller so it decelerates smoothly as it approaches center.
 //  *
 //  * <p>Bind via {@code .whileTrue()}.

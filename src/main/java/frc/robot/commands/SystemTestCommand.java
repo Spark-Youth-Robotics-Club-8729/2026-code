@@ -23,20 +23,17 @@ import frc.robot.subsystems.shooter.Shooter;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * System test command (basically just tests all components)
- * Drive: Each swerve module forward/backward/left/right one at a time
- * Intake: Slapdown up/down/jitter, roller intake
- * Indexer: Feed forward
- * Shooter: Multiple flywheel speeds, hood positions, feeder
+ * System test command (basically just tests all components) Drive: Each swerve module
+ * forward/backward/left/right one at a time Intake: Slapdown up/down/jitter, roller intake Indexer:
+ * Feed forward Shooter: Multiple flywheel speeds, hood positions, feeder
  */
 public class SystemTestCommand extends SequentialCommandGroup {
-  private static final double DURATION_SECONDS = 1.0; 
+  private static final double DURATION_SECONDS = 1.0;
 
   private static final double[] FLYWHEEL_TEST_SPEEDS_RPM = {2000.0, 2500.0, 3100.0};
   private static final double[] HOOD_TEST_ANGLES_DEG = {10.0, 20.0, 35.0};
 
-  public SystemTestCommand(
-      Drive drive, Intake intake, Indexer indexer, Shooter shooter) {
+  public SystemTestCommand(Drive drive, Intake intake, Indexer indexer, Shooter shooter) {
     addCommands(
         Commands.print("=== SYSTEM TEST START ==="),
         Commands.runOnce(
@@ -142,10 +139,10 @@ public class SystemTestCommand extends SequentialCommandGroup {
         Commands.print("Feeder: STOP"),
         Commands.runOnce(shooter::stopFeeder, shooter),
         Commands.waitSeconds(0.5),
-        
+
         // DONE
         Commands.print("=== SYSTEM TEST COMPLETE ==="),
-        Commands.runOnce(   // stop evertyhing
+        Commands.runOnce( // stop evertyhing
             () -> {
               drive.stop();
               shooter.stop();
@@ -199,7 +196,7 @@ public class SystemTestCommand extends SequentialCommandGroup {
         .withTimeout(DURATION_SECONDS);
   }
 
-  /** Test flywheel speeds by spinning up to each speed.*/
+  /** Test flywheel speeds by spinning up to each speed. */
   private static Command testFlywheelSpeeds(Shooter shooter, double[] speedsRPM) {
     Command[] commands = new Command[speedsRPM.length];
     for (int i = 0; i < speedsRPM.length; i++) {
@@ -213,7 +210,7 @@ public class SystemTestCommand extends SequentialCommandGroup {
                     Logger.recordOutput("SystemTest/FlywheelTestSpeed", speed);
                   },
                   shooter),
-              Commands.waitSeconds(2.0), 
+              Commands.waitSeconds(2.0),
               Commands.print("Flywheel: " + speed + " RPM achieved (or timeout)"),
               Commands.runOnce(shooter::stop, shooter),
               Commands.waitSeconds(0.5));
@@ -236,7 +233,7 @@ public class SystemTestCommand extends SequentialCommandGroup {
                     Logger.recordOutput("SystemTest/HoodTestAngleDeg", angleDeg);
                   },
                   shooter),
-              Commands.waitSeconds(1.5), 
+              Commands.waitSeconds(1.5),
               Commands.print("Hood: " + angleDeg + " degrees (or timeout)"),
               Commands.waitSeconds(0.5));
     }

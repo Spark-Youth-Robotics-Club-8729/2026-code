@@ -10,7 +10,8 @@
 //  *   d = (targetHeightIn - cameraHeightIn) / tan(mountAngleDeg + tyDeg)
 //  * </pre>
 //  *
-//  * <p>All height values are in inches for ease of physical measurement; the returned distance is in
+//  * <p>All height values are in inches for ease of physical measurement; the returned distance is
+// in
 //  * meters.
 //  *
 //  * <p>This is only meaningful when the camera mount height differs noticeably from the target
@@ -28,7 +29,8 @@
 //   private final double targetHeightInches;
 
 //   /**
-//    * Angle of the camera above perfectly horizontal (degrees, positive = tilted up). TODO: measure
+//    * Angle of the camera above perfectly horizontal (degrees, positive = tilted up). TODO:
+// measure
 //    * on real robot
 //    */
 //   private final double mountAngleDegrees;
@@ -47,7 +49,8 @@
 //   }
 
 //   /**
-//    * Returns estimated distance from the camera to the target in meters. Returns {@link Double#NaN}
+//    * Returns estimated distance from the camera to the target in meters. Returns {@link
+// Double#NaN}
 //    * if no target is visible or the geometry is degenerate.
 //    */
 //   public double getDistanceMeters() {
