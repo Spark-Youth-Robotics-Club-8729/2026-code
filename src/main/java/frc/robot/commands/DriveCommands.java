@@ -31,15 +31,23 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.4; // changed from 0.6 for making it less sensitive
-  private static final double DRIVE_SPEED_SCALE = 0.014;
-  private static final double TURN_SPEED_SCALE = 0.024;
+  // private static final double DRIVE_SPEED_SCALE = 0.05;
+  public static LoggedNetworkNumber DRIVE_SPEED_SCALE =
+      new LoggedNetworkNumber("drive_speed_scale", 0.05);
+  // private static final double TURN_SPEED_SCALE = 0.024;
+  public static LoggedNetworkNumber TURN_SPEED_SCALE =
+      new LoggedNetworkNumber("turn_speed_scale", 0.024);
+
   private static final double ANGLE_KP = 5.0;
   private static final double ANGLE_KD = 0.4;
-  private static final double ANGLE_MAX_VELOCITY = 6.0; // (changed from 8)
-  private static final double ANGLE_MAX_ACCELERATION = 12.0; // (changed from 20)
+  private static final double ANGLE_MAX_VELOCITY = 7.0; // (changed from 8)
+  // public static LoggedNetworkNumber ANGLE_MAX_VELOCITY =
+  //     new LoggedNetworkNumber("angle_max_velocity", 7);
+  private static final double ANGLE_MAX_ACCELERATION = 10.0; // (changed from 20)
   private static final double FF_START_DELAY = 2.0; // Secs
   private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
   private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.10; // Rad/Sec (changed from 0.25)
@@ -143,9 +151,15 @@ public class DriveCommands {
           }
           ChassisSpeeds speeds =
               new ChassisSpeeds(
-                  limitedX * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE * flipped,
-                  limitedY * drive.getMaxLinearSpeedMetersPerSec() * DRIVE_SPEED_SCALE * flipped,
-                  slewState[2] * drive.getMaxAngularSpeedRadPerSec() * TURN_SPEED_SCALE);
+                  limitedX
+                      * drive.getMaxLinearSpeedMetersPerSec()
+                      * DRIVE_SPEED_SCALE.get()
+                      * flipped,
+                  limitedY
+                      * drive.getMaxLinearSpeedMetersPerSec()
+                      * DRIVE_SPEED_SCALE.get()
+                      * flipped,
+                  slewState[2] * drive.getMaxAngularSpeedRadPerSec() * TURN_SPEED_SCALE.get());
           drive.runVelocity(
               ChassisSpeeds.fromFieldRelativeSpeeds(
                   speeds,

@@ -8,6 +8,7 @@
 package frc.robot.subsystems.shooter;
 
 import edu.wpi.first.math.util.Units;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class ShooterConstants {
   // CAN IDs
@@ -93,7 +94,8 @@ public class ShooterConstants {
   // Default / feeder speeds
   // ---------------------------------------------------------------------------
   public static final double defaultFlywheelSpeedRPM = 3100.0; // TODO: changeback to more
-  public static final double maxFlywheelSpeedRPM = 6000.0;
+  public static LoggedNetworkNumber maxFlywheelSpeedRPM =
+      new LoggedNetworkNumber("maxFlywheelSpeedRPM", 4500);
   // Positive = feeds ball up from hopper to shooter
   public static final double feederFeedSpeedRPM = 1500.0; // increase feeding speed
   // Negative = ejects ball back down toward hopper

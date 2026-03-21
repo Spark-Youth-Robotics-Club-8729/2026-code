@@ -141,7 +141,10 @@ public class RobotContainer {
 
     registerNamedCommands();
 
-    autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
+    // Publish autos under an "Elastic" prefix so they show up in the Elastic/AdvantageKit
+    // dashboard instead of SmartDashboard.
+    autoChooser =
+        new LoggedDashboardChooser<>("Elastic/Auto Choices", AutoBuilder.buildAutoChooser());
     autoChooser.addOption(
         "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
     autoChooser.addOption(
@@ -268,7 +271,6 @@ public class RobotContainer {
     }
 
     autoChooser.addOption("Manual Auto", ManualAuto.simpleAuto(drive));
-
     // Distance estimator (only meaningful on real hardware; values are placeholders)
     // distanceEstimator =
     //     new LimelightDistanceEstimator(
@@ -453,13 +455,13 @@ public class RobotContainer {
 
     drive.setDefaultCommand(
         DriveCommands.joystickDrive( // for robot relative, do this: joystickDriveRobotRelative
-            drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
+            drive, () -> driver.getLeftY(), () -> driver.getLeftX(), () -> -driver.getRightX()));
 
     driver
         .a()
         .whileTrue(
             DriveCommands.joystickDriveAtAngle(
-                drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> Rotation2d.kZero));
+                drive, () -> driver.getLeftY(), () -> driver.getLeftX(), () -> Rotation2d.kZero));
 
     // driver
     //     .b()
@@ -474,7 +476,7 @@ public class RobotContainer {
     // changed to left trigger
     driver.leftTrigger().whileTrue(Commands.runOnce(drive::zeroGyro, drive).ignoringDisable(true));
 
-    driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+    driver.rightTrigger().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
     // driver
     //     .y()
@@ -617,11 +619,9 @@ public class RobotContainer {
             Commands.run(
                     () -> {
                       // Use max hood angle for high arc and high velocity for distance
-                      double highArcHoodAngle =
-                          ShooterConstants.hoodMaxAngleRad
-                              - Units.degreesToRadians(45.0); // Adjust this!!!!
+                      double highArcHoodAngle = ShooterConstants.hoodMaxAngleRad / 1.5;
                       double highVelocityRPM =
-                          ShooterConstants.maxFlywheelSpeedRPM - 1500; // Adjust this!!!!
+                          ShooterConstants.maxFlywheelSpeedRPM.get(); // Adjust this!!!!
 
                       shooter.setHoodPosition(highArcHoodAngle);
                       shooter.setFlywheelVelocity(highVelocityRPM);
