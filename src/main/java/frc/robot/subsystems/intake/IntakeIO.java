@@ -19,7 +19,7 @@ public interface IntakeIO {
     public double rollerCurrentAmps = 0.0;
     public double rollerTempCelsius = 0.0;
 
-    // Slapdown (SparkMax + built-in NEO encoder)
+  // Slapdown (SparkMax + built-in NEO relative encoder; absolute encoder to be revisited for DCMP)
     public boolean slapdownConnected = false;
     public double slapdownPositionRad = 0.0;
     public double slapdownVelocityRadPerSec = 0.0;
