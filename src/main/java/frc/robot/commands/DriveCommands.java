@@ -149,7 +149,9 @@ public class DriveCommands {
           drive.runVelocity(
               ChassisSpeeds.fromFieldRelativeSpeeds(
                   speeds,
-                  isFlipped ? drive.getRotation().plus(Rotation2d.kPi) : drive.getRotation()));
+                  isFlipped
+                      ? drive.getGyroRotation().plus(Rotation2d.kPi)
+                      : drive.getGyroRotation()));
         },
         drive);
   }
@@ -184,7 +186,7 @@ public class DriveCommands {
               // Calculate angular speed
               double omega =
                   angleController.calculate(
-                      drive.getRotation().getRadians(), rotationSupplier.get().getRadians());
+                      drive.getGyroRotation().getRadians(), rotationSupplier.get().getRadians());
 
               // Convert to field relative speeds & send command
               ChassisSpeeds speeds =
@@ -199,13 +201,13 @@ public class DriveCommands {
                   ChassisSpeeds.fromFieldRelativeSpeeds(
                       speeds,
                       isFlipped
-                          ? drive.getRotation().plus(new Rotation2d(Math.PI))
-                          : drive.getRotation()));
+                          ? drive.getGyroRotation().plus(new Rotation2d(Math.PI))
+                          : drive.getGyroRotation()));
             },
             drive)
 
         // Reset PID controller when command starts
-        .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
+        .beforeStarting(() -> angleController.reset(drive.getGyroRotation().getRadians()));
   }
 
   /**
@@ -302,14 +304,14 @@ public class DriveCommands {
             Commands.runOnce(
                 () -> {
                   state.positions = drive.getWheelRadiusCharacterizationPositions();
-                  state.lastAngle = drive.getRotation();
+                  state.lastAngle = drive.getGyroRotation();
                   state.gyroDelta = 0.0;
                 }),
 
             // Update gyro delta
             Commands.run(
                     () -> {
-                      var rotation = drive.getRotation();
+                      var rotation = drive.getGyroRotation();
                       state.gyroDelta += Math.abs(rotation.minus(state.lastAngle).getRadians());
                       state.lastAngle = rotation;
                     })

@@ -1,3 +1,10 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
+
 package frc.robot.subsystems.vision;
 
 import static frc.robot.subsystems.vision.VisionConstants.*;
@@ -5,166 +12,288 @@ import static frc.robot.subsystems.vision.VisionConstants.*;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.LimelightHelpers;
-import java.util.Set;
-import java.util.function.Supplier;
-import org.littletonrobotics.junction.AutoLog;
+import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
+import java.util.ArrayList;
+import java.util.List;
 import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
+  private final VisionConsumer consumer;
+  private final VisionIO[] io;
+  private final VisionIOInputsAutoLogged[] inputs;
+  private final Alert[] disconnectedAlerts;
 
-  /** Functional interface to match your Drive::addVisionMeasurement signature */
-  @FunctionalInterface
-  public interface VisionConsumer {
-    void accept(Pose2d pose, double timestamp, Matrix<N3, N1> stdDevs);
-  }
+  // Track last DriverStation state for IMU mode transitions
+  private boolean wasDisabled = true;
 
-  @AutoLog
-  public static class VisionInputs {
-    public boolean connected = false;
-    public int tagCount = 0;
-    public double tx = 0.0;
-    public double ty = 0.0;
-    public double avgTagDist = 0.0;
-    public int[] visibleIds = new int[0];
-    public Pose2d mt2Pose = new Pose2d();
-    public double timestamp = 0.0;
-    public boolean enabledVisionUpdatesPose =
-        false; // use this to toggle whether vision data should be fed into the pose estimator or
-    // not
-  }
+  public Vision(VisionConsumer consumer, VisionIO... io) {
+    this.consumer = consumer;
+    this.io = io;
 
-  private final VisionInputsAutoLogged inputs =
-      new VisionInputsAutoLogged(); // DO NOT WORRY ABOUT RED ERRORS from this line and the inputs
-  // variable. its created once code is built, so it will work
-  private final Supplier<Rotation2d> gyroSupplier;
-  private final VisionConsumer
-      odometryConsumer; // Ri3D used something similar to give both the Pose and the timestamp
-
-  public Vision(Supplier<Rotation2d> gyroSupplier, VisionConsumer odometryConsumer) {
-    this.gyroSupplier = gyroSupplier;
-    this.odometryConsumer = odometryConsumer;
-
-    // LL4 will now only use the unblocked ids (we pass the validIDs and ignore the blocked ones)
-    int[] validIds =
-        LAYOUT.getTags().stream()
-            .mapToInt(tag -> tag.ID)
-            .filter(id -> !BLOCKED_TAG_IDS.contains(id))
-            .toArray();
-    LimelightHelpers.SetFiducialIDFiltersOverride(CAMERA_NAME, validIds);
-
-    // Seed the LL IMU on startup (means to set the LL4 IMU to the robot gyro)
-    LimelightHelpers.SetIMUMode(
-        CAMERA_NAME, 1); // we do this because LL4 has an IMU, while older versions dont
-  }
-
-  @Override
-  public void periodic() {
-    updateInputs();
-    Logger.processInputs("Vision", inputs);
-
-    // update Odometry using MegaTag 2 ONLY if enabled and data is valid
-    if (inputs.enabledVisionUpdatesPose && inputs.tagCount >= MT2_MIN_TAGS && inputs.connected) {
-      // Use standard deviation because it will prevetn the vision from jumping
-      double xStdDev = 0.1 * Math.pow(inputs.avgTagDist, 2) / inputs.tagCount;
-      double yStdDev = 0.1 * Math.pow(inputs.avgTagDist, 2) / inputs.tagCount;
-      double thetaStdDev = 0.5; // trust the rboto gyro  mainly
-
-      odometryConsumer.accept(
-          inputs.mt2Pose, inputs.timestamp, VecBuilder.fill(xStdDev, yStdDev, thetaStdDev));
+    this.inputs = new VisionIOInputsAutoLogged[io.length];
+    for (int i = 0; i < inputs.length; i++) {
+      inputs[i] = new VisionIOInputsAutoLogged();
     }
 
-    // the below stuff is for the IMU of the LL4 itself (older limelights dont have IMUs but LL4
-    // does, which is why this is needed)
-    if (DriverStation.isDisabled()) {
-      LimelightHelpers.SetIMUMode(
-          CAMERA_NAME, 1); // Seed (means to set the LL4 IMU to the robot gyro)
-    } else { // when enabled
-      LimelightHelpers.SetIMUMode(
-          CAMERA_NAME, 4); // Internal + Assist (means uses both robot gyro and LL4 IMU)
+    this.disconnectedAlerts = new Alert[io.length];
+    for (int i = 0; i < io.length; i++) {
+      disconnectedAlerts[i] =
+          new Alert("Vision camera " + i + " (Limelight 4) is disconnected.", AlertType.kWarning);
     }
-  }
 
-  private void updateInputs() {
-    // Get Gyro from robot and feed it to LL4
-    double yaw = gyroSupplier.get().getDegrees(); // get robot's gyro yaw
-    LimelightHelpers.SetRobotOrientation(
-        CAMERA_NAME,
-        yaw,
-        0,
-        0,
-        0,
-        0,
-        0); // sets the robot orientation with the yaw. the pitch, roll, and rate are 0 because they
-    // dont change (unless robot is tipped over)
-    var mt2 =
-        LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(
-            CAMERA_NAME); // since yaw is given, it is easy for LL4 to calcualte the x,y pose of
-    // robot
-
-    // Get all of the data from limelight and check if its valid, then update inputs
-    inputs.connected = LimelightHelpers.getTV(CAMERA_NAME); // true if valid target is found
-    inputs.tx = LimelightHelpers.getTX(CAMERA_NAME);
-    inputs.ty = LimelightHelpers.getTY(CAMERA_NAME);
-
-    if (mt2 != null) {
-      inputs.tagCount = mt2.tagCount;
-      inputs.avgTagDist = mt2.avgTagDist;
-      inputs.mt2Pose = mt2.pose;
-      inputs.timestamp = mt2.timestampSeconds;
-
-      inputs.visibleIds = new int[mt2.rawFiducials.length];
-      for (int i = 0; i < mt2.rawFiducials.length; i++) {
-        inputs.visibleIds[i] = mt2.rawFiducials[i].id;
+    // Seed the LL4 internal IMU immediately on construction (robot starts disabled)
+    for (var vio : io) {
+      if (vio instanceof VisionIOLimelight ll) {
+        ll.seedIMU();
       }
     }
   }
 
-  /** Toggle whether vision data interferes with the Pose Estimator */
-  public void enabledVisionUpdatesPose(boolean enabled) {
-    inputs.enabledVisionUpdatesPose = enabled;
+  /**
+   * Returns the X angle to the best target from the specified camera index. Useful for simple
+   * servoing (e.g. auto-aim while driving).
+   */
+  public Rotation2d getTargetX(int cameraIndex) {
+    return inputs[cameraIndex].latestTargetObservation.tx();
   }
 
-  /** Simple check if any tag is visible */
-  public boolean hasTarget() {
-    return inputs.tagCount > 0;
+  /** Returns the Y angle to the best target from the specified camera index. */
+  public Rotation2d getTargetY(int cameraIndex) {
+    return inputs[cameraIndex].latestTargetObservation.ty();
   }
 
-  /** Specifically checks if we see a hub tag for OUR alliance */
-  public boolean hasHubTarget() {
-    var alliance = DriverStation.getAlliance().orElse(Alliance.Blue); // uses OUR alliance
-    Set<Integer> hubTags = (alliance == Alliance.Red) ? RED_HUB_TAGS : BLUE_HUB_TAGS;
+  /** Returns whether the specified camera has any valid targets. */
+  public boolean hasTarget(int cameraIndex) {
+    return inputs[cameraIndex].tagCount > 0;
+  }
 
-    for (int id : inputs.visibleIds) {
-      if (hubTags.contains(id)) return true;
+  /** Returns TX angle to the best visible hub tag for the current alliance. */
+  public Rotation2d getHubTargetX(int cameraIndex) {
+    return inputs[cameraIndex].hubTargetObservation.tx();
+  }
+
+  /** Returns true if a hub tag for the current alliance is visible. */
+  public boolean hasHubTx(int cameraIndex) {
+    return inputs[cameraIndex].hasHubTx;
+  }
+
+  /** Returns the raw visible (non-blocked) tag IDs. Useful for debugging. */
+  public int[] getVisibleTagIds(int cameraIndex) {
+    return inputs[cameraIndex].tagIds;
+  }
+
+  /** Returns the average tag distance for camera 0, useful for range estimation. */
+  public double getAvgTagDistance(int cameraIndex) {
+    return inputs[cameraIndex].avgTagDistance;
+  }
+
+  /**
+   * Returns the distance to the nearest visible AprilTag in meters. Returns Double.NaN if no tags
+   * are visible.
+   */
+  public double getNearestTagDistance(int cameraIndex) {
+    double[] dists = inputs[cameraIndex].rawFiducialDistances;
+    if (dists.length == 0) return Double.NaN;
+    double min = Double.MAX_VALUE;
+    for (double d : dists) {
+      if (d > 0.0 && d < min) min = d;
+    }
+    return min == Double.MAX_VALUE ? Double.NaN : min;
+  }
+
+  /**
+   * Returns the average distance (meters) to visible hub AprilTags for the current alliance. Only
+   * considers tags belonging to the scoring hub the robot is shooting at. Returns {@link
+   * Double#NaN} if no relevant hub tags are visible.
+   *
+   * @param cameraIndex Camera to query.
+   */
+  public double getDistanceToHub(int cameraIndex) {
+    var alliance = DriverStation.getAlliance();
+    final java.util.Set<Integer> hubIds;
+    if (!alliance.isPresent()) {
+      // No FMS — accept hub tags from either alliance
+      hubIds = new java.util.HashSet<>(VisionConstants.redHubTagIds);
+      hubIds.addAll(VisionConstants.blueHubTagIds);
+    } else {
+      hubIds =
+          alliance.get() == Alliance.Red
+              ? VisionConstants.redHubTagIds
+              : VisionConstants.blueHubTagIds;
+    }
+
+    int[] tagIds = inputs[cameraIndex].tagIds;
+    double[] dists = inputs[cameraIndex].rawFiducialDistances;
+
+    double total = 0.0;
+    int count = 0;
+    for (int i = 0; i < tagIds.length && i < dists.length; i++) {
+      if (hubIds.contains(tagIds[i])) {
+        total += dists[i];
+        count++;
+      }
+    }
+    return count > 0 ? total / count : Double.NaN;
+  }
+
+  /** Returns true if the camera can currently see at least one hub tag for the current alliance. */
+  public boolean hasHubTarget(int cameraIndex) {
+    return !Double.isNaN(getDistanceToHub(cameraIndex));
+  }
+
+  /** Returns true if the camera can currently see at least one trench AprilTag. */
+  public boolean hasTrenchTarget(int cameraIndex) {
+    int[] tagIds = inputs[cameraIndex].tagIds;
+    for (int id : tagIds) {
+      if (VisionConstants.TRENCH_TAG_IDS.contains(id)) return true;
     }
     return false;
   }
 
-  /** Returns distance to nearest Hub Tag for shot calculation */
-  public double getDistanceToHub() {
-    var alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-    Set<Integer> hubTags = (alliance == Alliance.Red) ? RED_HUB_TAGS : BLUE_HUB_TAGS;
-
-    var raw = LimelightHelpers.getRawFiducials(CAMERA_NAME);
-    double minFound = Double.NaN;
-
-    if (raw == null || raw.length == 0)
-      return minFound; // check if raw is null or empty first to avoid crashes
-
-    for (var f : raw) {
-      if (hubTags.contains(f.id)) {
-        if (Double.isNaN(minFound) || f.distToRobot < minFound) {
-          minFound = f.distToRobot;
-        }
+  @Override
+  public void periodic() {
+    // -----------------------------------------------------------------------
+    // LL4 IMU mode transitions
+    // -----------------------------------------------------------------------
+    boolean isDisabled = DriverStation.isDisabled();
+    if (isDisabled && !wasDisabled) {
+      // Transitioned to disabled — re-seed the internal IMU
+      for (var vio : io) {
+        if (vio instanceof VisionIOLimelight ll) ll.seedIMU();
+      }
+    } else if (!isDisabled && wasDisabled) {
+      // Transitioned to enabled — switch to internal+assist mode
+      for (var vio : io) {
+        if (vio instanceof VisionIOLimelight ll) ll.enableIMUAssist();
       }
     }
-    return minFound;
+    wasDisabled = isDisabled;
+
+    // -----------------------------------------------------------------------
+    // Update inputs
+    // -----------------------------------------------------------------------
+    for (int i = 0; i < io.length; i++) {
+      io[i].updateInputs(inputs[i]);
+      Logger.processInputs("Vision/Camera" + i, inputs[i]);
+    }
+
+    // -----------------------------------------------------------------------
+    // Process each camera
+    // -----------------------------------------------------------------------
+    List<Pose3d> allTagPoses = new ArrayList<>();
+    List<Pose3d> allRobotPoses = new ArrayList<>();
+    List<Pose3d> allRobotPosesAccepted = new ArrayList<>();
+    List<Pose3d> allRobotPosesRejected = new ArrayList<>();
+
+    for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
+      disconnectedAlerts[cameraIndex].set(!inputs[cameraIndex].connected);
+
+      List<Pose3d> tagPoses = new ArrayList<>();
+      List<Pose3d> robotPoses = new ArrayList<>();
+      List<Pose3d> robotPosesAccepted = new ArrayList<>();
+      List<Pose3d> robotPosesRejected = new ArrayList<>();
+
+      // Collect visible tag poses for visualization
+      for (int tagId : inputs[cameraIndex].tagIds) {
+        var tagPose = aprilTagLayout.getTagPose(tagId);
+        tagPose.ifPresent(tagPoses::add);
+      }
+
+      for (var observation : inputs[cameraIndex].poseObservations) {
+        boolean rejectPose =
+            observation.tagCount() == 0
+                || (observation.tagCount() == 1
+                    && observation.type() == PoseObservationType.MEGATAG_1
+                    && observation.ambiguity() > maxAmbiguity)
+                || Math.abs(observation.pose().getZ()) > maxZError
+                || observation.pose().getX() < 0.0
+                || observation.pose().getX() > aprilTagLayout.getFieldLength()
+                || observation.pose().getY() < 0.0
+                || observation.pose().getY() > aprilTagLayout.getFieldWidth();
+
+        robotPoses.add(observation.pose());
+        if (rejectPose) {
+          robotPosesRejected.add(observation.pose());
+          continue;
+        }
+        robotPosesAccepted.add(observation.pose());
+
+        // Calculate std devs — prefer LL-provided values, fall back to distance²/tagCount formula
+        double linearStdDev;
+        double angularStdDev;
+
+        if (observation.stdDevs() != null
+            && observation.stdDevs().length >= 3
+            && observation.stdDevs()[0] > 0.0) {
+          // Use Limelight's own stddevs [x, y, yaw]
+          linearStdDev = observation.stdDevs()[0]; // x ~= y for our purposes
+          angularStdDev = observation.stdDevs()[2];
+        } else {
+          // Fallback: scale with distance² / tagCount
+          double stdDevFactor =
+              Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
+          linearStdDev = linearStdDevBaseline * stdDevFactor * cameraStdDevFactor;
+          angularStdDev = angularStdDevBaseline * stdDevFactor * cameraStdDevFactor;
+
+          if (observation.type() == PoseObservationType.MEGATAG_2) {
+            linearStdDev *= linearStdDevMegatag2Factor;
+            angularStdDev *= angularStdDevMegatag2Factor;
+          }
+        }
+
+        consumer.accept(
+            observation.pose().toPose2d(),
+            observation.timestamp(),
+            VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
+      }
+
+      // Per-camera logging
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/TagPoses", tagPoses.toArray(new Pose3d[0]));
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/RobotPoses", robotPoses.toArray(new Pose3d[0]));
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/RobotPosesAccepted",
+          robotPosesAccepted.toArray(new Pose3d[0]));
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/RobotPosesRejected",
+          robotPosesRejected.toArray(new Pose3d[0]));
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/TagCount", inputs[cameraIndex].tagCount);
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/AvgTagDistance", inputs[cameraIndex].avgTagDistance);
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/HasTarget", inputs[cameraIndex].tagCount > 0);
+
+      allTagPoses.addAll(tagPoses);
+      allRobotPoses.addAll(robotPoses);
+      allRobotPosesAccepted.addAll(robotPosesAccepted);
+      allRobotPosesRejected.addAll(robotPosesRejected);
+    }
+
+    // Summary logging
+    Logger.recordOutput("Vision/Summary/TagPoses", allTagPoses.toArray(new Pose3d[0]));
+    Logger.recordOutput("Vision/Summary/RobotPoses", allRobotPoses.toArray(new Pose3d[0]));
+    Logger.recordOutput(
+        "Vision/Summary/RobotPosesAccepted", allRobotPosesAccepted.toArray(new Pose3d[0]));
+    Logger.recordOutput(
+        "Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
+  }
+
+  @FunctionalInterface
+  public static interface VisionConsumer {
+    public void accept(
+        Pose2d visionRobotPoseMeters,
+        double timestampSeconds,
+        Matrix<N3, N1> visionMeasurementStdDevs);
   }
 }

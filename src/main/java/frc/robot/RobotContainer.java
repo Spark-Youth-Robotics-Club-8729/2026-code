@@ -8,6 +8,7 @@
 package frc.robot;
 
 import static frc.robot.subsystems.shooter.ShooterConstants.defaultFlywheelSpeedRPM;
+import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
@@ -17,9 +18,13 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ProxyCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.commands.AutoShootCommand;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.LimelightAimAndRangeCommand;
+import frc.robot.commands.LimelightAimCommand;
 import frc.robot.commands.ManualAuto;
 import frc.robot.commands.SystemTestCommand;
 import frc.robot.subsystems.drive.Drive;
@@ -42,23 +47,17 @@ import frc.robot.subsystems.shooter.ShooterIO;
 import frc.robot.subsystems.shooter.ShooterIOKrakenX60;
 import frc.robot.subsystems.shooter.ShooterIOSim;
 import frc.robot.subsystems.shooter.ShotCalculator;
+import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionConstants;
+import frc.robot.subsystems.vision.VisionIO;
+import frc.robot.subsystems.vision.VisionIOLimelight;
+import frc.robot.util.LimelightDistanceEstimator;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-
-// TODO: Clean up or restore these commented-out imports:
-// import static frc.robot.subsystems.vision.VisionConstants.*;
-// import frc.robot.commands.AutoShootCommand;
-// import frc.robot.commands.LimelightAimAndRangeCommand;
-// import frc.robot.commands.LimelightAimCommand;
-// import frc.robot.subsystems.vision.Vision;
-// import frc.robot.subsystems.vision.VisionConstants;
-// import frc.robot.subsystems.vision.VisionIO;
-// import frc.robot.subsystems.vision.VisionIOLimelight;
-// import frc.robot.util.LimelightDistanceEstimator;
 
 public class RobotContainer {
   // Subsystems
   private final Drive drive;
-  // private final Vision vision;
+  private final Vision vision;
   private final Shooter shooter;
   private final Intake intake;
   private final Indexer indexer;
@@ -71,7 +70,7 @@ public class RobotContainer {
   private final LoggedDashboardChooser<Command> autoChooser;
 
   // Distance estimator — TODO: fill in real measurements before competition
-  // private final LimelightDistanceEstimator distanceEstimator;
+  private final LimelightDistanceEstimator distanceEstimator;
 
   // (SHOOT_PRESETS and shootPresetIndex removed — now using ShotCalculator)
 
@@ -87,10 +86,10 @@ public class RobotContainer {
                 new ModuleIOSpark(3));
 
         // Single Limelight 4 — pass rotation supplier for MegaTag 2 and IMU assist
-        // vision =
-        //     new Vision(
-        //         drive::addVisionMeasurement,
-        //         new VisionIOLimelight(camera0Name, drive::getRotation));
+        vision =
+            new Vision(
+                drive::addVisionMeasurement,
+                new VisionIOLimelight(camera0Name, drive::getRotation));
 
         shooter = new Shooter(new ShooterIOKrakenX60());
         intake = new Intake(new IntakeIOHardware());
@@ -106,9 +105,14 @@ public class RobotContainer {
                 new ModuleIOSim(),
                 new ModuleIOSim());
 
+<<<<<<< Updated upstream
         // Vision is currently disabled; if re-enabled in sim, swap in a no-op VisionIO
         // implementation
         // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {});
+=======
+        // In sim there is no Limelight hardware — use a no-op VisionIO
+        vision = new Vision(drive::addVisionMeasurement, new VisionIO() {});
+>>>>>>> Stashed changes
 
         shooter = new Shooter(new ShooterIOSim());
         intake = new Intake(new IntakeIOSim());
@@ -124,7 +128,7 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {});
-        // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {});
+        vision = new Vision(drive::addVisionMeasurement, new VisionIO() {});
         shooter = new Shooter(new ShooterIO() {});
         intake = new Intake(new IntakeIO() {});
         indexer = new Indexer(new IndexerIO() {});
@@ -135,11 +139,11 @@ public class RobotContainer {
     // the per-alliance lookup, but we still need an initial Translation2d for the constructor.
     // We pass a lambda so the pose supplier always reads the latest estimated position,
     // and use the blue hub as the default (will be corrected once DS connects).
-    // ShotCalculator.initialize(
-    //     drive::getPose,
-    //     drive::getChassisSpeeds,
-    //     VisionConstants
-    //         .BLUE_HUB_POSITION); // default; getAllianceHubPosition() overrides at runtime
+    ShotCalculator.initialize(
+        drive::getPose,
+        drive::getChassisSpeeds,
+        VisionConstants
+            .BLUE_HUB_POSITION); // default; getAllianceHubPosition() overrides at runtime
 
     registerNamedCommands();
 
@@ -257,7 +261,7 @@ public class RobotContainer {
       "BlueDtoS3",
       "BlueDtoS4",
       // NBlue special path
-      "NBlueN4toTthorughB2",
+      "NBlueN4toTthroughB2",
       "Elims1path"
     };
     for (String pathName : pathNames) {
@@ -270,30 +274,33 @@ public class RobotContainer {
     }
 
     autoChooser.addOption("Manual Auto", ManualAuto.simpleAuto(drive));
+<<<<<<< Updated upstream
     autoChooser.addOption("Mobility Only", mobilityCommand());
+=======
+>>>>>>> Stashed changes
 
     // Distance estimator (only meaningful on real hardware; values are placeholders)
-    // distanceEstimator =
-    //     new LimelightDistanceEstimator(
-    //         vision, 0, 20.0, // TODO: camera height above floor (inches)
-    //         60.0, // TODO: target height above floor (inches)
-    //         25.0); // TODO: camera mount angle above horizontal (degrees)
+    distanceEstimator =
+        new LimelightDistanceEstimator(
+            vision, 0, 20.0, // TODO: camera height above floor (inches)
+            60.0, // TODO: target height above floor (inches)
+            25.0); // TODO: camera mount angle above horizontal (degrees)
 
     configureButtonBindings();
   }
 
   private void registerNamedCommands() {
     // Vision-assisted shooting/aiming
-    // NamedCommands.registerCommand(
-    //     "AutoShootCommand", new AutoShootCommand(drive, shooter, indexer, vision, 0));
-    // NamedCommands.registerCommand(
-    //     "AutoShootSpinUpWindow", autoShootWindow(2.0, false)); // TODO: Fix time
-    // NamedCommands.registerCommand(
-    //     "AutoShootFireWindow", autoShootWindow(4.0, true)); // TODO: Fix time
-    // NamedCommands.registerCommand(
-    //     "LimelightAim", new LimelightAimCommand(drive, vision, 0, () -> 0.0, () -> 0.0));
-    // NamedCommands.registerCommand(
-    //     "LimelightAimAndRange", new LimelightAimAndRangeCommand(drive, vision, 0));
+    NamedCommands.registerCommand(
+        "AutoShootCommand", new AutoShootCommand(drive, shooter, indexer, vision, 0));
+    NamedCommands.registerCommand(
+        "AutoShootSpinUpWindow", autoShootWindow(2.0, false)); // TODO: Fix time
+    NamedCommands.registerCommand(
+        "AutoShootFireWindow", autoShootWindow(4.0, true)); // TODO: Fix time
+    NamedCommands.registerCommand(
+        "LimelightAim", new LimelightAimCommand(drive, vision, 0, () -> 0.0, () -> 0.0));
+    NamedCommands.registerCommand(
+        "LimelightAimAndRange", new LimelightAimAndRangeCommand(drive, vision, 0));
 
     // Shooter orchestration
     NamedCommands.registerCommand(
@@ -353,9 +360,9 @@ public class RobotContainer {
     NamedCommands.registerCommand("IndexerStop", indexer.stopCommand());
 
     // Aim-only action (no translation) with a timeout to avoid running forever
-    // NamedCommands.registerCommand(
-    //     "AutoAimHub",
-    //     new LimelightAimCommand(drive, vision, 0, () -> 0.0, () -> 0.0).withTimeout(2.0));
+    NamedCommands.registerCommand(
+        "AutoAimHub",
+        new LimelightAimCommand(drive, vision, 0, () -> 0.0, () -> 0.0).withTimeout(2.0));
 
     // Jitter + shoot / no-jitter shoot routines
     NamedCommands.registerCommand("JitterShoot10s", buildJitterShootCommand());
@@ -377,6 +384,7 @@ public class RobotContainer {
             .ignoringDisable(true));
   }
 
+<<<<<<< Updated upstream
   // private Command autoShootWindow(double durationSeconds, boolean withJitter) {
   //   return new ProxyCommand(
   //       () -> {
@@ -393,6 +401,17 @@ public class RobotContainer {
         Commands.run(() -> drive.runVelocity(new ChassisSpeeds(1.0, 0.0, 0.0)), drive)
             .withTimeout(2.0),
         Commands.runOnce(drive::stopWithX, drive));
+=======
+  private Command autoShootWindow(double durationSeconds, boolean withJitter) {
+    return new ProxyCommand(
+        () -> {
+          Command autoShoot = new AutoShootCommand(drive, shooter, indexer, vision, 0);
+          if (withJitter) {
+            autoShoot = autoShoot.alongWith(intake.jitterCommand());
+          }
+          return Commands.waitSeconds(durationSeconds).deadlineWith(autoShoot);
+        });
+>>>>>>> Stashed changes
   }
 
   private Command buildJitterShootCommand() {
@@ -638,11 +657,7 @@ public class RobotContainer {
             Commands.run(
                     () -> {
                       // --- Vision-based shot parameters ---
-                      // double rawDist = vision.getNearestTagDistance(0);
-                      double rawDist =
-                          0.0; // placeholder until we can test with real vision data (TODO
-                      // IMPORTANT)
-
+                      double rawDist = vision.getNearestTagDistance(0);
                       if (!Double.isNaN(rawDist) && rawDist > 0.1) {
                         lastValidDist[0] = rawDist;
                       }
@@ -652,8 +667,7 @@ public class RobotContainer {
                       // up & down
                       double hoodAngle;
                       double flywheelRPM;
-                      if (
-                      /*vision.hasTarget(0) &&*/ !Double.isNaN(dist) && dist > 0.1) {
+                      if (vision.hasTarget(0) && !Double.isNaN(dist) && dist > 0.1) {
                         var params =
                             ShotCalculator.getInstance()
                                 .calculateFromDistance(dist, drive.getPose().getRotation());
@@ -694,8 +708,7 @@ public class RobotContainer {
                         shooter.feedNote();
                       } else {
                         shooter.stopFeeder();
-                        indexer.stop();
-                        indexer.stop();
+                        indexer.stop(); // keep or leave it????? idk
                       }
                     },
                     shooter,
@@ -867,9 +880,9 @@ public class RobotContainer {
     return drive;
   }
 
-  // public Vision getVision() {
-  //   return vision;
-  // }
+  public Vision getVision() {
+    return vision;
+  }
 
   public Shooter getShooter() {
     return shooter;

@@ -311,6 +311,11 @@ public class Drive extends SubsystemBase {
     return getPose().getRotation();
   }
 
+  /** Returns the rotation as reported by the gyro, unaffected by vision. */
+  public Rotation2d getGyroRotation() {
+    return rawGyroRotation;
+  }
+
   /** Resets the current odometry pose. */
   public void setPose(Pose2d pose) {
     poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
@@ -329,8 +334,8 @@ public class Drive extends SubsystemBase {
       Pose2d visionRobotPoseMeters,
       double timestampSeconds,
       Matrix<N3, N1> visionMeasurementStdDevs) {
-    poseEstimator.addVisionMeasurement(
-        visionRobotPoseMeters, timestampSeconds, visionMeasurementStdDevs);
+    // poseEstimator.addVisionMeasurement(
+    //     visionRobotPoseMeters, timestampSeconds, visionMeasurementStdDevs);
   }
 
   /** Returns the maximum linear speed in meters per sec. */

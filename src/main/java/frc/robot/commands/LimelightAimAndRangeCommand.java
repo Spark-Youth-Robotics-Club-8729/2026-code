@@ -1,91 +1,79 @@
-// package frc.robot.commands;
-// import edu.wpi.first.math.MathUtil;
-// import edu.wpi.first.math.controller.PIDController;
-// import edu.wpi.first.math.kinematics.ChassisSpeeds;
-// import edu.wpi.first.wpilibj2.command.Command;
-// import frc.robot.subsystems.drive.Drive;
-// import frc.robot.subsystems.vision.Vision;
-// import org.littletonrobotics.junction.Logger;
+package frc.robot.commands;
 
-// /**
-//  * Rotates the robot to center the best Limelight target (TX → 0). No translation at all. Uses a
-// PID
-//  * controller so it decelerates smoothly as it approaches center.
-//  *
-//  * <p>Bind via {@code .whileTrue()}.
-//  */
-// public class LimelightAimAndRangeCommand extends Command {
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.vision.Vision;
+import org.littletonrobotics.junction.Logger;
 
-//   // PID: kP — how aggressively to correct; kI/kD start at 0, tune if needed
-//   private static final double KP = 0.4;
-//   private static final double KI = 0.0;
-//   private static final double KD = 0.05;
+/**
+ * Uses Limelight TX for aiming and TY for range adjustment simultaneously. The robot drives
+ * toward/away from the target and rotates to face it. No driver translation input — robot moves
+ * autonomously.
+ *
+ * <p>Useful for auto-align sequences. Bind via {@code .whileTrue()}.
+ */
+public class LimelightAimAndRangeCommand extends Command {
 
-//   // Maximum rotation speed the PID output is clamped to (rad/s)
-//   private static final double MAX_OMEGA_RAD_S = 0.4;
+  private static final double KP_AIM = 0.035;
+  private static final double KP_DISTANCE = 0.1;
+  private static final double MIN_AIM_COMMAND_RAD_S = 0.3;
+  private static final double AIM_DEAD_BAND_DEG = 1.0;
+  private static final double RANGE_DEAD_BAND_DEG = 1.0;
 
-//   // Tolerance: consider aligned when TX is within ±1 degree
-//   private static final double TOLERANCE_DEG = 1.0;
+  private final Drive drive;
+  private final Vision vision;
+  private final int cameraIndex;
 
-//   private final Drive drive;
-//   private final Vision vision;
-//   private final int cameraIndex;
-//   private final PIDController pid;
+  public LimelightAimAndRangeCommand(Drive drive, Vision vision, int cameraIndex) {
+    this.drive = drive;
+    this.vision = vision;
+    this.cameraIndex = cameraIndex;
+    addRequirements(drive);
+  }
 
-//   public LimelightAimAndRangeCommand(Drive drive, Vision vision, int cameraIndex) {
-//     this.drive = drive;
-//     this.vision = vision;
-//     this.cameraIndex = cameraIndex;
-//     this.pid = new PIDController(KP, KI, KD);
-//     this.pid.setSetpoint(0.0); // target: TX = 0 (tag centered)
-//     this.pid.setTolerance(TOLERANCE_DEG);
-//     addRequirements(drive);
-//   }
+  @Override
+  public void execute() {
+    if (!vision.hasTarget(cameraIndex)) {
+      // Seek — spin slowly until a target appears
+      drive.runVelocity(new ChassisSpeeds(0.0, 0.0, 1.0));
+      Logger.recordOutput("LimelightAimRange/HasTarget", false);
+      return;
+    }
 
-//   @Override
-//   public void initialize() {
-//     pid.reset();
-//   }
+    double txDeg = vision.getTargetX(cameraIndex).getDegrees();
+    double tyDeg = vision.getTargetY(cameraIndex).getDegrees();
 
-//   @Override
-//   public void execute() {
-//     if (!vision.hasTarget(cameraIndex)) {
-//       // No target — stop and wait
-//       drive.stop();
-//       Logger.recordOutput("LimelightAimRange/HasTarget", false);
-//       return;
-//     }
+    // Aim
+    double omega = 0.0;
+    if (Math.abs(txDeg) > AIM_DEAD_BAND_DEG) {
+      omega = -txDeg * KP_AIM * drive.getMaxAngularSpeedRadPerSec();
+      omega += Math.copySign(MIN_AIM_COMMAND_RAD_S, omega);
+    }
 
-//     double txDeg = vision.getTargetX(cameraIndex).getDegrees();
+    // Range — TY positive = target above crosshair = too close (back up)
+    double forwardSpeed = 0.0;
+    if (Math.abs(tyDeg) > RANGE_DEAD_BAND_DEG) {
+      forwardSpeed = -tyDeg * KP_DISTANCE * drive.getMaxLinearSpeedMetersPerSec();
+    }
 
-//     // PID calculates correction: positive TX (tag right) → rotate CW (negative omega)
-//     double omega = MathUtil.clamp(pid.calculate(txDeg), -MAX_OMEGA_RAD_S, MAX_OMEGA_RAD_S);
+    Logger.recordOutput("LimelightAimRange/HasTarget", true);
+    Logger.recordOutput("LimelightAimRange/TX", txDeg);
+    Logger.recordOutput("LimelightAimRange/TY", tyDeg);
+    Logger.recordOutput("LimelightAimRange/OmegaRadS", omega);
+    Logger.recordOutput("LimelightAimRange/ForwardMps", forwardSpeed);
 
-//     Logger.recordOutput("LimelightAimRange/HasTarget", true);
-//     Logger.recordOutput("LimelightAimRange/TX", txDeg);
-//     Logger.recordOutput("LimelightAimRange/OmegaRadS", omega);
-//     Logger.recordOutput("LimelightAimRange/AtSetpoint", pid.atSetpoint());
+    // Robot-relative — don't rotate the velocity by field heading
+    drive.runVelocity(new ChassisSpeeds(forwardSpeed, 0.0, omega));
+  }
 
-//     // Rotation only — no translation
-//     drive.runVelocity(new ChassisSpeeds(0.0, 0.0, omega));
-//   }
+  @Override
+  public void end(boolean interrupted) {
+    drive.stop();
+  }
 
-//   @Override
-//   public void end(boolean interrupted) {
-//     drive.stop();
-//   }
-//   @Override
-//   public void end(boolean interrupted) {
-//     drive.stop();
-//   }
-
-//   @Override
-//   public boolean isFinished() {
-//     return false;
-//   }
-// }
-//   @Override
-//   public boolean isFinished() {
-//     return false;
-//   }
-// }
+  @Override
+  public boolean isFinished() {
+    return false;
+  }
+}
