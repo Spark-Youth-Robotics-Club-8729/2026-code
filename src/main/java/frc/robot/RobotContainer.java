@@ -14,6 +14,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -267,6 +268,7 @@ public class RobotContainer {
     }
 
     autoChooser.addOption("Manual Auto", ManualAuto.simpleAuto(drive));
+    autoChooser.addOption("Mobility Only", mobilityCommand());
 
     // Distance estimator (only meaningful on real hardware; values are placeholders)
     // distanceEstimator =
@@ -325,6 +327,10 @@ public class RobotContainer {
             shooter,
             indexer));
 
+    // Simple drive-only helpers
+    NamedCommands.registerCommand("DriveMobility", mobilityCommand());
+    NamedCommands.registerCommand("DriveStopWithX", Commands.runOnce(drive::stopWithX, drive));
+
     // Intake routines (multiple aliases for flexibility)
     NamedCommands.registerCommand("SlapdownAndIntakeCommand", intake.slapdownAndIntakeCommand());
     NamedCommands.registerCommand("StartIntakeSlapdown", intake.slapdownAndIntakeCommand());
@@ -379,6 +385,13 @@ public class RobotContainer {
   //         return Commands.waitSeconds(durationSeconds).deadlineWith(autoShoot);
   //       });
   // }
+
+  private Command mobilityCommand() {  //drive forwards 2 meters (assuming 1 m/s), then stop with X brake
+    return Commands.sequence(
+        Commands.run(() -> drive.runVelocity(new ChassisSpeeds(1.0, 0.0, 0.0)), drive)
+            .withTimeout(2.0),
+        Commands.runOnce(drive::stopWithX, drive));
+  }
 
   private Command buildJitterShootCommand() {
     Command jitter = intake.jitterCommand();
@@ -498,7 +511,7 @@ public class RobotContainer {
                 drive,
                 () -> -driver.getLeftY(),
                 () -> -driver.getLeftX(),
-                () -> drive.getRotation()));
+                () -> drive.getRotation())); // .plus(vision.getTargetX(0))
 
     // Driver LEFT BUMPER — Limelight proportional aim + driver translation
     // driver
