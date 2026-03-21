@@ -48,9 +48,6 @@ public class IntakeIOHardware implements IntakeIO {
 
   private final VoltageOut rollerVoltageControl = new VoltageOut(0);
 
-  // ---------------------------------------------------------------------------
-  // Slapdown — SparkMax (NEO brushless) via REVLib
-  // ---------------------------------------------------------------------------
   private final SparkMax slapdownMotor;
   private final RelativeEncoder slapdownEncoder;
   private final SparkClosedLoopController slapdownController;
@@ -80,10 +77,7 @@ public class IntakeIOHardware implements IntakeIO {
     BaseStatusSignal.setUpdateFrequencyForAll(4.0, rollerAppliedVolts, rollerCurrent, rollerTemp);
     rollerMotor.optimizeBusUtilization();
 
-    // ---- Slapdown (SparkMax + NEO) ----
-    // NOTE: Running on the NEO's relative encoder for now. The absolute encoder was problematic;
-    // keep the relative seed at the retracted (up) position and revisit absolute encoder
-    // bring-up before DCMP.
+    // ---- Slapdown (SparkMax + NEO, relative encoder)
     slapdownMotor = new SparkMax(slapdownMotorID, MotorType.kBrushless);
     slapdownEncoder = slapdownMotor.getEncoder();
     slapdownController = slapdownMotor.getClosedLoopController();
@@ -137,11 +131,10 @@ public class IntakeIOHardware implements IntakeIO {
     inputs.rollerCurrentAmps = rollerCurrent.getValueAsDouble();
     inputs.rollerTempCelsius = rollerTemp.getValueAsDouble();
 
-    // Slapdown — hasActiveFault() is the current non-deprecated connection check
+    // Slapdown
     inputs.slapdownConnected = !slapdownMotor.hasActiveFault();
-    inputs.slapdownPositionRad = slapdownEncoder.getPosition(); // radians (via conversion factor)
-    inputs.slapdownVelocityRadPerSec =
-        slapdownEncoder.getVelocity(); // rad/s (via conversion factor)
+    inputs.slapdownPositionRad = slapdownEncoder.getPosition(); // radians via conversion factor
+    inputs.slapdownVelocityRadPerSec = slapdownEncoder.getVelocity(); // rad/s
     inputs.slapdownAppliedVolts = slapdownMotor.getAppliedOutput() * slapdownMotor.getBusVoltage();
     inputs.slapdownCurrentAmps = slapdownMotor.getOutputCurrent();
     inputs.slapdownTempCelsius = slapdownMotor.getMotorTemperature();
@@ -152,8 +145,7 @@ public class IntakeIOHardware implements IntakeIO {
     // Roller (always open-loop voltage)
     rollerMotor.setControl(rollerVoltageControl.withOutput(outputs.rollerVolts));
 
-    // Reconfigure SparkMax PID gains only when they actually change —
-    // calling configure() every loop is slow and unnecessary
+    // Reconfigure SparkMax PID gains only when they actually change
     if (outputs.kP != lastKp || outputs.kD != lastKd) {
       SparkMaxConfig update = new SparkMaxConfig();
       update.closedLoop.p(outputs.kP).d(outputs.kD);
@@ -177,13 +169,11 @@ public class IntakeIOHardware implements IntakeIO {
 
       case OPEN_LOOP -> slapdownMotor.setVoltage(outputs.slapdownVolts);
 
-      case CLOSED_LOOP ->
-      // setSetpoint() is the non-deprecated replacement for setReference()
-      slapdownController.setSetpoint(
-          outputs.slapdownPositionRad, // already in radians via conversion factor
+      case CLOSED_LOOP -> slapdownController.setSetpoint(
+          outputs.slapdownPositionRad, // radians, matches absolute encoder conversion factor
           ControlType.kPosition,
           ClosedLoopSlot.kSlot0,
-          0.0); // no arbitrary feedforward
+          0.0);
     }
   }
 }

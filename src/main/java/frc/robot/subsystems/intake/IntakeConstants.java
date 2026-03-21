@@ -15,13 +15,21 @@ public class IntakeConstants {
   public static final int slapdownMotorID = 21;
   public static final String canBus = "rio"; // Change to "canivore" if needed
 
+  // Zero offset (rotations) fed into SparkAbsoluteEncoder config.
+  // Shifted 0.1 rot back from the raw UP reading (0.4135552) so that the
+  // adjusted UP position is ~0.1 rot instead of ~0.0 rot, keeping both
+  // endpoints away from the 0/1 wrap boundary and preventing the encoder
+  // from bouncing between 0.000 and 0.998 at the UP position.
+  public static final double slapdownEncoderOffset = 0.4135552 - 0.1; // = 0.3135552
+
   // Slapdown gear ratio (motor rotations per mechanism rotation)
   public static final double slapdownGearRatio = 45; // changed gear ratio to 45:1
 
-  // Slapdown angle limits (radians, at the mechanism after gear reduction)
-  public static final double slapdownUpAngleRad = Units.degreesToRadians(0.0); // TODO: Set actual
-  public static final double slapdownDownAngleRad =
-      Units.degreesToRadians(90.0); // TODO: Set actual
+  // Slapdown angle limits — expressed in radians from the absolute encoder.
+  // UP  = 0.100 rot * 2π ≈ 0.628 rad
+  // DOWN = (0.100 + 0.711) rot * 2π = 0.811 rot * 2π ≈ 5.095 rad
+  public static final double slapdownUpAngleRad = 0.1 * 2.0 * Math.PI;
+  public static final double slapdownDownAngleRad = 0.811 * 2.0 * Math.PI;
 
   // Slapdown PID gains (separate for each mode so they can be tuned independently)
   public static final double slapdownUpKp = 0.3; // TODO: Tune

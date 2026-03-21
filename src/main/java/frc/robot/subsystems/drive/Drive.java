@@ -319,6 +319,9 @@ public class Drive extends SubsystemBase {
   /** Zeroes the gyro yaw. Call this at the start of teleop or on a button press. */
   public void zeroGyro() {
     gyroIO.zeroYaw();
+    setPose(new Pose2d(getPose().getTranslation(), Rotation2d.fromDegrees(0)));
+    // LimelightHelpers.SetRobotOrientation("limelight", 0, 0, 0, 0, 0, 0);  // uncomment once LL4
+    // is being used
   }
 
   /** Adds a new timestamped vision measurement. */

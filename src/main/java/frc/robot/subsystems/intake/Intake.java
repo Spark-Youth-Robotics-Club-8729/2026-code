@@ -164,19 +164,20 @@ public class Intake extends SubsystemBase {
       case JITTER -> {
         outputs.kP = jitterKp;
         outputs.kD = jitterKd;
-        double radPerSec = jitterFrequencyHz * (2.0 * Math.PI);
-        double offset =
-            Math.abs(
-                Units.degreesToRadians(jitterAmplitudeDeg)
-                    * Math.sin(jitterTimer.get() * radPerSec));
-        /*     // If sine wave thingy does not work, then comment the two lines above, and uncomment this one
+        // double radPerSec = jitterFrequencyHz * (2.0 * Math.PI);
+        // double offset =
+        //    Math.abs(
+        //        Units.degreesToRadians(jitterAmplitudeDeg)
+        //            * Math.sin(jitterTimer.get() * radPerSec));
+        double offset;
+        // If sine wave thingy does not work, then comment the two lines above, and uncomment this
+        // one
         double cycleTime = 1.0 / jitterFrequencyHz;
         if ((jitterTimer.get() % cycleTime) < (cycleTime / 2.0)) {
           offset = Units.degreesToRadians(jitterAmplitudeDeg);
         } else {
           offset = 0.0;
         }
-        */
         outputs.slapdownPositionRad = slapdownDownAngleRad - offset;
       }
     }
@@ -301,10 +302,10 @@ public class Intake extends SubsystemBase {
   public void toggleSlapdown() {
     if (isSlapdownUp()) {
       setSlapdownGoal(SlapdownGoal.DOWN);
-      setRollerGoal(RollerGoal.INTAKE);
+      // setRollerGoal(RollerGoal.INTAKE);
     } else {
       setSlapdownGoal(SlapdownGoal.UP);
-      setRollerGoal(RollerGoal.STOP);
+      // setRollerGoal(RollerGoal.STOP);
     }
   }
 
