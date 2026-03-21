@@ -11,7 +11,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import frc.robot.subsystems.drive.DriveConstants;
-import frc.robot.subsystems.shooter.ShotCalculator;
+// import frc.robot.subsystems.shooter.ShotCalculator;
 
 /**
  * Waypoints and poses used by autonomous routines.
@@ -213,28 +213,28 @@ public class AutoFieldConstants {
   // Launch (pre-computed aimed shoot poses)
   // ---------------------------------------------------------------------------
 
-  /** Pre-computed aimed poses for stationary shots during auto. */
-  public static class Launch {
-    public static final Pose2d leftTower =
-        ShotCalculator.getStationaryAimedPose(
-            Climb.left.getTranslation().plus(new Translation2d(1.5, 0.5)), true);
+  //   /** Pre-computed aimed poses for stationary shots during auto. */
+  //   public static class Launch {
+  //     public static final Pose2d leftTower =
+  //         ShotCalculator.getStationaryAimedPose(
+  //             Climb.left.getTranslation().plus(new Translation2d(1.5, 0.5)), true);
 
-    public static final Pose2d rightTower =
-        ShotCalculator.getStationaryAimedPose(
-            Climb.right.getTranslation().plus(new Translation2d(1.5, -0.5)), true);
+  //     public static final Pose2d rightTower =
+  //         ShotCalculator.getStationaryAimedPose(
+  //             Climb.right.getTranslation().plus(new Translation2d(1.5, -0.5)), true);
 
-    public static Pose2d leftBump =
-        ShotCalculator.getStationaryAimedPose(
-            new Translation2d(
-                FieldConstants.LinesVertical.starting - 1.0,
-                FieldConstants.LinesHorizontal.leftBumpMiddle),
-            true);
+  //     public static Pose2d leftBump =
+  //         ShotCalculator.getStationaryAimedPose(
+  //             new Translation2d(
+  //                 FieldConstants.LinesVertical.starting - 1.0,
+  //                 FieldConstants.LinesHorizontal.leftBumpMiddle),
+  //             true);
 
-    public static Pose2d rightBump =
-        ShotCalculator.getStationaryAimedPose(
-            new Translation2d(
-                FieldConstants.LinesVertical.starting - 1.0,
-                FieldConstants.LinesHorizontal.rightBumpMiddle),
-            true);
-  }
+  //     public static Pose2d rightBump =
+  //         ShotCalculator.getStationaryAimedPose(
+  //             new Translation2d(
+  //                 FieldConstants.LinesVertical.starting - 1.0,
+  //                 FieldConstants.LinesHorizontal.rightBumpMiddle),
+  //             true);
+  //   }
 }

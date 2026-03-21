@@ -72,10 +72,6 @@ public class RobotContainer {
   // Distance estimator — TODO: fill in real measurements before competition
   // private final LimelightDistanceEstimator distanceEstimator;
 
-  // Hardcoded Hub Shot preset — adjust these before each match as needed
-  private static final double HUB_SHOT_HOOD_ANGLE_DEG = 25.0;
-  private static final double HUB_SHOT_FLYWHEEL_RPM = 1500.0;
-
   // (SHOOT_PRESETS and shootPresetIndex removed — now using ShotCalculator)
 
   public RobotContainer() {
@@ -457,7 +453,7 @@ public class RobotContainer {
 
     drive.setDefaultCommand(
         DriveCommands.joystickDrive( // for robot relative, do this: joystickDriveRobotRelative
-            drive, () -> driver.getLeftY(), () -> driver.getLeftX(), () -> -driver.getRightX()));
+            drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
 
     driver
         .a()
@@ -475,13 +471,8 @@ public class RobotContainer {
     //                 drive)
     //             .ignoringDisable(true));
 
-    driver
-        .b()
-        .whileTrue(
-            Commands.run(
-                () -> {
-                  drive.zeroGyro(); // not working
-                }));
+    // changed to left trigger
+    driver.leftTrigger().whileTrue(Commands.runOnce(drive::zeroGyro, drive).ignoringDisable(true));
 
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
@@ -550,7 +541,9 @@ public class RobotContainer {
                     () -> {
                       // --- Vision-based shot parameters ---
                       // double rawDist = vision.getNearestTagDistance(0);
-                      double rawDist = 0.0; // placeholder until we can test with real vision data
+                      double rawDist =
+                          0.0; // placeholder until we can test with real vision data (TODO
+                      // IMPORTANT)
 
                       if (!Double.isNaN(rawDist) && rawDist > 0.1) {
                         lastValidDist[0] = rawDist;
@@ -604,6 +597,7 @@ public class RobotContainer {
                       } else {
                         shooter.stopFeeder();
                         indexer.stop();
+                        indexer.stop();
                       }
                     },
                     shooter,
@@ -627,7 +621,7 @@ public class RobotContainer {
                           ShooterConstants.hoodMaxAngleRad
                               - Units.degreesToRadians(45.0); // Adjust this!!!!
                       double highVelocityRPM =
-                          ShooterConstants.maxFlywheelSpeedRPM - 5000; // Adjust this!!!!
+                          ShooterConstants.maxFlywheelSpeedRPM - 1500; // Adjust this!!!!
 
                       shooter.setHoodPosition(highArcHoodAngle);
                       shooter.setFlywheelVelocity(highVelocityRPM);
@@ -681,19 +675,6 @@ public class RobotContainer {
     operator.y().whileTrue(Commands.startEnd(shooter::feedNote, shooter::stopFeeder));
 
     // X — FEEDER WHEELS and FLYWHEELS out
-    operator
-        .x()
-        .whileTrue(
-            Commands.startEnd(
-                () -> {
-                  shooter.ejectNote();
-                  shooter.setFlywheelVelocity(-defaultFlywheelSpeedRPM); // Adjust RPM if needed
-                },
-                () -> {
-                  shooter.stopFeeder();
-                  shooter.stop();
-                },
-                shooter));
     operator
         .x()
         .whileTrue(
