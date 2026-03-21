@@ -103,8 +103,9 @@ public class RobotContainer {
                 new ModuleIOSim(),
                 new ModuleIOSim());
 
-  // Vision is currently disabled; if re-enabled in sim, swap in a no-op VisionIO implementation
-  // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {});
+        // Vision is currently disabled; if re-enabled in sim, swap in a no-op VisionIO
+        // implementation
+        // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {});
 
         shooter = new Shooter(new ShooterIOSim());
         intake = new Intake(new IntakeIOSim());
@@ -453,9 +454,9 @@ public class RobotContainer {
     // A             — HOLD to snap/drive at 0 degrees (facing forward)    -- kinda works
     // B             — RESET GYRO to current heading (sets rotation to 0)   -- test pls
     // X             — X-BRAKE (lock wheels in X-pattern to resist pushing)      -- works pretty
-  // Y             — (unused; Limelight/vision aim is currently disabled)
-  // Left Bumper   — (unused; vision-based proportional aiming removed)
-  // Right Bumper  — (unused; vision-based auto range removed)
+    // Y             — (unused; Limelight/vision aim is currently disabled)
+    // Left Bumper   — (unused; vision-based proportional aiming removed)
+    // Right Bumper  — (unused; vision-based auto range removed)
     // POV Down      — PRESS to set hood down to its minimum resting angle
     // POV Up        — PRESS to TEST EVERYTHING (all functionalities of the robot)  --- test pls
     // -------------------------------------------------------------------------
@@ -497,8 +498,7 @@ public class RobotContainer {
                 drive,
                 () -> -driver.getLeftY(),
                 () -> -driver.getLeftX(),
-                () -> drive.getRotation()
-                ));
+                () -> drive.getRotation()));
 
     // Driver LEFT BUMPER — Limelight proportional aim + driver translation
     // driver
@@ -534,7 +534,7 @@ public class RobotContainer {
     // Right Bumper   — HOLD to run INTAKE wheels in
     // Left Bumper    — HOLD to run INTAKE wheels out
     // B              — HOLD to run INDEXER wheels in
-  // A              — (unused; vision-based auto-shoot is currently disabled)
+    // A              — (unused; vision-based auto-shoot is currently disabled)
     // POV Down       — PRESS to toggle intake SLAPDOWN (up/down)
     // POV Up         — HOLD to JITTER/agitate balls in intake
     // POV Left       — PRESS to nudge hood angle DOWN (-1 degree)
@@ -547,7 +547,7 @@ public class RobotContainer {
     // Right Trigger — shoot: spin up flywheels + hood, then feed once both are at target.
     // Hood and flywheel targets come from ShotCalculator using nearest AprilTag distance.
     // VERSION 0: (initial version with indexer.feed() inside the if statement)
-    //double[] lastValidDist = {ShooterConstants.hoodMinAngleRad};
+    // double[] lastValidDist = {ShooterConstants.hoodMinAngleRad};
     // operator
     //     .rightTrigger(0.5)
     //     .whileTrue(

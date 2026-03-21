@@ -80,10 +80,10 @@ public class IntakeIOHardware implements IntakeIO {
     BaseStatusSignal.setUpdateFrequencyForAll(4.0, rollerAppliedVolts, rollerCurrent, rollerTemp);
     rollerMotor.optimizeBusUtilization();
 
-  // ---- Slapdown (SparkMax + NEO) ----
-  // NOTE: Running on the NEO's relative encoder for now. The absolute encoder was problematic;
-  // keep the relative seed at the retracted (up) position and revisit absolute encoder
-  // bring-up before DCMP.
+    // ---- Slapdown (SparkMax + NEO) ----
+    // NOTE: Running on the NEO's relative encoder for now. The absolute encoder was problematic;
+    // keep the relative seed at the retracted (up) position and revisit absolute encoder
+    // bring-up before DCMP.
     slapdownMotor = new SparkMax(slapdownMotorID, MotorType.kBrushless);
     slapdownEncoder = slapdownMotor.getEncoder();
     slapdownController = slapdownMotor.getClosedLoopController();
@@ -118,9 +118,9 @@ public class IntakeIOHardware implements IntakeIO {
     slapdownMotor.configure(
         slapdownConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-  // Seed relative encoder at the retracted (up) position on startup.
-  // TODO (DCMP): Re-enable an absolute encoder once hardware is fixed, to avoid manual seeding.
-  slapdownEncoder.setPosition(slapdownUpAngleRad);
+    // Seed relative encoder at the retracted (up) position on startup.
+    // TODO (DCMP): Re-enable an absolute encoder once hardware is fixed, to avoid manual seeding.
+    slapdownEncoder.setPosition(slapdownUpAngleRad);
 
     lastKp = slapdownUpKp;
     lastKd = slapdownUpKd;
