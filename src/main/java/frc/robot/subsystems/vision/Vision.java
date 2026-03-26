@@ -10,7 +10,6 @@ package frc.robot.subsystems.vision;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -27,7 +26,9 @@ import java.util.List;
 import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
+  @SuppressWarnings("unused")
   private final VisionConsumer consumer;
+
   private final VisionIO[] io;
   private final VisionIOInputsAutoLogged[] inputs;
   private final Alert[] disconnectedAlerts;
@@ -220,10 +221,23 @@ public class Vision extends SubsystemBase {
           }
         }
 
+        // NOTE: Per request, severing Limelight -> pose estimator connection.
+        // The original call that fed Limelight poses into the drive pose estimator is
+        // intentionally commented out below so vision will NOT update robot odometry.
+        // To re-enable, remove the comments around the consumer.accept(...) call.
+
+        // Record the calculated std devs for debugging / telemetry so the local
+        // variables are used and we don't get unused-variable warnings.
+        Logger.recordOutput("Vision/Camera" + cameraIndex + "/LinearStdDev", linearStdDev);
+        Logger.recordOutput("Vision/Camera" + cameraIndex + "/AngularStdDev", angularStdDev);
+
+        /*
         consumer.accept(
-            observation.pose().toPose2d(),
-            observation.timestamp(),
-            VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
+          observation.pose().toPose2d(),
+          observation.timestamp(),
+          VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
+        */
+        Logger.recordOutput("Vision/PoseFusion", "Disabled - Limelight poses not applied");
       }
 
       // Per-camera logging

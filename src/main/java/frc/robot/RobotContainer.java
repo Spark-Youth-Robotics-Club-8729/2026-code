@@ -15,6 +15,7 @@ import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ProxyCommand;
@@ -280,6 +281,17 @@ public class RobotContainer {
             25.0); // TODO: camera mount angle above horizontal (degrees)
 
     configureButtonBindings();
+
+    // Create NetworkTables keys with sane defaults so dashboards show controls automatically.
+    var visionTable = NetworkTableInstance.getDefault().getTable("Vision");
+    visionTable
+        .getEntry("EnablePoseFusion")
+        .setBoolean(visionTable.getEntry("EnablePoseFusion").getBoolean(true));
+
+    var aimTable = NetworkTableInstance.getDefault().getTable("LimelightAim");
+    aimTable.getEntry("KP").setDouble(aimTable.getEntry("KP").getDouble(0.009));
+    aimTable.getEntry("KI").setDouble(aimTable.getEntry("KI").getDouble(0.0));
+    aimTable.getEntry("KD").setDouble(aimTable.getEntry("KD").getDouble(0.0));
   }
 
   private void registerNamedCommands() {
@@ -487,11 +499,24 @@ public class RobotContainer {
 
     driver
         .b()
-        .whileTrue(
-            Commands.run(
-                () -> {
-                  drive.zeroGyro(); // not working
-                }));
+        .onTrue(
+            Commands.sequence(
+                    // Temporarily disable vision pose fusion, zero the gyro, then re-enable.
+                    Commands.runOnce(
+                        () ->
+                            NetworkTableInstance.getDefault()
+                                .getTable("Vision")
+                                .getEntry("EnablePoseFusion")
+                                .setBoolean(false)),
+                    Commands.runOnce(drive::zeroGyro, drive),
+                    Commands.waitSeconds(0.1),
+                    Commands.runOnce(
+                        () ->
+                            NetworkTableInstance.getDefault()
+                                .getTable("Vision")
+                                .getEntry("EnablePoseFusion")
+                                .setBoolean(true)))
+                .ignoringDisable(true));
 
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
