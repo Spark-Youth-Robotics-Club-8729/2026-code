@@ -3,6 +3,9 @@ package frc.robot.commands;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.Vision;
@@ -16,27 +19,41 @@ import org.littletonrobotics.junction.Logger;
  */
 public class LimelightAimAndRangeCommand extends Command {
 
-  // PID: kP — how aggressively to correct; kI/kD start at 0, tune if needed
-  private static final double KP = 0.4;
-  private static final double KI = 0.0;
-  private static final double KD = 0.05;
+  // PID default values (can be tuned live via NetworkTables at
+  // /LimelightAim/KP, /LimelightAim/KI, /LimelightAim/KD)
+  private static final double DEFAULT_KP = 0.009;
+  private static final double DEFAULT_KI = 0.0;
+  private static final double DEFAULT_KD = 0.0;
 
   // Maximum rotation speed the PID output is clamped to (rad/s)
-  private static final double MAX_OMEGA_RAD_S = 0.4;
+  private static final double MAX_OMEGA_RAD_S = 1.0; // was 0.4
 
-  // Tolerance: consider aligned when TX is within ±1 degree
-  private static final double TOLERANCE_DEG = 1.0;
+  // Tolerance: consider aligned when TX is within ±2 degree
+  private static final double TOLERANCE_DEG = 2.0;
 
   private final Drive drive;
   private final Vision vision;
   private final int cameraIndex;
   private final PIDController pid;
+  private final NetworkTableEntry kpEntry;
+  private final NetworkTableEntry kiEntry;
+  private final NetworkTableEntry kdEntry;
 
   public LimelightAimAndRangeCommand(Drive drive, Vision vision, int cameraIndex) {
     this.drive = drive;
     this.vision = vision;
     this.cameraIndex = cameraIndex;
-    this.pid = new PIDController(KP, KI, KD);
+    // NetworkTables entries for live PID tuning
+    NetworkTable table = NetworkTableInstance.getDefault().getTable("LimelightAim");
+    kpEntry = table.getEntry("KP");
+    kiEntry = table.getEntry("KI");
+    kdEntry = table.getEntry("KD");
+    // Initialize entries with defaults (won't overwrite if already set by dashboard)
+    kpEntry.setDouble(kpEntry.getDouble(DEFAULT_KP));
+    kiEntry.setDouble(kiEntry.getDouble(DEFAULT_KI));
+    kdEntry.setDouble(kdEntry.getDouble(DEFAULT_KD));
+
+    this.pid = new PIDController(DEFAULT_KP, DEFAULT_KI, DEFAULT_KD);
     this.pid.setSetpoint(0.0); // target: TX = 0 (tag centered)
     this.pid.setTolerance(TOLERANCE_DEG);
     addRequirements(drive);
@@ -55,6 +72,14 @@ public class LimelightAimAndRangeCommand extends Command {
       Logger.recordOutput("LimelightAimRange/HasTarget", false);
       return;
     }
+
+    // Update PID gains from NetworkTables (allows live tuning without redeploy)
+    double kp = kpEntry.getDouble(DEFAULT_KP);
+    double ki = kiEntry.getDouble(DEFAULT_KI);
+    double kd = kdEntry.getDouble(DEFAULT_KD);
+    pid.setP(kp);
+    pid.setI(ki);
+    pid.setD(kd);
 
     double txDeg = vision.getTargetX(cameraIndex).getDegrees();
 
