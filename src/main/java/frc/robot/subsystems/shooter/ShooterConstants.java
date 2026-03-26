@@ -81,7 +81,8 @@ public class ShooterConstants {
   // Hood angle limits (radians, at the mechanism — after gear reduction)
   // ---------------------------------------------------------------------------
   public static final double hoodMinAngleRad = Units.degreesToRadians(5.0); // TODO: Set actual
-  public static final double hoodMaxAngleRad = Units.degreesToRadians(45.0); // TODO: Set actual
+  public static LoggedNetworkNumber hoodMaxAngleRad =
+      new LoggedNetworkNumber("hoodMaxAngleRad", Units.degreesToRadians(30.0)); // TODO: Set actual
 
   // ---------------------------------------------------------------------------
   // Tolerances
@@ -93,7 +94,7 @@ public class ShooterConstants {
   // ---------------------------------------------------------------------------
   // Default / feeder speeds
   // ---------------------------------------------------------------------------
-  public static final double defaultFlywheelSpeedRPM = 3100.0; // TODO: changeback to more
+  public static final double defaultFlywheelSpeedRPM = 3200.0; // TODO: changeback to more
   public static LoggedNetworkNumber maxFlywheelSpeedRPM =
       new LoggedNetworkNumber("maxFlywheelSpeedRPM", 4500);
   // Positive = feeds ball up from hopper to shooter

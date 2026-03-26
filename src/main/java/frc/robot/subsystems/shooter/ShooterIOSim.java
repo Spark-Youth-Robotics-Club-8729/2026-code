@@ -46,9 +46,9 @@ public class ShooterIOSim implements ShooterIO {
           0.02, // MOI in kg·m² (estimate for the hood pivot arm)
           0.3, // Arm length in meters (estimate)
           hoodMinAngleRad,
-          hoodMaxAngleRad,
+          hoodMaxAngleRad.getAsDouble(),
           true, // Simulate gravity
-          (hoodMinAngleRad + hoodMaxAngleRad) / 2.0); // Start at middle
+          (hoodMinAngleRad + hoodMaxAngleRad.getAsDouble()) / 2.0); // Start at middle
 
   // ---------------------------------------------------------------------------
   // Feeder sim (green wheels)
@@ -71,7 +71,7 @@ public class ShooterIOSim implements ShooterIO {
   // Setpoints
   private double leftFlywheelSetpointRPM = 0.0;
   private double rightFlywheelSetpointRPM = 0.0;
-  private double hoodSetpointRad = (hoodMinAngleRad + hoodMaxAngleRad) / 2.0;
+  private double hoodSetpointRad = (hoodMinAngleRad + hoodMaxAngleRad.getAsDouble()) / 2.0;
   private double feederSetpointRPM = 0.0;
 
   // Applied voltages
@@ -162,7 +162,7 @@ public class ShooterIOSim implements ShooterIO {
 
   @Override
   public void setHoodPosition(double positionRad) {
-    hoodSetpointRad = MathUtil.clamp(positionRad, hoodMinAngleRad, hoodMaxAngleRad);
+    hoodSetpointRad = MathUtil.clamp(positionRad, hoodMinAngleRad, hoodMaxAngleRad.getAsDouble());
   }
 
   @Override

@@ -325,7 +325,7 @@ public class Intake extends SubsystemBase {
               setRollerGoal(RollerGoal.INTAKE);
             },
             this),
-        Commands.waitUntil(this::isSlapdownDown));
+        Commands.waitSeconds(1));
   }
 
   /** Raises the slapdown and stops the roller. */

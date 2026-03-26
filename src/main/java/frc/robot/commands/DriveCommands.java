@@ -44,10 +44,10 @@ public class DriveCommands {
 
   private static final double ANGLE_KP = 5.0;
   private static final double ANGLE_KD = 0.4;
-  private static final double ANGLE_MAX_VELOCITY = 7.0; // (changed from 8)
+  private static final double ANGLE_MAX_VELOCITY = 0.5; // (changed from 8)
   // public static LoggedNetworkNumber ANGLE_MAX_VELOCITY =
   //     new LoggedNetworkNumber("angle_max_velocity", 7);
-  private static final double ANGLE_MAX_ACCELERATION = 10.0; // (changed from 20)
+  private static final double ANGLE_MAX_ACCELERATION = 2.0; // (changed from 20)
   private static final double FF_START_DELAY = 2.0; // Secs
   private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
   private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.10; // Rad/Sec (changed from 0.25)
@@ -377,7 +377,11 @@ public class DriveCommands {
 
           // Reconstruct x/y from magnitude (no field rotation)
           double angle = Math.atan2(y, x);
-          double vx = linearMagnitude * Math.cos(angle) * drive.getMaxLinearSpeedMetersPerSec();
+          double vx =
+              linearMagnitude
+                  * Math.cos(angle)
+                  * drive.getMaxLinearSpeedMetersPerSec()
+                  * DRIVE_SPEED_SCALE;
           double vy = linearMagnitude * Math.sin(angle) * drive.getMaxLinearSpeedMetersPerSec();
           double vomega = omegaScaled * drive.getMaxAngularSpeedRadPerSec();
 

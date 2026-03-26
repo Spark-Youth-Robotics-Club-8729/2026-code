@@ -454,8 +454,12 @@ public class RobotContainer {
     // -------------------------------------------------------------------------
 
     drive.setDefaultCommand(
-        DriveCommands.joystickDrive( // for robot relative, do this: joystickDriveRobotRelative
-            drive, () -> driver.getLeftY(), () -> driver.getLeftX(), () -> -driver.getRightX()));
+        DriveCommands
+            .joystickDriveRobotRelative( // for robot relative, do this: joystickDriveRobotRelative
+                drive,
+                () -> driver.getLeftY(),
+                () -> driver.getLeftX(),
+                () -> -driver.getRightX()));
 
     driver
         .a()
@@ -619,7 +623,7 @@ public class RobotContainer {
             Commands.run(
                     () -> {
                       // Use max hood angle for high arc and high velocity for distance
-                      double highArcHoodAngle = ShooterConstants.hoodMaxAngleRad / 1.5;
+                      double highArcHoodAngle = ShooterConstants.hoodMaxAngleRad.get() / 1.5;
                       double highVelocityRPM =
                           ShooterConstants.maxFlywheelSpeedRPM.get(); // Adjust this!!!!
 

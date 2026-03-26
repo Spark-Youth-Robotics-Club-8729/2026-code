@@ -122,7 +122,8 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     hoodConfig.Slot0.kD = hoodKd;
     // Software limits in mechanism rotations (convert radians → rotations)
     hoodConfig.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-    hoodConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold = hoodMaxAngleRad / (2.0 * Math.PI);
+    hoodConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold =
+        ShooterConstants.hoodMaxAngleRad.get() / (2.0 * Math.PI);
     hoodConfig.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
     hoodConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = hoodMinAngleRad / (2.0 * Math.PI);
     hoodMotor.getConfigurator().apply(hoodConfig);
